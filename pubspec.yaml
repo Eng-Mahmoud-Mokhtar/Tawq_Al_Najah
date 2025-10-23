@@ -1,0 +1,71 @@
+name: tawqalnajah
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
+  cupertino_icons: ^1.0.8
+  intl_utils: ^2.8.10
+  flutter_bloc:
+  shared_preferences:
+  dropdown_button2:
+  url_launcher:
+  font_awesome_flutter:
+  image_picker:
+  country_icons:
+  device_preview:
+  bloc:
+  flutter_screenutil:
+  smooth_page_indicator:
+  flutter_credit_card:
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.0
+
+flutter_intl:
+  enabled: true
+  class_name: S
+  main_locale: en
+  arb_dir: Assets/Localization
+  output_dir: lib/generated
+
+# ✅ إعداد شاشة البداية (Native Splash)
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: Assets/ChatGPT Image Sep 22, 2025, 03_17_41 AM 6.png
+  android: true
+  ios: true
+  android_gravity: center
+  ios_content_mode: center
+  fullscreen: true
+
+# ✅ إعداد أيقونة التطبيق (Launcher Icon)
+flutter_launcher_icons:
+  android: true
+  ios: true
+  adaptive_icon_background: "#FFFFFF"
+  image_path: "Assets/ChatGPT Image Sep 22, 2025, 03_17_41 AM 6.png"
+
+flutter:
+  uses-material-design: true
+  assets:
+    - Assets/
+    - Assets/Localization/intl_ar.arb
+    - Assets/Localization/intl_en.arb
+
+  fonts:
+    - family: Tajawal
+      fonts:
+        - asset: Assets/Fonts/Tajawal-Regular.ttf
