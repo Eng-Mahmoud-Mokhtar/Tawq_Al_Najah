@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../../../Core/utiles/Colors.dart';
 import '../../../../../../../generated/l10n.dart';
-import '../../../../../Product/presentation/view_model/views/widgets/getAdsData.dart';
 import '../../filter_cubit.dart';
 import '../../../../../Home/presentation/view_model/views/HomeStructure.dart';
 
@@ -30,7 +29,6 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
 
   bool _initialized = false;
 
-  // IDs
   static const String categoryAll = 'all';
   static const String countryAll = 'all';
   static const Map<String, String> categoryIds = {
@@ -105,143 +103,145 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: widget.screenWidth * 0.04,
-        vertical: widget.screenHeight * 0.03,
+        vertical: widget.screenHeight * 0.02,
       ),
-      height: widget.screenHeight * 0.55,
+      constraints: BoxConstraints(
+        maxHeight: widget.screenHeight * 0.7,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(
-          top: Radius.circular(widget.screenWidth * 0.02),
+          top: Radius.circular(widget.screenWidth * 0.03),
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.tune, color: KprimaryColor, size: widget.screenWidth * 0.05),
-                  SizedBox(width: widget.screenWidth * 0.015),
-                  Text(
-                    S.of(context).filterProducts,
-                    style: TextStyle(
-                      fontSize: widget.screenWidth * 0.04,
-                      fontWeight: FontWeight.bold,
-                      color: KprimaryText,
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.tune,
+                        color: KprimaryColor, size: widget.screenWidth * 0.05),
+                    SizedBox(width: widget.screenWidth * 0.015),
+                    Text(
+                      S.of(context).filterProducts,
+                      style: TextStyle(
+                        fontSize: widget.screenWidth * 0.04,
+                        fontWeight: FontWeight.bold,
+                        color: KprimaryText,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              InkWell(
-                onTap: () => Navigator.pop(context),
-                child: Icon(Icons.close_rounded,
-                    size: widget.screenWidth * 0.05, color: Colors.black),
-              ),
-            ],
-          ),
-          SizedBox(height: widget.screenHeight * 0.03),
-
-          // Category
-          _buildLabel(S.of(context).category),
-          _buildStyledDropdown(
-            value: selectedCategory['id'],
-            hint: S.of(context).selectCategory,
-            items: categories,
-            onChanged: (value) {
-              setState(() => tempCategoryId = value);
-            },
-          ),
-          SizedBox(height: widget.screenHeight * 0.02),
-
-          // Country
-          _buildLabel(S.of(context).country),
-          _buildStyledDropdown(
-            value: selectedCountry['id'],
-            hint: S.of(context).selectCountry,
-            items: countries,
-            onChanged: (value) {
-              setState(() => tempCountry = value);
-            },
-          ),
-          SizedBox(height: widget.screenHeight * 0.02),
-
-          // Price Range
-          _buildLabel(S.of(context).priceRange),
-          RangeSlider(
-            min: 0,
-            max: 100000,
-            divisions: 100,
-            labels: RangeLabels(
-              tempMinPrice.round().toString(),
-              tempMaxPrice.round().toString(),
+                  ],
+                ),
+                InkWell(
+                  onTap: () => Navigator.pop(context),
+                  child: Icon(Icons.close_rounded,
+                      size: widget.screenWidth * 0.06, color: Colors.black),
+                ),
+              ],
             ),
-            values: RangeValues(tempMinPrice, tempMaxPrice),
-            onChanged: (values) {
-              setState(() {
-                tempMinPrice = values.start;
-                tempMaxPrice = values.end;
-              });
-            },
-            activeColor: KprimaryColor,
-            inactiveColor: Colors.grey[300],
-          ),
-          const Spacer(),
+            SizedBox(height: widget.screenHeight * 0.02),
 
-          // Apply Button
-          SizedBox(
-            height: widget.screenWidth * 0.12,
-            width: double.infinity,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: KprimaryColor,
-                borderRadius: BorderRadius.circular(8),
+            // Category
+            _buildLabel(S.of(context).category),
+            SizedBox(height: widget.screenHeight * 0.01),
+            _buildStyledDropdown(
+              value: selectedCategory['id'],
+              hint: S.of(context).selectCategory,
+              items: categories,
+              onChanged: (value) {
+                setState(() => tempCategoryId = value);
+              },
+            ),
+            SizedBox(height: widget.screenHeight * 0.015),
+
+            // Country
+            _buildLabel(S.of(context).country),
+            SizedBox(height: widget.screenHeight * 0.01),
+            _buildStyledDropdown(
+              value: selectedCountry['id'],
+              hint: S.of(context).selectCountry,
+              items: countries,
+              onChanged: (value) {
+                setState(() => tempCountry = value);
+              },
+            ),
+            SizedBox(height: widget.screenHeight * 0.015),
+
+            // Price Range
+            _buildLabel(S.of(context).priceRange),
+            RangeSlider(
+              min: 0,
+              max: 100000,
+              divisions: 100,
+              labels: RangeLabels(
+                tempMinPrice.round().toString(),
+                tempMaxPrice.round().toString(),
               ),
-              child: TextButton(
-                onPressed: () {
-                  // ✅ لو اختار "الكل" نخليهم null عشان ينعرض الكل فعليًا
-                  final categoryIdToSet =
-                  tempCategoryId == categoryAll ? null : tempCategoryId;
-                  final categoryValue =
-                  tempCategoryId == categoryAll ? null : categoryIds[tempCategoryId];
+              values: RangeValues(tempMinPrice, tempMaxPrice),
+              onChanged: (values) {
+                setState(() {
+                  tempMinPrice = values.start;
+                  tempMaxPrice = values.end;
+                });
+              },
+              activeColor: KprimaryColor,
+              inactiveColor: Colors.grey[300],
+            ),
+            SizedBox(height: widget.screenHeight * 0.02),
 
-                  final countryIdToSet =
-                  tempCountry == countryAll ? null : tempCountry;
-                  final countryValue =
-                  tempCountry == countryAll ? null : countryIds[tempCountry];
+            // Apply Button
+            SizedBox(
+              height: widget.screenWidth * 0.12,
+              width: double.infinity,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: KprimaryColor,
+                  borderRadius: BorderRadius.circular(widget.screenWidth * 0.03),
+                ),
+                child: TextButton(
+                  onPressed: () {
+                    final categoryIdToSet =
+                    tempCategoryId == categoryAll ? null : tempCategoryId;
+                    final categoryValue =
+                    tempCategoryId == categoryAll ? null : categoryIds[tempCategoryId];
 
-                  print(
-                      'Applying filters: categoryId=$categoryIdToSet, category=$categoryValue, countryId=$countryIdToSet, country=$countryValue');
+                    final countryIdToSet =
+                    tempCountry == countryAll ? null : tempCountry;
+                    final countryValue =
+                    tempCountry == countryAll ? null : countryIds[tempCountry];
 
-                  context.read<FilterCubit>().updateFilters(
-                    context: context,
-                    categoryId: categoryIdToSet,
-                    category: categoryValue,
-                    countryId: countryIdToSet,
-                    country: countryValue,
-                    minPrice: tempMinPrice,
-                    maxPrice: tempMaxPrice,
-                  );
+                    context.read<FilterCubit>().updateFilters(
+                      context: context,
+                      categoryId: categoryIdToSet,
+                      category: categoryValue,
+                      countryId: countryIdToSet,
+                      country: countryValue,
+                      minPrice: tempMinPrice,
+                      maxPrice: tempMaxPrice,
+                    );
 
-                  // تحديث الصفحة للنتائج
-                  context.read<BottomNavCubit>().setIndex(1);
-                  Navigator.pop(context);
-                },
-                child: Text(
-                  S.of(context).applyFilters,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: widget.screenWidth * 0.035,
-                    fontWeight: FontWeight.bold,
+                    context.read<BottomNavCubit>().setIndex(1);
+                    Navigator.pop(context);
+                  },
+                  child: Text(
+                    S.of(context).applyFilters,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: widget.screenWidth * 0.038,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          SizedBox(height: widget.screenHeight * 0.02),
-        ],
+            SizedBox(height: widget.screenHeight * 0.02),
+          ],
+        ),
       ),
     );
   }
@@ -268,7 +268,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: const Color(0xffFAFAFA),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(widget.screenWidth * 0.03),
           border: Border.all(color: const Color(0xffE9E9E9)),
         ),
         child: DropdownButtonHideUnderline(
@@ -277,11 +277,11 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
             value: value,
             isExpanded: true,
             hint: Padding(
-              padding: EdgeInsets.symmetric(horizontal: widget.screenWidth * 0.03),
+              padding: EdgeInsets.symmetric(horizontal: widget.screenWidth * 0.02),
               child: Text(
                 hint ?? '',
                 style: TextStyle(
-                  fontSize: widget.screenWidth * 0.03,
+                  fontSize: widget.screenWidth * 0.035,
                   fontWeight: FontWeight.bold,
                   color: Colors.grey.shade600,
                 ),
@@ -299,7 +299,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                   child: Text(
                     item['name']!,
                     style: TextStyle(
-                      fontSize: widget.screenWidth * 0.03,
+                      fontSize: widget.screenWidth * 0.035,
                       fontWeight: FontWeight.bold,
                       color: Colors.black,
                     ),

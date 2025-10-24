@@ -36,7 +36,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "ChooseCountryCode": MessageLookupByLibrary.simpleMessage(
       "اختر رمز الدولة",
     ),
-    "City": MessageLookupByLibrary.simpleMessage("المدينة"),
+    "City": MessageLookupByLibrary.simpleMessage("المدينة/المحافظة"),
     "Country": MessageLookupByLibrary.simpleMessage("الدولة"),
     "FullName": MessageLookupByLibrary.simpleMessage("الاسم"),
     "HelloMahmoud": MessageLookupByLibrary.simpleMessage("أهلا محمود"),
@@ -116,7 +116,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "chooseSupportType": MessageLookupByLibrary.simpleMessage(
       "اختر نوع الدعم الذي ترغب في تقديمه:",
     ),
-    "city": MessageLookupByLibrary.simpleMessage("المدينة"),
+    "city": MessageLookupByLibrary.simpleMessage("المدينة/المحافظة"),
     "clothes": MessageLookupByLibrary.simpleMessage("ملابس"),
     "codeCopiedSuccess": MessageLookupByLibrary.simpleMessage(
       "تم نسخ الكود بنجاح!",
@@ -184,6 +184,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "inKindSupportType": MessageLookupByLibrary.simpleMessage(
       "نوع الدعم العيني",
     ),
+    "itemRemoved": MessageLookupByLibrary.simpleMessage("تم الحذف بنجاح"),
     "january": MessageLookupByLibrary.simpleMessage("يناير"),
     "july": MessageLookupByLibrary.simpleMessage("يوليو"),
     "june": MessageLookupByLibrary.simpleMessage("يونيو"),

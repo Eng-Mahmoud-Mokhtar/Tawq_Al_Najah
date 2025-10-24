@@ -1064,10 +1064,10 @@ class S {
     return Intl.message('Add to Cart', name: 'addToCart', desc: '', args: []);
   }
 
-  /// `Item removed from cart`
+  /// `Removed successfully`
   String get itemRemoved {
     return Intl.message(
-      'Item removed from cart',
+      'Removed successfully',
       name: 'itemRemoved',
       desc: '',
       args: [],

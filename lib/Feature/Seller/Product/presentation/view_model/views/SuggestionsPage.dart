@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:tawqalnajah/generated/l10n.dart';
 import 'package:tawqalnajah/Feature/Seller/Product/presentation/view_model/views/widgets/ProductDetailsPage.dart';
 import '../../../../../../Core/Widgets/AppBar.dart';
@@ -20,11 +21,20 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   List<Map<String, dynamic>> _filteredAds = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _filteredAds = widget.ads;
+
+    // محاكاة تحميل البيانات لمدة ثانيتين (هتشيلها لما تجيب البيانات من API)
+    Future.delayed(const Duration(seconds: 2), () {
+      setState(() {
+        _isLoading = false;
+        _filteredAds = widget.ads;
+      });
+    });
+
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text;
@@ -85,6 +95,31 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
     super.dispose();
   }
 
+  Widget _buildShimmerGrid(double screenWidth) {
+    return GridView.builder(
+      physics: const BouncingScrollPhysics(),
+      itemCount: 6, // عدد العناصر أثناء التحميل
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: screenWidth * 0.04,
+        crossAxisSpacing: screenWidth * 0.04,
+        childAspectRatio: 0.65,
+      ),
+      itemBuilder: (context, index) {
+        return Shimmer.fromColors(
+          baseColor: Colors.grey[300]!,
+          highlightColor: Colors.grey[100]!,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(screenWidth * 0.03),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -92,7 +127,7 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xfffafafa),
-      appBar: CustomAppBar(title: S.of(context).suggestions), // "الاقتراحات"
+      appBar: CustomAppBar(title: S.of(context).suggestions),
       body: Padding(
         padding: EdgeInsets.all(screenWidth * 0.04),
         child: Column(
@@ -107,20 +142,39 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: const Color(0xffE9E9E9)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.2),
+                          blurRadius: 5,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
                     child: TextField(
                       controller: _searchController,
+                      autofocus: true,
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.03,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.bold,
+                      ),
                       decoration: InputDecoration(
                         hintText: S.of(context).search,
                         hintStyle: TextStyle(
-                          color: Colors.grey,
-                          fontSize: screenWidth * 0.035,
+                          fontSize: screenWidth * 0.03,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade600,
                         ),
-                        prefixIcon: Icon(Icons.search,
-                            color: Colors.grey, size: screenWidth * 0.05),
                         border: InputBorder.none,
-                        contentPadding:
-                        EdgeInsets.symmetric(vertical: screenHeight * 0.015),
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: Colors.grey,
+                          size: screenWidth * 0.06,
+                        ),
+                        contentPadding: EdgeInsets.symmetric(
+                          vertical: screenWidth * 0.035,
+                          horizontal: screenWidth * 0.035,
+                        ),
                       ),
                     ),
                   ),
@@ -144,28 +198,32 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
             SizedBox(height: screenHeight * 0.02),
 
             Expanded(
-              child: _filteredAds.isEmpty
+              child: _isLoading
+                  ? _buildShimmerGrid(screenWidth)
+                  : _filteredAds.isEmpty
                   ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset(
-                      'Assets/magnifying-glass.png',
-                      width: screenWidth * 0.5,
-                      height: screenWidth * 0.5,
-                      fit: BoxFit.contain,
-                    ),
-                    SizedBox(height: screenHeight * 0.02),
-                    Text(
-                      S.of(context).NoResultstoShow,
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontWeight: FontWeight.w600,
-                        fontSize: screenWidth * 0.035,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        'Assets/magnifying-glass.png',
+                        width: screenWidth * 0.5,
+                        height: screenWidth * 0.5,
+                        fit: BoxFit.contain,
                       ),
-                    ),
-                    SizedBox(height: screenHeight * 0.15),
-                  ],
+                      SizedBox(height: screenHeight * 0.02),
+                      Text(
+                        S.of(context).NoResultstoShow,
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w600,
+                          fontSize: screenWidth * 0.035,
+                        ),
+                      ),
+                      SizedBox(height: screenHeight * 0.15),
+                    ],
+                  ),
                 ),
               )
                   : GridView.builder(
@@ -175,14 +233,12 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
                   crossAxisCount: 2,
                   mainAxisSpacing: screenWidth * 0.04,
                   crossAxisSpacing: screenWidth * 0.04,
-                  childAspectRatio: 0.53,
+                  childAspectRatio: 0.65,
                 ),
                 itemCount: _filteredAds.length,
                 itemBuilder: (context, index) {
                   return AdCard(
                     ad: _filteredAds[index],
-                    screenWidth: screenWidth,
-                    screenHeight: screenHeight,
                     onTap: () {
                       Navigator.push(
                         context,

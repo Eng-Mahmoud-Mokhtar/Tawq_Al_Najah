@@ -8,8 +8,7 @@ class CartCubit extends Cubit<CartState> {
 
   void addToCart(Map<String, dynamic> ad) {
     final newCart = List<Map<String, dynamic>>.from(state.cartItems);
-    final index = newCart.indexWhere((item) =>
-    item['ad']['name'] == ad['name']);
+    final index = newCart.indexWhere((item) => item['ad']['name'] == ad['name']);
     if (index != -1) {
       newCart[index]['quantity'] += 1;
     } else {
@@ -20,8 +19,7 @@ class CartCubit extends Cubit<CartState> {
 
   void increment(Map<String, dynamic> ad) {
     final newCart = List<Map<String, dynamic>>.from(state.cartItems);
-    final index = newCart.indexWhere((item) =>
-    item['ad']['name'] == ad['name']);
+    final index = newCart.indexWhere((item) => item['ad']['name'] == ad['name']);
     if (index != -1) {
       newCart[index]['quantity'] += 1;
       emit(CartState(newCart));
@@ -30,9 +28,7 @@ class CartCubit extends Cubit<CartState> {
 
   void decrement(Map<String, dynamic> ad) {
     final newCart = List<Map<String, dynamic>>.from(state.cartItems);
-    final index = newCart.indexWhere((item) =>
-    item['ad']['name'] == ad['name']);
-
+    final index = newCart.indexWhere((item) => item['ad']['name'] == ad['name']);
     if (index != -1) {
       if (newCart[index]['quantity'] > 1) {
         newCart[index]['quantity'] -= 1;
@@ -40,7 +36,6 @@ class CartCubit extends Cubit<CartState> {
       emit(CartState(newCart));
     }
   }
-
 
   void removeFromCart(Map<String, dynamic> ad) {
     final newCart = List<Map<String, dynamic>>.from(state.cartItems);

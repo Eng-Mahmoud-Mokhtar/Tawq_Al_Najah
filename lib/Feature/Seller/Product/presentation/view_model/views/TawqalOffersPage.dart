@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:tawqalnajah/Feature/Seller/Product/presentation/view_model/views/widgets/ProductDetailsPage.dart';
 import '../../../../../../Core/Widgets/AppBar.dart';
 import '../../../../../../Core/utiles/Colors.dart';
@@ -20,49 +21,60 @@ class TawqalOffersPage extends StatefulWidget {
 class _TawqalOffersPageState extends State<TawqalOffersPage> {
   late TextEditingController searchController;
   late List<Map<String, dynamic>> filteredAds;
-
-  String selectedCategory = 'All';
-  String selectedCountry = 'All';
-  double minPrice = 0;
-  double maxPrice = 100000;
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
     searchController = TextEditingController();
-    filteredAds = widget.ads;
+    filteredAds = [];
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    // محاكاة تحميل البيانات
+    await Future.delayed(const Duration(seconds: 2));
+    setState(() {
+      filteredAds = widget.ads;
+      isLoading = false;
+    });
   }
 
   void _applyFilters() {
+    final filterState = context.read<FilterCubit>().state;
+
     setState(() {
       filteredAds = widget.ads.where((ad) {
-        final title = (ad['title'] ??
-            ad['name'] ??
-            ad['adName'] ??
-            ad['description'] ??
-            '')
+        final title = (ad['title'] ?? ad['name'] ?? ad['description'] ?? '')
             .toString()
-            .toLowerCase();
+            .toLowerCase()
+            .trim();
+        final searchText = searchController.text.toLowerCase().trim();
+        final searchMatch = title.contains(searchText);
 
-        final country = ad['country']?.toString() ?? 'All';
-        final category = ad['category']?.toString() ?? 'All';
-        final price = double.tryParse(ad['price'].toString()) ?? 0;
+        final category = ad['category']?.toString().toLowerCase().trim() ?? '';
+        final filterCategory =
+            filterState.category?.toLowerCase().trim() ?? '';
+        final categoryMatch = filterCategory.isEmpty ||
+            filterCategory == S.of(context).all.toLowerCase()
+            ? true
+            : category == filterCategory;
 
-        final searchMatch =
-        title.contains(searchController.text.trim().toLowerCase());
-        final categoryMatch =
-            selectedCategory == 'All' || category == selectedCategory;
-        final countryMatch =
-            selectedCountry == 'All' || country == selectedCountry;
-        final priceMatch = price >= minPrice && price <= maxPrice;
+        final country = ad['country']?.toString().toLowerCase().trim() ?? '';
+        final filterCountry =
+            filterState.country?.toLowerCase().trim() ?? '';
+        final countryMatch = filterCountry.isEmpty ||
+            filterCountry == S.of(context).all.toLowerCase()
+            ? true
+            : country == filterCountry;
 
-        return searchMatch && categoryMatch && countryMatch && priceMatch;
+        return searchMatch && categoryMatch && countryMatch;
       }).toList();
     });
   }
 
   void _openFilterSheet(double screenWidth, double screenHeight) async {
-    final result = await showModalBottomSheet(
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -77,15 +89,13 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
       },
     );
 
-    if (result != null && result is Map) {
-      setState(() {
-        selectedCategory = result['category'] ?? 'All';
-        selectedCountry = result['country'] ?? 'All';
-        minPrice = result['minPrice'] ?? 0;
-        maxPrice = result['maxPrice'] ?? 100000;
-      });
-      _applyFilters();
-    }
+    _applyFilters();
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -112,26 +122,41 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: const Color(0xffE9E9E9)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.2),
+                          blurRadius: 5,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
                     child: TextField(
                       controller: searchController,
+                      autofocus: true,
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.03,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.bold,
+                      ),
                       decoration: InputDecoration(
                         hintText: S.of(context).search,
                         hintStyle: TextStyle(
-                          color: Colors.grey,
-                          fontSize: screenWidth * 0.035,
+                          fontSize: screenWidth * 0.03,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade600,
                         ),
+                        border: InputBorder.none,
                         prefixIcon: Icon(
                           Icons.search,
                           color: Colors.grey,
-                          size: screenWidth * 0.05,
+                          size: screenWidth * 0.06,
                         ),
-                        border: InputBorder.none,
                         contentPadding: EdgeInsets.symmetric(
-                          vertical: screenWidth * 0.03,
+                          vertical: screenWidth * 0.035,
+                          horizontal: screenWidth * 0.035,
                         ),
                       ),
-                      onChanged: (value) => _applyFilters(),
+                      onChanged: (_) => _applyFilters(),
                     ),
                   ),
                 ),
@@ -156,44 +181,68 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
             ),
           ),
           Expanded(
-            child: filteredAds.isEmpty
+            child: isLoading
+                ? Shimmer.fromColors(
+              baseColor: Colors.grey[300]!,
+              highlightColor: Colors.grey[100]!,
+              child: GridView.builder(
+                padding: EdgeInsets.all(screenWidth * 0.04),
+                itemCount: 6, // عناصر وهمية أثناء التحميل
+                gridDelegate:
+                SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: screenWidth * 0.04,
+                  crossAxisSpacing: screenWidth * 0.04,
+                  childAspectRatio: 0.65,
+                ),
+                itemBuilder: (_, __) => Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius:
+                    BorderRadius.circular(screenWidth * 0.03),
+                  ),
+                ),
+              ),
+            )
+                : filteredAds.isEmpty
                 ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Image.asset(
-                    'Assets/magnifying-glass.png',
-                    width: screenWidth * 0.5,
-                    height: screenWidth * 0.5,
-                    fit: BoxFit.contain,
-                  ),
-                  SizedBox(height: screenHeight * 0.02),
-                  Text(
-                    S.of(context).NoResultstoShow,
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontWeight: FontWeight.w600,
-                      fontSize: screenWidth * 0.035,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset(
+                      'Assets/magnifying-glass.png',
+                      width: screenWidth * 0.5,
+                      height: screenWidth * 0.5,
+                      fit: BoxFit.contain,
                     ),
-                  ),
-                  SizedBox(height: screenHeight * 0.15),
-                ],
+                    SizedBox(height: screenHeight * 0.02),
+                    Text(
+                      S.of(context).NoResultstoShow,
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w600,
+                        fontSize: screenWidth * 0.035,
+                      ),
+                    ),
+                    SizedBox(height: screenHeight * 0.15),
+                  ],
+                ),
               ),
             )
                 : GridView.builder(
               padding: EdgeInsets.all(screenWidth * 0.04),
               itemCount: filteredAds.length,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate:
+              SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 mainAxisSpacing: screenWidth * 0.04,
                 crossAxisSpacing: screenWidth * 0.04,
-                childAspectRatio: 0.53,
+                childAspectRatio: 0.65,
               ),
               itemBuilder: (_, index) {
                 return AdCard(
                   ad: filteredAds[index],
-                  screenWidth: screenWidth,
-                  screenHeight: screenHeight,
                   onTap: () {
                     Navigator.push(
                       context,

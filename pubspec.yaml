@@ -23,7 +23,9 @@ dependencies:
   image_picker:
   country_icons:
   device_preview:
+  shimmer:
   bloc:
+  flutter_slidable:
   flutter_screenutil:
   smooth_page_indicator:
   flutter_credit_card:

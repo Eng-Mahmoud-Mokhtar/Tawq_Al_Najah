@@ -10,9 +10,11 @@ class CountryContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<CountryCubit>().state;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Header
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -24,13 +26,18 @@ class CountryContent extends StatelessWidget {
               ),
             ),
             IconButton(
-              icon: Icon(Icons.close,
-                  size: screenWidth * 0.05, color: Colors.grey),
+              icon: Icon(
+                Icons.close,
+                size: screenWidth * 0.05,
+                color: Colors.grey,
+              ),
               onPressed: () => Navigator.pop(context),
             ),
           ],
         ),
+
         SizedBox(height: screenWidth * 0.02),
+
         // Search bar
         Container(
           height: screenWidth * 0.12,
@@ -54,15 +61,22 @@ class CountryContent extends StatelessWidget {
               ),
               border: InputBorder.none,
               contentPadding: EdgeInsets.symmetric(
-                  vertical: screenWidth * 0.035),
-              prefixIcon: Icon(Icons.search_outlined,
-                  color: Colors.grey, size: screenWidth * 0.05),
+                vertical: screenWidth * 0.035,
+              ),
+              prefixIcon: Icon(
+                Icons.search_outlined,
+                color: Colors.grey,
+                size: screenWidth * 0.05,
+              ),
             ),
             onChanged: (query) =>
                 context.read<CountryCubit>().filterCountries(query),
           ),
         ),
+
         SizedBox(height: screenWidth * 0.02),
+
+        // Country list
         Expanded(
           child: Directionality(
             textDirection: TextDirection.ltr,
@@ -83,11 +97,11 @@ class CountryContent extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                   SizedBox(height:  screenWidth * 0.3),
-
+                  SizedBox(height: screenWidth * 0.3),
                 ],
               ),
-            ): ListView.builder(
+            )
+                : ListView.builder(
               padding: EdgeInsets.zero,
               itemCount: state.filteredCountries.length,
               itemBuilder: (context, index) {
@@ -97,7 +111,9 @@ class CountryContent extends StatelessWidget {
                     children: [
                       Text(
                         country['flag']!,
-                        style: TextStyle(fontSize: screenWidth * 0.04),
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.04,
+                        ),
                       ),
                       const SizedBox(width: 20),
                       SizedBox(

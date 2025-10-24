@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:tawqalnajah/Feature/Seller/cart/presentation/view_model/views/widgets/CartItemCard.dart';
 import '../../../../../../Core/Widgets/AppBar.dart';
 import '../../../../../../Core/utiles/Colors.dart';
@@ -15,6 +16,7 @@ class CartPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+
     return BlocBuilder<CartCubit, CartState>(
       builder: (context, state) {
         if (state.cartItems.isEmpty) {
@@ -103,10 +105,41 @@ class CartPage extends StatelessWidget {
             child: Column(
               children: [
                 ...state.cartItems.map(
-                      (cartItem) => CartItemCard(
-                    cartItem: cartItem,
-                    screenWidth: screenWidth,
-                    screenHeight: screenHeight,
+                      (cartItem) => Padding(
+                    padding: EdgeInsets.symmetric(vertical: screenHeight * 0.005),
+                    child: Slidable(
+                      key: ValueKey(cartItem),
+                      endActionPane: ActionPane(
+                        motion: const DrawerMotion(),
+                        extentRatio: 0.25,
+                        children: [
+                          SlidableAction(
+                            onPressed: (_) {
+                              context.read<CartCubit>().removeFromCart(cartItem['ad']);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(S.of(context).itemRemoved),
+                                  backgroundColor: Colors.red,
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            icon: Icons.delete,
+                            label: S.of(context).delete,
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: CartItemCard(
+                          cartItem: cartItem,
+                          screenWidth: screenWidth,
+                          screenHeight: screenHeight,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
                 SizedBox(height: screenHeight * 0.02),
@@ -132,11 +165,15 @@ class CartPage extends StatelessWidget {
                         children: [
                           Text(
                             S.of(context).subtotal,
-                            style: TextStyle(fontSize: screenWidth * 0.035, fontWeight: FontWeight.w500),
+                            style: TextStyle(
+                                fontSize: screenWidth * 0.035,
+                                fontWeight: FontWeight.w500),
                           ),
                           Text(
                             subtotal.toStringAsFixed(2),
-                            style: TextStyle(fontSize: screenWidth * 0.04, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                                fontSize: screenWidth * 0.035,
+                                fontWeight: FontWeight.w500),
                           ),
                         ],
                       ),
@@ -146,11 +183,15 @@ class CartPage extends StatelessWidget {
                         children: [
                           Text(
                             S.of(context).shippingCostLabel,
-                            style: TextStyle(fontSize: screenWidth * 0.035, fontWeight: FontWeight.w500),
+                            style: TextStyle(
+                                fontSize: screenWidth * 0.035,
+                                fontWeight: FontWeight.w500),
                           ),
                           Text(
                             shipping.toStringAsFixed(2),
-                            style: TextStyle(fontSize: screenWidth * 0.04, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                                fontSize: screenWidth * 0.035,
+                                fontWeight: FontWeight.w500),
                           ),
                         ],
                       ),
@@ -160,12 +201,14 @@ class CartPage extends StatelessWidget {
                         children: [
                           Text(
                             S.of(context).totalLabel,
-                            style: TextStyle(fontSize: screenWidth * 0.035, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                                fontSize: screenWidth * 0.035,
+                                fontWeight: FontWeight.bold),
                           ),
                           Text(
-                            "${total.toStringAsFixed(2)}",
+                            total.toStringAsFixed(2),
                             style: TextStyle(
-                              fontSize: screenWidth * 0.04,
+                              fontSize: screenWidth * 0.035,
                               fontWeight: FontWeight.bold,
                               color: const Color(0xffFF580E),
                             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:tawqalnajah/Feature/Seller/Product/presentation/view_model/views/widgets/getAdsData.dart';
 import '../../../../../../Core/Widgets/AppBar.dart';
 import '../../../../../../Core/utiles/Colors.dart';
@@ -18,6 +19,7 @@ class _StoresPageState extends State<StoresPage> {
   late String selectedCategory;
   late String selectedLocation;
   List<Map<String, dynamic>> filteredStores = [];
+  bool _isLoading = true; // ✅ للتحكم في الشيمر
 
   @override
   void initState() {
@@ -28,6 +30,11 @@ class _StoresPageState extends State<StoresPage> {
         searchQuery = _searchController.text;
         _applyFilters();
       });
+    });
+
+    // ⏳ محاكاة وقت التحميل
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _isLoading = false);
     });
   }
 
@@ -41,7 +48,6 @@ class _StoresPageState extends State<StoresPage> {
   void _applyFilters() {
     var stores = DataProvider.getStoresData();
 
-    // 🔍 فلترة حسب الاسم
     if (searchQuery.isNotEmpty) {
       stores = stores
           .where((store) => store['name']
@@ -51,13 +57,11 @@ class _StoresPageState extends State<StoresPage> {
           .toList();
     }
 
-    // 🏷️ فلترة حسب الفئة (يدعم عربي وإنجليزي)
     if (selectedCategory != S.of(context).all) {
       stores = stores.where((store) {
         final category = store['category']?.toString().trim().toLowerCase() ?? '';
         final selected = selectedCategory.trim().toLowerCase();
 
-        // نربط الترجمات مع الفئات
         final translations = {
           'clothes': ['clothes', 'ملابس'],
           'electronics': ['electronics', 'الكترونيات', 'إلكترونيات'],
@@ -67,17 +71,13 @@ class _StoresPageState extends State<StoresPage> {
 
         for (var values in translations.values) {
           if (values.contains(selected)) {
-            // لو الفئة المختارة تطابق إحدى القيم في القاموس
             return values.any((val) => category.contains(val));
           }
         }
-
-        // fallback عادي في حالة عدم وجود تطابق
         return category.contains(selected);
       }).toList();
     }
 
-    // 📍 فلترة حسب الموقع
     if (selectedLocation != S.of(context).all) {
       stores = stores
           .where((store) => store['address']
@@ -115,21 +115,14 @@ class _StoresPageState extends State<StoresPage> {
                 horizontal: screenWidth * 0.04,
                 vertical: screenHeight * 0.03,
               ),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius:
-                BorderRadius.vertical(top: Radius.circular(screenWidth * 0.02)),
-              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 🧩 العنوان
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Icon(Icons.tune, color: KprimaryColor, size: screenWidth * 0.04),
                           SizedBox(width: screenWidth * 0.015),
@@ -151,8 +144,6 @@ class _StoresPageState extends State<StoresPage> {
                     ],
                   ),
                   SizedBox(height: screenHeight * 0.03),
-
-                  // 🏷️ الفئة
                   _buildLabel(S.of(context).category, screenWidth),
                   _buildStyledDropdown(
                     items: [
@@ -167,8 +158,6 @@ class _StoresPageState extends State<StoresPage> {
                     screenWidth: screenWidth,
                   ),
                   SizedBox(height: screenHeight * 0.02),
-
-                  // 📍 الموقع
                   _buildLabel(S.of(context).location, screenWidth),
                   _buildStyledDropdown(
                     items: [
@@ -183,8 +172,6 @@ class _StoresPageState extends State<StoresPage> {
                     screenWidth: screenWidth,
                   ),
                   SizedBox(height: screenHeight * 0.03),
-
-                  // ✅ زر تطبيق الفلاتر
                   SizedBox(
                     width: double.infinity,
                     height: screenWidth * 0.12,
@@ -281,6 +268,50 @@ class _StoresPageState extends State<StoresPage> {
     );
   }
 
+  // ✅ ودجت الشيمر أثناء التحميل
+  Widget _buildShimmerLoading(double screenWidth, double screenHeight) {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey.shade300,
+      highlightColor: Colors.grey.shade100,
+      child: ListView.builder(
+        itemCount: 6,
+        itemBuilder: (_, __) => Container(
+          margin: EdgeInsets.symmetric(vertical: screenHeight * 0.01),
+          padding: EdgeInsets.all(screenWidth * 0.04),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: screenWidth * 0.06,
+                backgroundColor: Colors.white,
+              ),
+              SizedBox(width: screenWidth * 0.03),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                        width: screenWidth * 0.4,
+                        height: screenWidth * 0.03,
+                        color: Colors.white),
+                    SizedBox(height: screenHeight * 0.01),
+                    Container(
+                        width: screenWidth * 0.6,
+                        height: screenWidth * 0.025,
+                        color: Colors.white),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -302,19 +333,39 @@ class _StoresPageState extends State<StoresPage> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: const Color(0xffE9E9E9)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.2),
+                          blurRadius: 5,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
                     child: TextField(
                       controller: _searchController,
+                      autofocus: true,
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.03,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.bold,
+                      ),
                       decoration: InputDecoration(
                         hintText: S.of(context).search,
+                        hintStyle: TextStyle(
+                          fontSize: screenWidth * 0.03,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade600,
+                        ),
                         border: InputBorder.none,
                         prefixIcon: Icon(
                           Icons.search,
                           color: Colors.grey,
-                          size: screenWidth * 0.05,
+                          size: screenWidth * 0.06,
                         ),
-                        contentPadding:
-                        EdgeInsets.symmetric(vertical: screenHeight * 0.015),
+                        contentPadding: EdgeInsets.symmetric(
+                          vertical: screenWidth * 0.035,
+                          horizontal: screenWidth * 0.035,
+                        ),
                       ),
                     ),
                   ),
@@ -328,6 +379,13 @@ class _StoresPageState extends State<StoresPage> {
                     decoration: BoxDecoration(
                       color: KprimaryColor,
                       borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.2),
+                          blurRadius: 5,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
                     child: Icon(Icons.tune,
                         color: Colors.white, size: screenWidth * 0.06),
@@ -337,27 +395,32 @@ class _StoresPageState extends State<StoresPage> {
             ),
             SizedBox(height: screenHeight * 0.02),
             Expanded(
-              child: filteredStores.isEmpty
+              child: _isLoading
+                  ? _buildShimmerLoading(screenWidth, screenHeight)
+                  : filteredStores.isEmpty
                   ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset(
-                      'Assets/magnifying-glass.png',
-                      width: screenWidth * 0.5,
-                      height: screenWidth * 0.5,
-                      fit: BoxFit.contain,
-                    ),
-                    SizedBox(height: screenHeight * 0.02),
-                    Text(
-                      S.of(context).NoResultstoShow,
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontWeight: FontWeight.w600,
-                        fontSize: screenWidth * 0.035,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        'Assets/magnifying-glass.png',
+                        width: screenWidth * 0.5,
+                        height: screenWidth * 0.5,
+                        fit: BoxFit.contain,
                       ),
-                    ),
-                  ],
+                      SizedBox(height: screenHeight * 0.02),
+                      Text(
+                        S.of(context).NoResultstoShow,
+                        style: TextStyle(
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w600,
+                          fontSize: screenWidth * 0.035,
+                        ),
+                      ),
+                      SizedBox(height: screenHeight * 0.15),
+                    ],
+                  ),
                 ),
               )
                   : ListView.builder(

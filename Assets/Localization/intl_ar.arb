@@ -20,7 +20,7 @@
   "PhoneNumber": "رقم الهاتف",
   "location": "العنوان",
   "Country": "الدولة",
-  "City":"المدينة",
+  "City":"المدينة/المحافظة",
   "ChooseCountryCode": "اختر رمز الدولة",
   "ChooseAccountType": "اختر نوع الحساب الذي يناسب احتياجاتك.",
   "seller": "بائع",
@@ -167,10 +167,11 @@
   "filter": "فلتر",
   "minimumPrice": "السعر الأدنى",
   "maximumPrice": "السعر الأعلى",
-  "city": "المدينة",
+  "city": "المدينة/المحافظة",
   "apply": "تطبيق",
   "searchIn": "ابحث في",
   "errorOpeningLink": "حدث خطأ أثناء فتح الرابط",
   "yourProductRating": "تقييمك للمنتج",
-  "addedToCart": "مضافة للسلة"
+  "addedToCart": "مضافة للسلة",
+  "itemRemoved": "تم الحذف بنجاح"
 }

@@ -144,8 +144,6 @@ class _FavoritesPageState extends State<FavoritesPage> with RouteAware {
                 children: [
                   AdCard(
                     ad: filteredFavorites[index],
-                    screenWidth: screenWidth,
-                    screenHeight: screenHeight,
                     onTap: () {
                       Navigator.push(
                         context,

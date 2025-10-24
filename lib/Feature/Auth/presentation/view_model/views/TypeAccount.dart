@@ -41,7 +41,7 @@ class _TypeAccountState extends State<TypeAccount> {
                 Text(
                   S.of(context).ChooseAccountType,
                   style: TextStyle(
-                    fontSize: screenWidth * 0.045,
+                    fontSize: screenWidth * 0.04,
                     fontWeight: FontWeight.bold,
                     color: KprimaryText,
                   ),
@@ -161,7 +161,7 @@ class _TypeAccountState extends State<TypeAccount> {
         height: screenHeight * 0.2,
         decoration: BoxDecoration(
           color: isSelected ? KprimaryColor : Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular( screenWidth * 0.03),
           border: Border.all(color: KprimaryColor, width: 1.5),
           boxShadow: [
             BoxShadow(

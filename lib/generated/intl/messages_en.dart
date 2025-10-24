@@ -192,9 +192,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "inKindSupportType": MessageLookupByLibrary.simpleMessage(
       "Type of In-Kind Support",
     ),
-    "itemRemoved": MessageLookupByLibrary.simpleMessage(
-      "Item removed from cart",
-    ),
+    "itemRemoved": MessageLookupByLibrary.simpleMessage("Removed successfully"),
     "january": MessageLookupByLibrary.simpleMessage("January"),
     "july": MessageLookupByLibrary.simpleMessage("July"),
     "june": MessageLookupByLibrary.simpleMessage("June"),

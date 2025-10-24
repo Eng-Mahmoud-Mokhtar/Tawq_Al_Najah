@@ -181,7 +181,7 @@ class _BuyOrderState extends State<BuyOrder> {
                                             ],
                                           ),
                                           Text(
-                                            '${itemTotal.toStringAsFixed(2)}',
+                                            itemTotal.toStringAsFixed(2),
                                             style: TextStyle(
                                               fontSize: screenWidth * 0.03,
                                               fontWeight: FontWeight.bold,
@@ -307,7 +307,7 @@ class _BuyOrderState extends State<BuyOrder> {
                       ClipRRect(
                         borderRadius: BorderRadius.circular(screenWidth * 0.02),
                         child: Directionality(
-                          textDirection: TextDirection.ltr, // 👈 الاتجاه ثابت من اليسار لليمين
+                          textDirection: TextDirection.ltr,
                           child: CreditCardWidget(
                             cardNumber: cardNumber,
                             expiryDate: expiryDate,
@@ -324,16 +324,16 @@ class _BuyOrderState extends State<BuyOrder> {
                                 cardType: CardType.visa,
                                 cardImage: Image.asset(
                                   'Assets/visa.png',
-                                  height: screenWidth * 0.07,
-                                  width: screenWidth * 0.07,
+                                  height: screenWidth * 0.05,
+                                  width: screenWidth * 0.05,
                                 ),
                               ),
                               CustomCardTypeIcon(
                                 cardType: CardType.mastercard,
                                 cardImage: Image.asset(
                                   'Assets/card.png',
-                                  height: screenWidth * 0.07,
-                                  width: screenWidth * 0.07,
+                                  height: screenWidth * 0.05,
+                                  width: screenWidth * 0.05,
                                 ),
                               ),
                             ],
@@ -520,7 +520,7 @@ class _BuyOrderState extends State<BuyOrder> {
                           ),
                         ),
                         Text(
-                          '${shipping.toStringAsFixed(2)}',
+                          shipping.toStringAsFixed(2),
                           style: TextStyle(
                             fontSize: screenWidth * 0.04,
                             fontWeight: FontWeight.bold,

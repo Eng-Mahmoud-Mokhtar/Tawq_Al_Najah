@@ -34,13 +34,13 @@ class _HomePageState extends State<HomePage> {
   ];
 
   final List<IconData> icons = [
-    Icons.store,
-    Icons.phone_iphone,
-    Icons.checkroom,
-    Icons.chair,
-    Icons.sports_esports,
-    Icons.kitchen,
-    Icons.health_and_safety,
+    Icons.storefront_outlined,
+    Icons.smartphone_sharp,
+    Icons.dry_cleaning_outlined,
+    Icons.table_restaurant_outlined,
+    Icons.sports_volleyball_outlined,
+    Icons.kitchen_outlined,
+    Icons.health_and_safety_outlined,
   ];
 
   @override
@@ -190,41 +190,54 @@ class _HomePageState extends State<HomePage> {
                       onTap: () {
                         context.read<BottomNavCubit>().setIndex(1);
                       },
-                      child: Container(
-                        height: screenHeight * 0.06,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.2),
-                              blurRadius: 5,
-                              offset: const Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            SizedBox(width: screenWidth * 0.03),
-                            Icon(
-                              Icons.search,
-                              color: Colors.grey,
-                              size: screenWidth * 0.06,
-                            ),
-                            SizedBox(width: screenWidth * 0.03),
-                            Expanded(
-                              child: TextField(
-                                enabled: false,
-                                decoration: InputDecoration(
-                                  hintText:  S.of(context).search,
-                                  border: InputBorder.none,
-                                  hintStyle: TextStyle(
-                                    fontSize: screenWidth * 0.035,
+                      child: SizedBox(
+                        height: screenWidth * 0.12, // نفس ارتفاع TextField
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xffE9E9E9)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.2),
+                                blurRadius: 5,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              SizedBox(width: screenWidth * 0.035),
+                              Icon(
+                                Icons.search,
+                                color: Colors.grey,
+                                size: screenWidth * 0.06,
+                              ),
+                              SizedBox(width: screenWidth * 0.035),
+                              Expanded(
+                                child: TextField(
+                                  enabled: false,
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.03,
+                                    color: Colors.black87,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: S.of(context).search,
+                                    hintStyle: TextStyle(
+                                      fontSize: screenWidth * 0.03,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                    border: InputBorder.none,
+                                    contentPadding: EdgeInsets.symmetric(
+                                      vertical: screenWidth * 0.035,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -233,11 +246,11 @@ class _HomePageState extends State<HomePage> {
                   GestureDetector(
                     onTap: () => _showFilterBottomSheet(context),
                     child: Container(
-                      height: screenHeight * 0.06,
-                      width: screenHeight * 0.065,
+                      height: screenWidth * 0.12, // نفس ارتفاع TextField
+                      width: screenWidth * 0.12,  // مربع
                       decoration: BoxDecoration(
                         color: KprimaryColor,
-                        borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                        borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.grey.withOpacity(0.2),
@@ -265,7 +278,7 @@ class _HomePageState extends State<HomePage> {
               ),
               SizedBox(height: screenHeight * 0.015),
               SizedBox(
-                height: screenHeight * 0.07,
+                height: screenWidth * 0.2,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: isArabic
@@ -281,9 +294,9 @@ class _HomePageState extends State<HomePage> {
                   itemCount: icons.length,
                 ),
               ),
-              SizedBox(height: screenHeight * 0.02),
+              SizedBox(height: screenWidth * 0.04),
               SizedBox(
-                height: screenHeight * 0.18,
+                height: screenWidth * 0.4,
                 child: Stack(
                   alignment: Alignment.bottomCenter,
                   children: [
@@ -315,9 +328,12 @@ class _HomePageState extends State<HomePage> {
                           bool isActive = index == activeDot;
                           return AnimatedContainer(
                             duration: const Duration(milliseconds: 300),
-                            margin: const EdgeInsets.symmetric(horizontal: 4),
-                            width: isActive ? 12 : 8,
-                            height: isActive ? 12 : 8,
+                          margin: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.01),
+                            width: isActive
+                                ? screenWidth * 0.04
+                                : screenWidth * 0.02,
+                            height: screenWidth * 0.02,
                             decoration: BoxDecoration(
                               color: isActive ? const Color(0xffFF580E) : Colors.white70,
                               shape: BoxShape.circle,
@@ -330,9 +346,11 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               SizedBox(height: screenHeight * 0.01),
-              tawqalOffers(screenWidth, screenHeight, context),
+              TawqalOffersSection(screenWidth: MediaQuery.of(context).size.width,
+                  screenHeight: MediaQuery.of(context).size.height),
               SizedBox(height: screenHeight * 0.01),
-              suggestions(screenWidth, screenHeight, context),
+              SuggestionsSection(  screenWidth: MediaQuery.of(context).size.width,
+                screenHeight: MediaQuery.of(context).size.height),
             ],
           ),
         ),

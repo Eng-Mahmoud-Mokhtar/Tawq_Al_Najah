@@ -51,7 +51,7 @@ class HomeStructure extends StatelessWidget {
           bottomNavigationBar: SafeArea(
             minimum: EdgeInsets.zero,
             child: SizedBox(
-              height: screenWidth * 0.175,
+              height: screenWidth * 0.18,
               child: BottomAppBar(
                 color: Colors.white,
                 child: Row(
@@ -72,8 +72,8 @@ class HomeStructure extends StatelessWidget {
                         children: [
                           Image.asset(
                             iconList[index],
-                            width: screenWidth * 0.055,
-                            height: screenWidth * 0.055,
+                            width: screenWidth * 0.05,
+                            height: screenWidth * 0.05,
                             color: iconColor,
                             fit: BoxFit.contain,
                           ),

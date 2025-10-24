@@ -171,8 +171,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
               itemBuilder: (_, index) {
                 return AdCard(
                   ad: suggestionAds[index],
-                  screenWidth: screenWidth,
-                  screenHeight: screenHeight,
                   onTap: () {
                     Navigator.push(
                       context,
@@ -335,7 +333,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                       Icon(
                                         Icons.star,
                                         color: const Color(0xffFF580E),
-                                        size: screenWidth * 0.06,
+                                        size: screenWidth * 0.07,
                                       ),
                                     ],
                                   ),
@@ -379,15 +377,12 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                 children: [
                                   Row(
                                     children: [
-                                      Padding(
-                                        padding: EdgeInsets.only(top: screenHeight * 0.02),
-                                        child: CircleAvatar(
-                                          backgroundColor: Colors.grey.shade300,
-                                          radius: screenWidth * 0.07,
-                                          backgroundImage: widget.ad['seller']?['image'] != null
-                                              ? AssetImage(widget.ad['seller']['image'])
-                                              : const AssetImage('Assets/fallback_image.png'),
-                                        ),
+                                      CircleAvatar(
+                                        backgroundColor: Colors.grey.shade300,
+                                        radius: screenWidth * 0.07,
+                                        backgroundImage: widget.ad['seller']?['image'] != null
+                                            ? AssetImage(widget.ad['seller']['image'])
+                                            : const AssetImage('Assets/fallback_image.png'),
                                       ),
                                       SizedBox(width: screenHeight * 0.01),
                                       Expanded(
@@ -398,17 +393,14 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                               children: [
                                                 Expanded(
-                                                  child: Padding(
-                                                    padding: EdgeInsets.only(top: screenHeight * 0.02),
-                                                    child: Text(
-                                                      widget.ad['seller']?['name'] ??
-                                                          S.of(context).unknown,
-                                                      style: TextStyle(
-                                                        fontSize: screenWidth * 0.035,
-                                                        fontWeight: FontWeight.bold,
-                                                      ),
-                                                      overflow: TextOverflow.ellipsis,
+                                                  child: Text(
+                                                    widget.ad['seller']?['name'] ??
+                                                        S.of(context).unknown,
+                                                    style: TextStyle(
+                                                      fontSize: screenWidth * 0.03,
+                                                      fontWeight: FontWeight.bold,
                                                     ),
+                                                    overflow: TextOverflow.ellipsis,
                                                   ),
                                                 ),
                                                 Row(
@@ -557,7 +549,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
                         : Text(
                       _showAddedText
                           ? S.of(context).addedToCart
-                          : S.of(context).addToCart,
+                          : S.of(context).AddtoCart,
                       style: TextStyle(
                         fontSize: screenWidth * 0.035,
                         color: Colors.white,

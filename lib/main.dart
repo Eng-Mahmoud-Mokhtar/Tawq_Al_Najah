@@ -23,7 +23,7 @@ void main() async {
 
   runApp(
     DevicePreview(
-      enabled: false,
+      enabled: true,
       builder: (context) => ScreenUtilInit(
         designSize: const Size(360, 690),
         minTextAdapt: true,
