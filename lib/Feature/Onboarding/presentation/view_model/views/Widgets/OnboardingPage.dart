@@ -34,7 +34,6 @@ class OnboardingPage extends StatelessWidget {
           child: Center(
             child: Container(
               width: screenWidth * 0.9,
-              height: screenWidth * 0.9,
               decoration: BoxDecoration(
                 image: DecorationImage(
                   image: AssetImage(image),
@@ -45,7 +44,7 @@ class OnboardingPage extends StatelessWidget {
           ),
         ),
         Container(
-          height: screenHeight * 0.3,
+          height: screenWidth * 0.6,
           width: double.infinity,
           decoration: const BoxDecoration(
             color: Colors.white,

@@ -1,17 +1,14 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:tawqalnajah/Feature/Seller/Search/presentation/view_model/views/widgets/FilterBottomSheet.dart';
-import 'package:tawqalnajah/Feature/Seller/Home/presentation/view_model/views/widgets/categoryItem.dart';
-import 'package:tawqalnajah/Feature/Seller/Home/presentation/view_model/views/widgets/suggestions.dart';
-import 'package:tawqalnajah/Feature/Seller/Home/presentation/view_model/views/widgets/tawqalOffers.dart';
-import '../../../../../../Core/utiles/Colors.dart';
-import '../../../../../../generated/l10n.dart';
-import '../../../../Notification/presentation/view_model/views/Notification.dart';
-import '../../../../Search/presentation/view_model/views/SearchPage.dart';
-import '../../../../Search/presentation/view_model/filter_cubit.dart';
-import 'HomeStructure.dart';
+import 'package:tawqalnajah/Core/utiles/Colors.dart';
+import 'package:tawqalnajah/generated/l10n.dart';
+import 'package:tawqalnajah/Feature/Seller/Notification/presentation/view_model/views/Notification.dart';
+import 'package:tawqalnajah/Feature/Seller/RelatedProuducts/presentation/view_model/views/widgets/RelatedSection.dart';
+import '../../../../Orders/presentation/view_model/views/FinancialAccountsPage.dart';
+import '../../../../Orders/presentation/view_model/views/SellerActiveOrdersPage.dart';
+import '../../../../Orders/presentation/view_model/views/SellerCancelledOrdersPage.dart';
+import '../../../../Orders/presentation/view_model/views/SellerPendingOrdersPage.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -33,16 +30,6 @@ class _HomePageState extends State<HomePage> {
     'Assets/man-giving-some-keys-woman.jpg',
   ];
 
-  final List<IconData> icons = [
-    Icons.storefront_outlined,
-    Icons.smartphone_sharp,
-    Icons.dry_cleaning_outlined,
-    Icons.table_restaurant_outlined,
-    Icons.sports_volleyball_outlined,
-    Icons.kitchen_outlined,
-    Icons.health_and_safety_outlined,
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -59,54 +46,10 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  void _showFilterBottomSheet(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-
-    showModalBottomSheet<Map<String, dynamic>?>(
-      context: context,
-      isScrollControlled: true,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(screenWidth * 0.05)),
-      ),
-      builder: (context) {
-        return FilterBottomSheet(screenWidth: screenWidth, screenHeight: screenHeight);
-      },
-    ).then((filters) {
-      if (filters != null) {
-        context.read<FilterCubit>().updateFilters(
-          category: filters['category'],
-          country: filters['country'],
-          minPrice: filters['minPrice'],
-          maxPrice: filters['maxPrice'],
-          sortOrder: filters['sortOrder'],
-          context: context,
-        );
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const SearchPage(),
-          ),
-        );
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    final List<String> labels = [
-      S.of(context).stores,
-      S.of(context).electronics,
-      S.of(context).fashion,
-      S.of(context).furniture,
-      S.of(context).toys,
-      S.of(context).kitchen,
-      S.of(context).health,
-    ];
-
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
@@ -133,7 +76,9 @@ class _HomePageState extends State<HomePage> {
                       CircleAvatar(
                         radius: screenWidth * 0.065,
                         backgroundColor: Colors.white,
-                        backgroundImage: userImage != null ? NetworkImage(userImage!) : null,
+                        backgroundImage: userImage != null
+                            ? NetworkImage(userImage!)
+                            : null,
                         child: userImage == null
                             ? Icon(
                           Icons.person,
@@ -174,7 +119,7 @@ class _HomePageState extends State<HomePage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const NotificationsPage(),
+                          builder: (_) => const NotificationsPage(),
                         ),
                       );
                     },
@@ -182,177 +127,146 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
               SizedBox(height: screenHeight * 0.02),
-              Row(
-                children: [
-                  Expanded(
-                    flex: 4,
-                    child: GestureDetector(
-                      onTap: () {
-                        context.read<BottomNavCubit>().setIndex(1);
-                      },
-                      child: SizedBox(
-                        height: screenWidth * 0.12, // نفس ارتفاع TextField
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xffE9E9E9)),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.2),
-                                blurRadius: 5,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              SizedBox(width: screenWidth * 0.035),
-                              Icon(
-                                Icons.search,
-                                color: Colors.grey,
-                                size: screenWidth * 0.06,
-                              ),
-                              SizedBox(width: screenWidth * 0.035),
-                              Expanded(
-                                child: TextField(
-                                  enabled: false,
-                                  style: TextStyle(
-                                    fontSize: screenWidth * 0.03,
-                                    color: Colors.black87,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  decoration: InputDecoration(
-                                    hintText: S.of(context).search,
-                                    hintStyle: TextStyle(
-                                      fontSize: screenWidth * 0.03,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                    border: InputBorder.none,
-                                    contentPadding: EdgeInsets.symmetric(
-                                      vertical: screenWidth * 0.035,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: screenWidth * 0.02),
-                  GestureDetector(
-                    onTap: () => _showFilterBottomSheet(context),
-                    child: Container(
-                      height: screenWidth * 0.12, // نفس ارتفاع TextField
-                      width: screenWidth * 0.12,  // مربع
-                      decoration: BoxDecoration(
-                        color: KprimaryColor,
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.2),
-                            blurRadius: 5,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.tune,
-                        color: Colors.white,
-                        size: screenWidth * 0.05,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: screenHeight * 0.02),
-              Text(
-                S.of(context).categories,
-                style: TextStyle(
-                  fontSize: screenWidth * 0.035,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: screenHeight * 0.015),
-              SizedBox(
-                height: screenWidth * 0.2,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: isArabic
-                      ? EdgeInsets.only(left: screenWidth * 0.02)
-                      : EdgeInsets.only(right: screenWidth * 0.02),
-                  itemBuilder: (_, index) => categoryItem(
-                    icons[index],
-                    labels[index],
-                    screenWidth,
-                    context,
-                  ),
-                  separatorBuilder: (_, __) => SizedBox(width: screenWidth * 0.02),
-                  itemCount: icons.length,
-                ),
-              ),
-              SizedBox(height: screenWidth * 0.04),
               SizedBox(
                 height: screenWidth * 0.4,
                 child: Stack(
                   alignment: Alignment.bottomCenter,
-                  children: [
-                    ...offers.asMap().entries.map((entry) {
-                      int idx = entry.key;
-                      String img = entry.value;
-                      return AnimatedOpacity(
-                        opacity: idx == currentPage ? 1.0 : 0.0,
-                        duration: const Duration(seconds: 1),
-                        curve: Curves.easeInOut,
-                        child: Container(
-                          margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.01),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                            image: DecorationImage(
-                              image: AssetImage(img),
-                              fit: BoxFit.cover,
-                            ),
+                  children: offers.asMap().entries.map((entry) {
+                    int idx = entry.key;
+                    String img = entry.value;
+                    return AnimatedOpacity(
+                      opacity: idx == currentPage ? 1.0 : 0.0,
+                      duration: const Duration(seconds: 1),
+                      curve: Curves.easeInOut,
+                      child: Container(
+                        margin: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.01,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(
+                            screenWidth * 0.03,
+                          ),
+                          image: DecorationImage(
+                            image: AssetImage(img),
+                            fit: BoxFit.cover,
                           ),
                         ),
-                      );
-                    }).toList(),
-                    Positioned(
-                      bottom: screenHeight * 0.02,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(3, (index) {
-                          int activeDot = currentPage % 3;
-                          bool isActive = index == activeDot;
-                          return AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                          margin: EdgeInsets.symmetric(
-                          horizontal: screenWidth * 0.01),
-                            width: isActive
-                                ? screenWidth * 0.04
-                                : screenWidth * 0.02,
-                            height: screenWidth * 0.02,
-                            decoration: BoxDecoration(
-                              color: isActive ? const Color(0xffFF580E) : Colors.white70,
-                              shape: BoxShape.circle,
-                            ),
-                          );
-                        }),
                       ),
-                    ),
-                  ],
+                    );
+                  }).toList(),
                 ),
               ),
+              SizedBox(height: screenHeight * 0.02),
+              Text(
+                S.of(context).ourServices,
+                style: TextStyle(
+                  fontSize: screenWidth * 0.035,
+                  fontWeight: FontWeight.bold,
+                  color: KprimaryText,
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.015),
+              Wrap(
+                spacing: screenWidth * 0.04,
+                runSpacing: screenWidth * 0.04,
+                alignment: WrapAlignment.center,
+                children: [
+                  buildServiceItem(
+                    icon: Icons.shopping_cart_outlined,
+                    title: S.of(context).newOrders,
+                    screenWidth: screenWidth,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SellerPendingOrdersPage(),
+                        ),
+                      );
+                    },
+                  ),
+                  buildServiceItem(
+                    icon: Icons.inventory_2_outlined,
+                    title: S.of(context).manageOrders,
+                    screenWidth: screenWidth,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SellerActiveOrdersPage(),
+                        ),
+                      );
+                    },
+                  ),
+                  buildServiceItem(
+                    icon: Icons.cancel_outlined,
+                    title: S.of(context).cancelledOrders,
+                    screenWidth: screenWidth,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SellerCancelledOrdersPage(),
+                        ),
+                      );
+                    },
+                  ),
+                  buildServiceItem(
+                    icon: Icons.receipt_long_outlined,
+                    title: S.of(context).FinancialAccounts,
+                    screenWidth: screenWidth,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const FinancialAccountsPage(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
               SizedBox(height: screenHeight * 0.01),
-              TawqalOffersSection(screenWidth: MediaQuery.of(context).size.width,
-                  screenHeight: MediaQuery.of(context).size.height),
-              SizedBox(height: screenHeight * 0.01),
-              SuggestionsSection(  screenWidth: MediaQuery.of(context).size.width,
-                screenHeight: MediaQuery.of(context).size.height),
+              RelatedSection(
+                screenWidth: screenWidth,
+                screenHeight: screenHeight,
+              ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildServiceItem({
+    required IconData icon,
+    required String title,
+    required double screenWidth,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: (screenWidth - (screenWidth * 0.12)) / 2,
+        height: screenWidth * 0.3,
+        decoration: BoxDecoration(
+          color: KprimaryColor.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(screenWidth * 0.03),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: KprimaryColor, size: screenWidth * 0.07),
+            SizedBox(height: screenWidth * 0.03),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: KprimaryText,
+                fontSize: screenWidth * 0.03,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
       ),
     );

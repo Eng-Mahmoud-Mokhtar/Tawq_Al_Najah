@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:tawqalnajah/Feature/Seller/SignUpSeller/presentation/view_model/views/widgets/ReferralCode.dart';
+import 'package:tawqalnajah/Core/Widgets/ReferralCode.dart';
+import 'package:tawqalnajah/Feature/Seller/SignUpSeller/presentation/view_model/views/widgets/NameSeller.dart';
 import '../../../../../../Core/Widgets/Button.dart';
 import '../../../../../../Core/Widgets/Country&city.dart';
 import '../../../../../../Core/Widgets/Location.dart';
-import '../../../../../../Core/Widgets/Name.dart';
 import '../../../../../../Core/Widgets/alreadyHaveAccount.dart';
 import '../../../../../../Core/Widgets/phoneNumber.dart';
 import '../../../../../../Core/utiles/Colors.dart';
 import '../../../../../../Core/utiles/Images.dart';
 import '../../../../../../generated/l10n.dart';
-import '../../../../../Auth/presentation/view_model/views/login.dart';
+import 'NextSeller.dart';
 
 class SignUpSeller extends StatelessWidget {
   const SignUpSeller({Key? key}) : super(key: key);
@@ -21,11 +21,11 @@ class SignUpSeller extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: SecoundColor,
-      body: Padding(
-        padding: EdgeInsets.all(screenWidth * 0.04),
-        child: Stack(
-          children: [
-            CustomScrollView(
+      body: Stack(
+        children: [
+          Padding(
+            padding: EdgeInsets.all(screenWidth * 0.04),
+            child: CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(
                   child: Column(
@@ -44,7 +44,7 @@ class SignUpSeller extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Name(),
+                          const NameSeller(),
                           SizedBox(height: screenHeight * 0.02),
                           const PhoneNumber(),
                           SizedBox(height: screenHeight * 0.02),
@@ -55,12 +55,12 @@ class SignUpSeller extends StatelessWidget {
                           Location(),
                           SizedBox(height: screenHeight * 0.02),
                           Button(
-                            text: S.of(context).SignUp,
+                            text: S.of(context).Next,
                             onPressed: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const Login(),
+                                  builder: (context) => const NextSignUp(),
                                 ),
                               );
                             },
@@ -74,22 +74,23 @@ class SignUpSeller extends StatelessWidget {
                 ),
               ],
             ),
-            Positioned(
-              top: screenHeight * 0.01,
-              child: SafeArea(
-                child: IconButton(
-                  onPressed: () {
-                    Navigator.pop(context);                        },
-                  icon: Icon(
-                    Icons.arrow_back_ios_new,
-                    color: KprimaryText,
-                    size: screenHeight * 0.03,
-                  ),
+          ),
+          Positioned(
+            top: screenHeight * 0.01,
+            child: SafeArea(
+              child: IconButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  },
+                icon: Icon(
+                  Icons.arrow_back_ios_new,
+                  color: KprimaryText,
+                  size: screenHeight * 0.03,
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

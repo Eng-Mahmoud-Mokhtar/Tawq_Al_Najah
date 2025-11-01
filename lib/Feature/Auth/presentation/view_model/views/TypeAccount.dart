@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:tawqalnajah/Feature/Buyer/SignUpBuyer/presentation/view_model/views/SignUpBuyer.dart';
 import '../../../../../../Core/utiles/Colors.dart';
 import '../../../../../../Core/utiles/Images.dart';
 import '../../../../../generated/l10n.dart';
+import '../../../../Buyer/SignUpBuyer/presentation/view_model/views/SignUpBuyer.dart';
 import '../../../../Seller/SignUpSeller/presentation/view_model/views/SignUpSeller.dart';
-
 
 class TypeAccount extends StatefulWidget {
   const TypeAccount({Key? key}) : super(key: key);
@@ -23,11 +22,11 @@ class _TypeAccountState extends State<TypeAccount> {
 
     return Scaffold(
       backgroundColor: SecoundColor,
-      body: Padding(
-        padding: EdgeInsets.all(screenWidth * 0.04),
-        child: Stack(
-          children: [
-            Column(
+      body: Stack(
+        children: [
+          Padding(
+            padding: EdgeInsets.all(screenWidth * 0.04),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 SizedBox(height: screenHeight * 0.1),
@@ -55,10 +54,10 @@ class _TypeAccountState extends State<TypeAccount> {
                       context,
                       icon: Icons.storefront_outlined,
                       label: S.of(context).seller,
-                      isSelected: selectedAccount == "buyer",
+                      isSelected: selectedAccount == "seller",
                       onTap: () {
                         setState(() {
-                          selectedAccount = "buyer";
+                          selectedAccount = "seller";
                         });
                       },
                       screenWidth: screenWidth,
@@ -68,10 +67,10 @@ class _TypeAccountState extends State<TypeAccount> {
                       context,
                       icon: Icons.shopping_cart_outlined,
                       label: S.of(context).buyer,
-                      isSelected: selectedAccount == "seller",
+                      isSelected: selectedAccount == "buyer",
                       onTap: () {
                         setState(() {
-                          selectedAccount = "seller";
+                          selectedAccount = "buyer";
                         });
                       },
                       screenWidth: screenWidth,
@@ -82,7 +81,7 @@ class _TypeAccountState extends State<TypeAccount> {
                 const Spacer(),
                 SizedBox(
                   width: double.infinity,
-                  height: screenHeight * 0.06,
+                  height: screenWidth * 0.12,
                   child: ElevatedButton(
                     onPressed: selectedAccount == null
                         ? null
@@ -108,14 +107,14 @@ class _TypeAccountState extends State<TypeAccount> {
                           ? Colors.grey[400]
                           : KprimaryColor,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
                     child: Text(
                       S.of(context).Next,
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: screenWidth * 0.04,
+                        fontSize: screenWidth * 0.03,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -124,22 +123,23 @@ class _TypeAccountState extends State<TypeAccount> {
                 SizedBox(height: screenHeight * 0.04),
               ],
             ),
-            Positioned(
-              top: screenHeight * 0.01,
-              child: SafeArea(
-                child: IconButton(
-                  onPressed: () {
-                    Navigator.pop(context);                        },
-                  icon: Icon(
-                    Icons.arrow_back_ios_new,
-                    color: KprimaryText,
-                    size: screenHeight * 0.03,
-                  ),
+          ),
+          Positioned(
+            top: screenHeight * 0.01,
+            child: SafeArea(
+              child: IconButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                icon: Icon(
+                  Icons.arrow_back_ios_new,
+                  color: KprimaryText,
+                  size: screenHeight * 0.03,
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -161,7 +161,7 @@ class _TypeAccountState extends State<TypeAccount> {
         height: screenHeight * 0.2,
         decoration: BoxDecoration(
           color: isSelected ? KprimaryColor : Colors.white,
-          borderRadius: BorderRadius.circular( screenWidth * 0.03),
+          borderRadius: BorderRadius.circular(screenWidth * 0.03),
           border: Border.all(color: KprimaryColor, width: 1.5),
           boxShadow: [
             BoxShadow(

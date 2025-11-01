@@ -65,7 +65,7 @@ class _OnboardingState extends State<Onboarding> {
                     children: [
                       OnboardingPage(
                         image:
-                        'Assets/WhatsApp_Image_2025-09-21_at_11.02.18_AM__1_-removebg-preview 1.png',
+                        'Assets/Online world-bro.png',
                         title: S.of(context).OnBoarding1title,
                         description: S.of(context).OnBoarding1description,
                         onNextPressed: _nextPage,
@@ -74,7 +74,7 @@ class _OnboardingState extends State<Onboarding> {
                       ),
                       OnboardingPage(
                         image:
-                        'Assets/WhatsApp_Image_2025-09-30_at_12.47.45_PM-removebg-preview 1.png',
+                        'Assets/Online Groceries-cuate.png',
                         title: S.of(context).OnBoarding2title,
                         description: S.of(context).OnBoarding2description,
                         onNextPressed: _nextPage,
@@ -83,7 +83,7 @@ class _OnboardingState extends State<Onboarding> {
                       ),
                       OnboardingPage(
                         image:
-                        'Assets/WhatsApp_Image_2025-09-21_at_11.02.18_AM__1_-removebg-preview 1 (1).png',
+                        'Assets/Shopping bag-amico.png',
                         title: S.of(context).OnBoarding3title,
                         description: S.of(context).OnBoarding3description,
                         onNextPressed: _nextPage,

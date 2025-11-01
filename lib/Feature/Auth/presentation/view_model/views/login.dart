@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tawqalnajah/Feature/Auth/presentation/view_model/views/widgets/dontHaveAccountRow.dart';
-import 'package:tawqalnajah/Feature/Seller/Home/presentation/view_model/views/HomeStructure.dart';
+import 'package:tawqalnajah/Feature/Buyer/Home/presentation/view_model/views/HomeStructure.dart';
 import '../../../../../Core/Widgets/phoneNumber.dart';
 import '../../../../../Core/utiles/Colors.dart';
 import '../../../../../Core/utiles/Images.dart';
@@ -18,14 +18,14 @@ class Login extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: SecoundColor,
-      body: Padding(
-        padding: EdgeInsets.all(screenWidth * 0.04),
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: Stack(
-                children: [
-                  Column(
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Stack(
+              children: [
+                Padding(
+                  padding: EdgeInsets.all(screenWidth * 0.04),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       SizedBox(height: screenHeight * 0.1),
@@ -51,29 +51,29 @@ class Login extends StatelessWidget {
                       const CreateAccount(),
                     ],
                   ),
-                  Positioned(
-                    top: screenHeight * 0.01,
-                    child: SafeArea(
-                      child: IconButton(
-                        onPressed: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (context) => HomeStructure()),
-                          );                        },
-                        icon: Icon(
-                          Icons.close,
-                          color: KprimaryText,
-                          size: screenHeight * 0.03,
-                        ),
+                ),
+                Positioned(
+                  top: screenHeight * 0.01,
+                  child: SafeArea(
+                    child: IconButton(
+                      onPressed: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => HomeStructure()),
+                        );                        },
+                      icon: Icon(
+                        Icons.close,
+                        color: KprimaryText,
+                        size: screenHeight * 0.03,
                       ),
                     ),
                   ),
+                ),
 
-                ],
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

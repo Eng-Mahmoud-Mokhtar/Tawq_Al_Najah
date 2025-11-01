@@ -4,7 +4,7 @@ import 'package:shimmer/shimmer.dart';
 import '../../../../../../Core/Widgets/AppBar.dart';
 import '../../../../../../Core/utiles/Colors.dart';
 import '../../../../../../generated/l10n.dart';
-import '../../../../Home/presentation/view_model/views/HomeStructure.dart';
+import '../../../../../Seller/Home/presentation/view_model/views/HomeStructure.dart';
 
 class NotificationItem {
   final String title;
@@ -40,17 +40,17 @@ class _NotificationsPageState extends State<NotificationsPage> {
     setState(() {
       notifications = [
         NotificationItem(
-          title: 'إشعار جديد',
+          title: S.of(context).newNotification,
           content: 'تم إضافة عرض جديد على منتجاتك المفضلة!',
           isRead: false,
         ),
         NotificationItem(
-          title: 'إشعار جديد',
+          title: S.of(context).newNotification,
           content: 'تم تحديث الأسعار لهذا الأسبوع.',
           isRead: false,
         ),
         NotificationItem(
-          title: 'إشعار جديد',
+          title: S.of(context).newNotification,
           content: 'لديك منتجات في السلة لم تكمل الشراء بعد.',
           isRead: true,
         ),

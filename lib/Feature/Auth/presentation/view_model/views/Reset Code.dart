@@ -19,7 +19,7 @@ class ResetCode extends StatelessWidget {
         child: Stack(
           children: [
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
+              padding: EdgeInsets.all(screenWidth * 0.04),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
@@ -77,20 +77,20 @@ class ResetCode extends StatelessWidget {
               ),
             ),
             Positioned(
-              top: screenHeight * 0.01,
-              child: SafeArea(
-                child: IconButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  icon: Icon(
-                    Icons.arrow_back_ios_new,
-                    color: KprimaryText,
-                    size: screenHeight * 0.03,
+                top: screenHeight * 0.01,
+                child: SafeArea(
+                  child: IconButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    icon: Icon(
+                      Icons.arrow_back_ios_new,
+                      color: KprimaryText,
+                      size: screenHeight * 0.03,
+                    ),
                   ),
                 ),
               ),
-            ),
           ],
         ),
       ),
