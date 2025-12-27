@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tawqalnajah/Feature/Auth/presentation/view_model/views/login.dart';
+import 'package:tawqalnajah/Feature/Auth/presentation/login.dart';
 import '../../../../../../Core/Widgets/Button.dart';
 import '../../../../../../Core/utiles/Colors.dart';
 import '../../../../../../generated/l10n.dart';
@@ -50,7 +50,7 @@ class SuccessPage extends StatelessWidget {
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const Login(),
+                      builder: (context) => const LoginScreen(),
                     ),
                   );
                 },

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../../generated/l10n.dart';
-import '../../Feature/Auth/presentation/view_model/CountryCubit.dart';
-import '../../Feature/Auth/presentation/view_model/CountryState.dart';
+import 'CountryCubit.dart';
+import 'CountryState.dart';
 import 'CountryContent.dart';
 
 class PhoneNumber extends StatelessWidget {

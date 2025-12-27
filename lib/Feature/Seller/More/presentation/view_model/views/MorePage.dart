@@ -5,13 +5,13 @@ import 'package:tawqalnajah/Core/utiles/Colors.dart';
 import 'package:tawqalnajah/Feature/Seller/More/presentation/view_model/views/widgets/AccountInfoSeller.dart';
 import 'package:tawqalnajah/Feature/Seller/More/presentation/view_model/views/widgets/BankAccount.dart';
 import 'package:tawqalnajah/Feature/Seller/More/presentation/view_model/views/widgets/EditProfile.dart';
-import 'package:tawqalnajah/Feature/Seller/More/presentation/view_model/views/widgets/RewardsPage.dart';
 import '../../../../../../Core/Widgets/AppBar.dart';
 import '../../../../../../generated/l10n.dart';
-import '../../../../../Auth/presentation/view_model/views/login.dart';
+import '../../../../../Auth/presentation/login.dart';
 import '../../../../../Buyer/More/presentation/view_model/views/AboutUs.dart';
+import '../../../../../Buyer/More/presentation/view_model/views/Marketing.dart';
 import '../../../../../Buyer/More/presentation/view_model/views/PrivacyPolicy.dart';
-import '../../../../../Buyer/More/presentation/view_model/views/Support.dart';
+import '../../../../../Buyer/More/presentation/view_model/views/inKindSupport.dart';
 import '../../../../../Buyer/More/presentation/view_model/views/TermsConditions.dart';
 import '../../../../../Buyer/More/presentation/view_model/views/widgets/buildProfileOption.dart';
 
@@ -55,19 +55,19 @@ class _MorePageState extends State<MorePage> {
       ),
       buildProfileOption(
         context,
-        label: S.of(context).AppSupport,
+        label: S.of(context).inKindSupportForm,
         imagePath: 'Assets/fluent_people-community-32-regular.png',
         screenWidth: screenWidth,
         screenHeight: screenHeight,
-        page: const Support(),
+        page: const InKindSupport(),
       ),
       buildProfileOption(
         context,
-        label: S.of(context).Rewards,
+        label: S.of(context).Marketing,
         imagePath: 'Assets/hand.png',
         screenWidth: screenWidth,
         screenHeight: screenHeight,
-        page: const RewardsPage(),
+        page: const Marketing(),
       ),
       buildProfileOption(
         context,
@@ -99,7 +99,7 @@ class _MorePageState extends State<MorePage> {
           onTap: () {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (_) => const Login()),
+              MaterialPageRoute(builder: (_) => const LoginScreen()),
             );
           },
           child: Container(

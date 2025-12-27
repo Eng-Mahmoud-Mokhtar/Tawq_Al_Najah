@@ -159,10 +159,10 @@ class S {
     );
   }
 
-  /// `Enter the verification code sent to 01017900067`
+  /// `Enter the verification code sent to `
   String get SubVerifyPhoneNumber {
     return Intl.message(
-      'Enter the verification code sent to 01017900067',
+      'Enter the verification code sent to ',
       name: 'SubVerifyPhoneNumber',
       desc: '',
       args: [],
@@ -174,10 +174,10 @@ class S {
     return Intl.message('Verify', name: 'Verify', desc: '', args: []);
   }
 
-  /// `Resend code after 00:59`
+  /// `Resend code after`
   String get ResendCode {
     return Intl.message(
-      'Resend code after 00:59',
+      'Resend code after',
       name: 'ResendCode',
       desc: '',
       args: [],
@@ -344,9 +344,9 @@ class S {
     );
   }
 
-  /// `SYP`
+  /// `SAR`
   String get SYP {
-    return Intl.message('SYP', name: 'SYP', desc: '', args: []);
+    return Intl.message('SAR', name: 'SYP', desc: '', args: []);
   }
 
   /// `Products`
@@ -529,16 +529,6 @@ class S {
     return Intl.message(
       'Privacy Policy',
       name: 'PrivacyPolicy',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Invite Friends`
-  String get InviteFriends {
-    return Intl.message(
-      'Invite Friends',
-      name: 'InviteFriends',
       desc: '',
       args: [],
     );
@@ -819,16 +809,6 @@ class S {
     );
   }
 
-  /// `Financial Support`
-  String get financialSupport {
-    return Intl.message(
-      'Financial Support',
-      name: 'financialSupport',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `In-Kind Support`
   String get inKindSupport {
     return Intl.message(
@@ -929,20 +909,10 @@ class S {
     );
   }
 
-  /// `Example: Food, Clothing, Household Items`
-  String get inKindSupportExample {
-    return Intl.message(
-      'Example: Food, Clothing, Household Items',
-      name: 'inKindSupportExample',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Example: 10 kg rice, 5 winter clothes`
+  /// `Write a brief description of the support you want to provide`
   String get inKindDescriptionExample {
     return Intl.message(
-      'Example: 10 kg rice, 5 winter clothes',
+      'Write a brief description of the support you want to provide',
       name: 'inKindDescriptionExample',
       desc: '',
       args: [],
@@ -1052,11 +1022,6 @@ class S {
       desc: '',
       args: [],
     );
-  }
-
-  /// `Add to Cart`
-  String get addToCart {
-    return Intl.message('Add to Cart', name: 'addToCart', desc: '', args: []);
   }
 
   /// `Removed successfully`
@@ -1234,6 +1199,21 @@ class S {
     return Intl.message('Price Range', name: 'priceRange', desc: '', args: []);
   }
 
+  /// `Search Results`
+  String get filteredResults {
+    return Intl.message(
+      'Search Results',
+      name: 'filteredResults',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Clear All`
+  String get clearAll {
+    return Intl.message('Clear All', name: 'clearAll', desc: '', args: []);
+  }
+
   /// `Apply Filters`
   String get applyFilters {
     return Intl.message(
@@ -1367,11 +1347,6 @@ class S {
       desc: '',
       args: [],
     );
-  }
-
-  /// `Rewards`
-  String get Rewards {
-    return Intl.message('Rewards', name: 'Rewards', desc: '', args: []);
   }
 
   /// `My Store`
@@ -2709,10 +2684,10 @@ class S {
     );
   }
 
-  /// `Referral Code`
+  /// `Marketer Code (optional)`
   String get ReferralCode {
     return Intl.message(
-      'Referral Code',
+      'Marketer Code (optional)',
       name: 'ReferralCode',
       desc: '',
       args: [],
@@ -2767,6 +2742,1906 @@ class S {
   /// `Ad not found`
   String get adNotFound {
     return Intl.message('Ad not found', name: 'adNotFound', desc: '', args: []);
+  }
+
+  /// `Email`
+  String get email {
+    return Intl.message('Email', name: 'email', desc: '', args: []);
+  }
+
+  /// `Password`
+  String get password {
+    return Intl.message('Password', name: 'password', desc: '', args: []);
+  }
+
+  /// `Forgot your password?`
+  String get forgotPassword {
+    return Intl.message(
+      'Forgot your password?',
+      name: 'forgotPassword',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Reset Code`
+  String get resetCode {
+    return Intl.message('Reset Code', name: 'resetCode', desc: '', args: []);
+  }
+
+  /// `Contact Us`
+  String get ContactUs {
+    return Intl.message('Contact Us', name: 'ContactUs', desc: '', args: []);
+  }
+
+  /// `My Ads`
+  String get myAds {
+    return Intl.message('My Ads', name: 'myAds', desc: '', args: []);
+  }
+
+  /// `Explore`
+  String get explore {
+    return Intl.message('Explore', name: 'explore', desc: '', args: []);
+  }
+
+  /// `Marketplace`
+  String get marketplace {
+    return Intl.message('Marketplace', name: 'marketplace', desc: '', args: []);
+  }
+
+  /// `Ad Price`
+  String get adPriceTitle {
+    return Intl.message('Ad Price', name: 'adPriceTitle', desc: '', args: []);
+  }
+
+  /// `SAR`
+  String get adPriceValue {
+    return Intl.message('SAR', name: 'adPriceValue', desc: '', args: []);
+  }
+
+  /// `Pay now to complete posting your ad`
+  String get adPaymentText {
+    return Intl.message(
+      'Pay now to complete posting your ad',
+      name: 'adPaymentText',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Red Crescent`
+  String get charityOption1 {
+    return Intl.message(
+      'Red Crescent',
+      name: 'charityOption1',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Al-Amal Charity`
+  String get charityOption2 {
+    return Intl.message(
+      'Al-Amal Charity',
+      name: 'charityOption2',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Syrian Food Bank`
+  String get charityOption3 {
+    return Intl.message(
+      'Syrian Food Bank',
+      name: 'charityOption3',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Marketing`
+  String get Marketing {
+    return Intl.message('Marketing', name: 'Marketing', desc: '', args: []);
+  }
+
+  /// `Join the affiliate program and start earning commissions for every user who uses your code. The more users, the higher your earnings!`
+  String get joinAffiliateProgram {
+    return Intl.message(
+      'Join the affiliate program and start earning commissions for every user who uses your code. The more users, the higher your earnings!',
+      name: 'joinAffiliateProgram',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Request Sent`
+  String get requestSentTitle {
+    return Intl.message(
+      'Request Sent',
+      name: 'requestSentTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your request will be reviewed and you will be notified upon approval.`
+  String get requestSentContent {
+    return Intl.message(
+      'Your request will be reviewed and you will be notified upon approval.',
+      name: 'requestSentContent',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Request Marketing`
+  String get requestMarketingButton {
+    return Intl.message(
+      'Request Marketing',
+      name: 'requestMarketingButton',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Code copied successfully`
+  String get referralCodeCopied {
+    return Intl.message(
+      'Code copied successfully',
+      name: 'referralCodeCopied',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter Bank Account Information`
+  String get enterBankData {
+    return Intl.message(
+      'Enter Bank Account Information',
+      name: 'enterBankData',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Account/Visa Number`
+  String get accountNumber {
+    return Intl.message(
+      'Account/Visa Number',
+      name: 'accountNumber',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Account Holder Name`
+  String get accountHolder {
+    return Intl.message(
+      'Account Holder Name',
+      name: 'accountHolder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Withdraw Earnings`
+  String get withdrawEarningsButton {
+    return Intl.message(
+      'Withdraw Earnings',
+      name: 'withdrawEarningsButton',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Code usage`
+  String get usersUsedLabel {
+    return Intl.message(
+      'Code usage',
+      name: 'usersUsedLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your current balance`
+  String get currentBalanceLabel {
+    return Intl.message(
+      'Your current balance',
+      name: 'currentBalanceLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Registration successful!`
+  String get registrationSuccess {
+    return Intl.message(
+      'Registration successful!',
+      name: 'registrationSuccess',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Registration failed.`
+  String get registrationFailed {
+    return Intl.message(
+      'Registration failed.',
+      name: 'registrationFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please try again.`
+  String get unexpectedError {
+    return Intl.message(
+      'Please try again.',
+      name: 'unexpectedError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Successful`
+  String get successTitle {
+    return Intl.message('Successful', name: 'successTitle', desc: '', args: []);
+  }
+
+  /// `Registration Failed`
+  String get failedTitle {
+    return Intl.message(
+      'Registration Failed',
+      name: 'failedTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Continue to Login`
+  String get continueToLogin {
+    return Intl.message(
+      'Continue to Login',
+      name: 'continueToLogin',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Try Again`
+  String get tryAgain {
+    return Intl.message('Try Again', name: 'tryAgain', desc: '', args: []);
+  }
+
+  /// `Please check your internet connection.`
+  String get networkError {
+    return Intl.message(
+      'Please check your internet connection.',
+      name: 'networkError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Request timed out. Please try again.`
+  String get timeoutError {
+    return Intl.message(
+      'Request timed out. Please try again.',
+      name: 'timeoutError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please try again later.`
+  String get defaultError {
+    return Intl.message(
+      'Please try again later.',
+      name: 'defaultError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please try again later.`
+  String get serverUnavailable {
+    return Intl.message(
+      'Please try again later.',
+      name: 'serverUnavailable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please check all required fields.`
+  String get validationError {
+    return Intl.message(
+      'Please check all required fields.',
+      name: 'validationError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Username field is required.`
+  String get usernameRequired {
+    return Intl.message(
+      'Username field is required.',
+      name: 'usernameRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This email is already used.`
+  String get emailUsed {
+    return Intl.message(
+      'This email is already used.',
+      name: 'emailUsed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This phone number is already used.`
+  String get phoneUsed {
+    return Intl.message(
+      'This phone number is already used.',
+      name: 'phoneUsed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Password is too weak.`
+  String get passwordWeak {
+    return Intl.message(
+      'Password is too weak.',
+      name: 'passwordWeak',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Email is required.`
+  String get emailRequired {
+    return Intl.message(
+      'Email is required.',
+      name: 'emailRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please enter a valid email address.`
+  String get invalidEmail {
+    return Intl.message(
+      'Please enter a valid email address.',
+      name: 'invalidEmail',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Password is required.`
+  String get passwordRequired {
+    return Intl.message(
+      'Password is required.',
+      name: 'passwordRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Password must be at least 6 characters.`
+  String get passwordLength {
+    return Intl.message(
+      'Password must be at least 6 characters.',
+      name: 'passwordLength',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Country code is required.`
+  String get countryCodeRequired {
+    return Intl.message(
+      'Country code is required.',
+      name: 'countryCodeRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Phone number is required.`
+  String get phoneRequired {
+    return Intl.message(
+      'Phone number is required.',
+      name: 'phoneRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please enter a valid phone number.`
+  String get invalidPhone {
+    return Intl.message(
+      'Please enter a valid phone number.',
+      name: 'invalidPhone',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Country is required.`
+  String get countryRequired {
+    return Intl.message(
+      'Country is required.',
+      name: 'countryRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `City is required.`
+  String get cityRequired {
+    return Intl.message(
+      'City is required.',
+      name: 'cityRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Address is required.`
+  String get addressRequired {
+    return Intl.message(
+      'Address is required.',
+      name: 'addressRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please check your information.`
+  String get checkInfo {
+    return Intl.message(
+      'Please check your information.',
+      name: 'checkInfo',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please check the fields.`
+  String get checkFields {
+    return Intl.message(
+      'Please check the fields.',
+      name: 'checkFields',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Account not found`
+  String get accountNotFound {
+    return Intl.message(
+      'Account not found',
+      name: 'accountNotFound',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Email not verified`
+  String get emailNotVerified {
+    return Intl.message(
+      'Email not verified',
+      name: 'emailNotVerified',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Account suspended`
+  String get accountSuspended {
+    return Intl.message(
+      'Account suspended',
+      name: 'accountSuspended',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Server error, please try again later`
+  String get serverError {
+    return Intl.message(
+      'Server error, please try again later',
+      name: 'serverError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Logout`
+  String get logoutConfirmation {
+    return Intl.message(
+      'Logout',
+      name: 'logoutConfirmation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Are you sure you want to logout?`
+  String get areYouSureLogout {
+    return Intl.message(
+      'Are you sure you want to logout?',
+      name: 'areYouSureLogout',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Login failed`
+  String get loginFailed {
+    return Intl.message(
+      'Login failed',
+      name: 'loginFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invalid password`
+  String get invalidEmailOrPassword {
+    return Intl.message(
+      'Invalid password',
+      name: 'invalidEmailOrPassword',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Logging out..`
+  String get loggingOut {
+    return Intl.message(
+      'Logging out..',
+      name: 'loggingOut',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sending...`
+  String get Sending {
+    return Intl.message('Sending...', name: 'Sending', desc: '', args: []);
+  }
+
+  /// `Failed to send reset code`
+  String get failedToSendCode {
+    return Intl.message(
+      'Failed to send reset code',
+      name: 'failedToSendCode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter Verification Code`
+  String get enterVerificationCode {
+    return Intl.message(
+      'Enter Verification Code',
+      name: 'enterVerificationCode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `We sent a verification code to`
+  String get codeSentTo {
+    return Intl.message(
+      'We sent a verification code to',
+      name: 'codeSentTo',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Code expires in`
+  String get codeExpiresIn {
+    return Intl.message(
+      'Code expires in',
+      name: 'codeExpiresIn',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The code must be 4 digits`
+  String get codeMustBe4Digits {
+    return Intl.message(
+      'The code must be 4 digits',
+      name: 'codeMustBe4Digits',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Verifying...`
+  String get verifying {
+    return Intl.message('Verifying...', name: 'verifying', desc: '', args: []);
+  }
+
+  /// `Verify`
+  String get verify {
+    return Intl.message('Verify', name: 'verify', desc: '', args: []);
+  }
+
+  /// `Code resent successfully`
+  String get codeResentSuccessfully {
+    return Intl.message(
+      'Code resent successfully',
+      name: 'codeResentSuccessfully',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to resend code`
+  String get resendFailed {
+    return Intl.message(
+      'Failed to resend code',
+      name: 'resendFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invalid verification code`
+  String get invalidCode {
+    return Intl.message(
+      'Invalid verification code',
+      name: 'invalidCode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Verification code has expired`
+  String get codeExpired {
+    return Intl.message(
+      'Verification code has expired',
+      name: 'codeExpired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Verification failed`
+  String get verificationFailed {
+    return Intl.message(
+      'Verification failed',
+      name: 'verificationFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Set New Password`
+  String get setNewPassword {
+    return Intl.message(
+      'Set New Password',
+      name: 'setNewPassword',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `New Password`
+  String get newPassword {
+    return Intl.message(
+      'New Password',
+      name: 'newPassword',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Confirm Password`
+  String get confirmPassword {
+    return Intl.message(
+      'Confirm Password',
+      name: 'confirmPassword',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Password must be at least 6 characters`
+  String get passwordMinLength {
+    return Intl.message(
+      'Password must be at least 6 characters',
+      name: 'passwordMinLength',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Passwords do not match`
+  String get passwordsDoNotMatch {
+    return Intl.message(
+      'Passwords do not match',
+      name: 'passwordsDoNotMatch',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Password reset failed`
+  String get passwordResetFailed {
+    return Intl.message(
+      'Password reset failed',
+      name: 'passwordResetFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invalid or expired verification code`
+  String get invalidOrExpiredCode {
+    return Intl.message(
+      'Invalid or expired verification code',
+      name: 'invalidOrExpiredCode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Password requirements not met`
+  String get passwordRequirementsNotMet {
+    return Intl.message(
+      'Password requirements not met',
+      name: 'passwordRequirementsNotMet',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Password Reset Successful`
+  String get passwordResetSuccess {
+    return Intl.message(
+      'Password Reset Successful',
+      name: 'passwordResetSuccess',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your password has been reset successfully. You can now login with your new password.`
+  String get passwordResetSuccessMessage {
+    return Intl.message(
+      'Your password has been reset successfully. You can now login with your new password.',
+      name: 'passwordResetSuccessMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Continue to Home`
+  String get continueToHome {
+    return Intl.message(
+      'Continue to Home',
+      name: 'continueToHome',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Resetting...`
+  String get resetting {
+    return Intl.message('Resetting...', name: 'resetting', desc: '', args: []);
+  }
+
+  /// `Reset Password`
+  String get resetPassword {
+    return Intl.message(
+      'Reset Password',
+      name: 'resetPassword',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Verification Success`
+  String get verificationSuccess {
+    return Intl.message(
+      'Verification Success',
+      name: 'verificationSuccess',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sending...`
+  String get sending {
+    return Intl.message('Sending...', name: 'sending', desc: '', args: []);
+  }
+
+  /// `Reset Success`
+  String get resetSuccess {
+    return Intl.message(
+      'Reset Success',
+      name: 'resetSuccess',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Reset Failed`
+  String get resetFailed {
+    return Intl.message(
+      'Reset Failed',
+      name: 'resetFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unauthorized access`
+  String get unauthorized {
+    return Intl.message(
+      'Unauthorized access',
+      name: 'unauthorized',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Access forbidden`
+  String get forbidden {
+    return Intl.message(
+      'Access forbidden',
+      name: 'forbidden',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `SSL certificate error`
+  String get sslError {
+    return Intl.message(
+      'SSL certificate error',
+      name: 'sslError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Request cancelled`
+  String get requestCancelled {
+    return Intl.message(
+      'Request cancelled',
+      name: 'requestCancelled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Community Partnerships`
+  String get CommunityPartnerships {
+    return Intl.message(
+      'Community Partnerships',
+      name: 'CommunityPartnerships',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Participating Entity`
+  String get ParticipatingEntity {
+    return Intl.message(
+      'Participating Entity',
+      name: 'ParticipatingEntity',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Representative Name`
+  String get RepresentativeName {
+    return Intl.message(
+      'Representative Name',
+      name: 'RepresentativeName',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Food Supplies`
+  String get foodSupplies {
+    return Intl.message(
+      'Food Supplies',
+      name: 'foodSupplies',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Clothing`
+  String get clothing {
+    return Intl.message('Clothing', name: 'clothing', desc: '', args: []);
+  }
+
+  /// `Medical Bill`
+  String get medicalBill {
+    return Intl.message(
+      'Medical Bill',
+      name: 'medicalBill',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Electricity Bill`
+  String get electricityBill {
+    return Intl.message(
+      'Electricity Bill',
+      name: 'electricityBill',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Fuel Bill (Gasoline + Diesel)`
+  String get fuelBill {
+    return Intl.message(
+      'Fuel Bill (Gasoline + Diesel)',
+      name: 'fuelBill',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `School Supplies`
+  String get schoolSupplies {
+    return Intl.message(
+      'School Supplies',
+      name: 'schoolSupplies',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select type of in-kind support`
+  String get inKindSupportExample {
+    return Intl.message(
+      'Select type of in-kind support',
+      name: 'inKindSupportExample',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please enter a valid email address`
+  String get enterValidEmail {
+    return Intl.message(
+      'Please enter a valid email address',
+      name: 'enterValidEmail',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Email not found`
+  String get emailNotFound {
+    return Intl.message(
+      'Email not found',
+      name: 'emailNotFound',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invalid verification code`
+  String get invalidOtp {
+    return Intl.message(
+      'Invalid verification code',
+      name: 'invalidOtp',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Verification code has expired`
+  String get otpExpired {
+    return Intl.message(
+      'Verification code has expired',
+      name: 'otpExpired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Error loading`
+  String get errorLoadingCategories {
+    return Intl.message(
+      'Error loading',
+      name: 'errorLoadingCategories',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Image load failed`
+  String get imageLoadFailed {
+    return Intl.message(
+      'Image load failed',
+      name: 'imageLoadFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No products available`
+  String get noProductsAvailable {
+    return Intl.message(
+      'No products available',
+      name: 'noProductsAvailable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No suggestions available`
+  String get noSuggestionsAvailable {
+    return Intl.message(
+      'No suggestions available',
+      name: 'noSuggestionsAvailable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No seller information`
+  String get noSellerInfo {
+    return Intl.message(
+      'No seller information',
+      name: 'noSellerInfo',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Full Name`
+  String get fullName {
+    return Intl.message('Full Name', name: 'fullName', desc: '', args: []);
+  }
+
+  /// `Phone Number`
+  String get phoneNumber {
+    return Intl.message(
+      'Phone Number',
+      name: 'phoneNumber',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Choose Country Code`
+  String get chooseCountryCode {
+    return Intl.message(
+      'Choose Country Code',
+      name: 'chooseCountryCode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No Results to Show`
+  String get noResultsToShow {
+    return Intl.message(
+      'No Results to Show',
+      name: 'noResultsToShow',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Name is required`
+  String get nameRequired {
+    return Intl.message(
+      'Name is required',
+      name: 'nameRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Name must be at least 3 characters`
+  String get nameMinLength {
+    return Intl.message(
+      'Name must be at least 3 characters',
+      name: 'nameMinLength',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invalid email format`
+  String get emailInvalid {
+    return Intl.message(
+      'Invalid email format',
+      name: 'emailInvalid',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Phone number must contain only numbers`
+  String get phoneNumbersOnly {
+    return Intl.message(
+      'Phone number must contain only numbers',
+      name: 'phoneNumbersOnly',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This phone number is already in use.`
+  String get phoneAlreadyUsed {
+    return Intl.message(
+      'This phone number is already in use.',
+      name: 'phoneAlreadyUsed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This email is already in use.`
+  String get emailAlreadyUsed {
+    return Intl.message(
+      'This email is already in use.',
+      name: 'emailAlreadyUsed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Address is required`
+  String get locationRequired {
+    return Intl.message(
+      'Address is required',
+      name: 'locationRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Profile updated successfully`
+  String get profileUpdatedSuccessfully {
+    return Intl.message(
+      'Profile updated successfully',
+      name: 'profileUpdatedSuccessfully',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Session expired.`
+  String get sessionExpired {
+    return Intl.message(
+      'Session expired.',
+      name: 'sessionExpired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Service is currently unavailable.`
+  String get serviceUnavailable {
+    return Intl.message(
+      'Service is currently unavailable.',
+      name: 'serviceUnavailable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please check your internet connection.`
+  String get connectionTimeout {
+    return Intl.message(
+      'Please check your internet connection.',
+      name: 'connectionTimeout',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please check your internet connection.`
+  String get cannotConnectToServer {
+    return Intl.message(
+      'Please check your internet connection.',
+      name: 'cannotConnectToServer',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Connection error`
+  String get connectionError {
+    return Intl.message(
+      'Connection error',
+      name: 'connectionError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Profile data not available.`
+  String get profileDataNotAvailable {
+    return Intl.message(
+      'Profile data not available.',
+      name: 'profileDataNotAvailable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to load data`
+  String get failedToLoadData {
+    return Intl.message(
+      'Failed to load data',
+      name: 'failedToLoadData',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to update profile`
+  String get failedToUpdateProfile {
+    return Intl.message(
+      'Failed to update profile',
+      name: 'failedToUpdateProfile',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invalid data`
+  String get invalidData {
+    return Intl.message(
+      'Invalid data',
+      name: 'invalidData',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invalid name`
+  String get nameInvalid {
+    return Intl.message(
+      'Invalid name',
+      name: 'nameInvalid',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Error picking image`
+  String get errorPickingImage {
+    return Intl.message(
+      'Error picking image',
+      name: 'errorPickingImage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Search country`
+  String get searchCountry {
+    return Intl.message(
+      'Search country',
+      name: 'searchCountry',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Loading...`
+  String get loading {
+    return Intl.message('Loading...', name: 'loading', desc: '', args: []);
+  }
+
+  /// `Support`
+  String get support {
+    return Intl.message('Support', name: 'support', desc: '', args: []);
+  }
+
+  /// `Select Support Type`
+  String get selectSupportType {
+    return Intl.message(
+      'Select Support Type',
+      name: 'selectSupportType',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Packages`
+  String get packages {
+    return Intl.message('Packages', name: 'packages', desc: '', args: []);
+  }
+
+  /// `Package Value`
+  String get packageValue {
+    return Intl.message(
+      'Package Value',
+      name: 'packageValue',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select package value`
+  String get selectPackageValue {
+    return Intl.message(
+      'Select package value',
+      name: 'selectPackageValue',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter other value`
+  String get enterOtherValue {
+    return Intl.message(
+      'Enter other value',
+      name: 'enterOtherValue',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Example: Donation for patient treatment`
+  String get financialDescriptionExample {
+    return Intl.message(
+      'Example: Donation for patient treatment',
+      name: 'financialDescriptionExample',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Submit`
+  String get submitDonation {
+    return Intl.message('Submit', name: 'submitDonation', desc: '', args: []);
+  }
+
+  /// `Please select package value`
+  String get selectPackageError {
+    return Intl.message(
+      'Please select package value',
+      name: 'selectPackageError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Submit sent successfully`
+  String get donationSentSuccessfully {
+    return Intl.message(
+      'Submit sent successfully',
+      name: 'donationSentSuccessfully',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please login first`
+  String get pleaseLoginFirst {
+    return Intl.message(
+      'Please login first',
+      name: 'pleaseLoginFirst',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Attention`
+  String get attention {
+    return Intl.message('Attention', name: 'attention', desc: '', args: []);
+  }
+
+  /// `Delete Confirmation`
+  String get deleteConfirmation {
+    return Intl.message(
+      'Delete Confirmation',
+      name: 'deleteConfirmation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Are you sure you want to delete this item from the cart?`
+  String get deleteItemConfirmation {
+    return Intl.message(
+      'Are you sure you want to delete this item from the cart?',
+      name: 'deleteItemConfirmation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cart is empty`
+  String get cartIsEmpty {
+    return Intl.message(
+      'Cart is empty',
+      name: 'cartIsEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Error navigating to checkout page`
+  String get errorNavigatingToCheckout {
+    return Intl.message(
+      'Error navigating to checkout page',
+      name: 'errorNavigatingToCheckout',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Insufficient stock`
+  String get insufficientStock {
+    return Intl.message(
+      'Insufficient stock',
+      name: 'insufficientStock',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Free`
+  String get free {
+    return Intl.message('Free', name: 'free', desc: '', args: []);
+  }
+
+  /// `Loading cart...`
+  String get loadingCart {
+    return Intl.message(
+      'Loading cart...',
+      name: 'loadingCart',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Summary`
+  String get orderSummary {
+    return Intl.message('Summary', name: 'orderSummary', desc: '', args: []);
+  }
+
+  /// `Cash on delivery`
+  String get cashOnDelivery {
+    return Intl.message(
+      'Cash on delivery',
+      name: 'cashOnDelivery',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Fill all card details`
+  String get pleaseFillCardDetails {
+    return Intl.message(
+      'Fill all card details',
+      name: 'pleaseFillCardDetails',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Order failed`
+  String get orderFailed {
+    return Intl.message(
+      'Order failed',
+      name: 'orderFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `An error occurred`
+  String get somethingWentWrong {
+    return Intl.message(
+      'An error occurred',
+      name: 'somethingWentWrong',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Processing...`
+  String get processing {
+    return Intl.message(
+      'Processing...',
+      name: 'processing',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Pay cash upon delivery.`
+  String get cashDeliveryNote {
+    return Intl.message(
+      'Pay cash upon delivery.',
+      name: 'cashDeliveryNote',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your card is secure. Payment is processed instantly.`
+  String get cardPaymentNote {
+    return Intl.message(
+      'Your card is secure. Payment is processed instantly.',
+      name: 'cardPaymentNote',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Credit/Debit Card`
+  String get creditCard {
+    return Intl.message(
+      'Credit/Debit Card',
+      name: 'creditCard',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your request has been rejected`
+  String get requestRejected {
+    return Intl.message(
+      'Your request has been rejected',
+      name: 'requestRejected',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your request is under review`
+  String get requestUnderReview {
+    return Intl.message(
+      'Your request is under review',
+      name: 'requestUnderReview',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your request has been submitted successfully and is currently under review. You will be contacted as soon as possible.`
+  String get requestPendingContent {
+    return Intl.message(
+      'Your request has been submitted successfully and is currently under review. You will be contacted as soon as possible.',
+      name: 'requestPendingContent',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sorry, your request to join the affiliate marketing program has been rejected. Please contact support to have your application reviewed again.`
+  String get requestRejectedContent {
+    return Intl.message(
+      'Sorry, your request to join the affiliate marketing program has been rejected. Please contact support to have your application reviewed again.',
+      name: 'requestRejectedContent',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your referral code`
+  String get yourReferralCode {
+    return Intl.message(
+      'Your referral code',
+      name: 'yourReferralCode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Share this code with your friends to earn a commission`
+  String get shareReferralCodeHint {
+    return Intl.message(
+      'Share this code with your friends to earn a commission',
+      name: 'shareReferralCodeHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The code has not been assigned yet`
+  String get codeNotAssigned {
+    return Intl.message(
+      'The code has not been assigned yet',
+      name: 'codeNotAssigned',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `You must log in to be able to submit an in-kind support request`
+  String get mustLoginForSupport {
+    return Intl.message(
+      'You must log in to be able to submit an in-kind support request',
+      name: 'mustLoginForSupport',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No charities are currently available`
+  String get noCharitiesAvailable {
+    return Intl.message(
+      'No charities are currently available',
+      name: 'noCharitiesAvailable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No support types are currently available`
+  String get noSupportTypesAvailable {
+    return Intl.message(
+      'No support types are currently available',
+      name: 'noSupportTypesAvailable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `and`
+  String get and {
+    return Intl.message('and', name: 'and', desc: '', args: []);
+  }
+
+  /// `Failed to submit the request`
+  String get requestFailed {
+    return Intl.message(
+      'Failed to submit the request',
+      name: 'requestFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Recent Searches`
+  String get recentSearches {
+    return Intl.message(
+      'Recent Searches',
+      name: 'recentSearches',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter Amount`
+  String get enterAmount {
+    return Intl.message(
+      'Enter Amount',
+      name: 'enterAmount',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter a Valid Amount`
+  String get enterValidAmount {
+    return Intl.message(
+      'Enter a Valid Amount',
+      name: 'enterValidAmount',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Donation Failed`
+  String get donationFailed {
+    return Intl.message(
+      'Donation Failed',
+      name: 'donationFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Financial Support`
+  String get financialSupport {
+    return Intl.message(
+      'Financial Support',
+      name: 'financialSupport',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Example: Financial donation to support charitable activities`
+  String get donationDescriptionExample {
+    return Intl.message(
+      'Example: Financial donation to support charitable activities',
+      name: 'donationDescriptionExample',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No Packages Available`
+  String get noPackagesAvailable {
+    return Intl.message(
+      'No Packages Available',
+      name: 'noPackagesAvailable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Le prix est requis`
+  String get priceRequired {
+    return Intl.message(
+      'Le prix est requis',
+      name: 'priceRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Veuillez entrer un prix valide`
+  String get enterValidPrice {
+    return Intl.message(
+      'Veuillez entrer un prix valide',
+      name: 'enterValidPrice',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `La remise doit être comprise entre 0 et 100`
+  String get enterValidDiscount {
+    return Intl.message(
+      'La remise doit être comprise entre 0 et 100',
+      name: 'enterValidDiscount',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Au moins une image est requise`
+  String get imageRequired {
+    return Intl.message(
+      'Au moins une image est requise',
+      name: 'imageRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Optionnel`
+  String get optional {
+    return Intl.message('Optionnel', name: 'optional', desc: '', args: []);
+  }
+
+  /// `Entrez le prix`
+  String get enterPrice {
+    return Intl.message(
+      'Entrez le prix',
+      name: 'enterPrice',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Entrez la remise`
+  String get enterDiscount {
+    return Intl.message(
+      'Entrez la remise',
+      name: 'enterDiscount',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Ad deleted successfully`
+  String get adDeletedSuccess {
+    return Intl.message(
+      'Ad deleted successfully',
+      name: 'adDeletedSuccess',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to delete ad`
+  String get failedToDeleteAd {
+    return Intl.message(
+      'Failed to delete ad',
+      name: 'failedToDeleteAd',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `An error occurred while deleting the ad`
+  String get errorDeletingAd {
+    return Intl.message(
+      'An error occurred while deleting the ad',
+      name: 'errorDeletingAd',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Order`
+  String get orderNumberLabel {
+    return Intl.message('Order', name: 'orderNumberLabel', desc: '', args: []);
+  }
+
+  /// `items`
+  String get productsCountLabel {
+    return Intl.message(
+      'items',
+      name: 'productsCountLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No items in this order`
+  String get noItemsInOrder {
+    return Intl.message(
+      'No items in this order',
+      name: 'noItemsInOrder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unnamed product`
+  String get unnamedProduct {
+    return Intl.message(
+      'Unnamed product',
+      name: 'unnamedProduct',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Discount`
+  String get discountLabel {
+    return Intl.message('Discount', name: 'discountLabel', desc: '', args: []);
+  }
+
+  /// `Cancelling order...`
+  String get cancellingOrder {
+    return Intl.message(
+      'Cancelling order...',
+      name: 'cancellingOrder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Order cancelled successfully`
+  String get orderCancelledSuccess {
+    return Intl.message(
+      'Order cancelled successfully',
+      name: 'orderCancelledSuccess',
+      desc: '',
+      args: [],
+    );
   }
 }
 

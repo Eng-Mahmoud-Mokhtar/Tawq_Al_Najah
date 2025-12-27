@@ -3,8 +3,8 @@ import '../utiles/Colors.dart';
 
 class Button extends StatelessWidget {
   final String text;
-  final VoidCallback onPressed;
-  const Button({super.key, required this.text, required this.onPressed});
+  final VoidCallback? onPressed; // made nullable
+  const Button({super.key, required this.text, this.onPressed});
 
   @override
   Widget build(BuildContext context) {

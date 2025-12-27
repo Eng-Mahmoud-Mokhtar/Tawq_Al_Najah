@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../../Core/utiles/Colors.dart';
 import '../../../../../generated/l10n.dart';
-import '../../../../Auth/presentation/view_model/views/login.dart';
+import '../../../../Auth/presentation/login.dart';
 import 'Widgets/OnboardingPage.dart';
 
 class Onboarding extends StatefulWidget {
@@ -29,7 +29,7 @@ class _OnboardingState extends State<Onboarding> {
   void _skipToLogin(BuildContext context) {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => const Login()),
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
     );
   }
 

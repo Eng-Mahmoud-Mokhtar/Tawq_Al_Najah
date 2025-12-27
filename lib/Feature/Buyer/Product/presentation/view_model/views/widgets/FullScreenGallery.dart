@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 class FullScreenGallery extends StatefulWidget {
   final List<String> images;
   final int initialIndex;

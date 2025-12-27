@@ -174,12 +174,16 @@ class _RelatedSectionState extends State<RelatedSection> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                               SizedBox(height: widget.screenHeight * 0.005),
-                              Text(
-                                "${item['price']} ${item['currency']}",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: widget.screenWidth * 0.035,
-                                  color: const Color(0xffFF580E),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: Text(
+                                  "${item['price']} ${item['currency']}",
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: widget.screenWidth * 0.035,
+                                    color: const Color(0xffFF580E),
+                                  ),
                                 ),
                               ),
                             ],

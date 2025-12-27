@@ -232,15 +232,23 @@ class _ProductDetailsState extends State<ProductDetails> {
                           SizedBox(height: screenHeight * 0.01),
                           Row(
                             children: [
-                              Text(
-                                "${price.toStringAsFixed(2)} ${widget.ad['currency'] ?? ''}",
-                                style: TextStyle(fontSize: screenWidth * 0.04, fontWeight: FontWeight.bold, color: const Color(0xffFF580E)),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: Text(
+                                  "${price.toStringAsFixed(2)} ${widget.ad['currency'] ?? ''}",
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(fontSize: screenWidth * 0.04, fontWeight: FontWeight.bold, color: const Color(0xffFF580E)),
+                                ),
                               ),
                               if (discount > 0) ...[
                                 const SizedBox(width: 16),
-                                Text(
-                                  "${originalPrice.toStringAsFixed(2)} ${widget.ad['currency'] ?? ''}",
-                                  style: TextStyle(fontSize: screenWidth * 0.035, color: Colors.grey[600], decoration: TextDecoration.lineThrough),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    "${originalPrice.toStringAsFixed(2)} ${widget.ad['currency'] ?? ''}",
+                                    textAlign: TextAlign.right,
+                                    style: TextStyle(fontSize: screenWidth * 0.035, color: Colors.grey[600], decoration: TextDecoration.lineThrough),
+                                  ),
                                 ),
                                 const SizedBox(width: 16),
                                 Text(

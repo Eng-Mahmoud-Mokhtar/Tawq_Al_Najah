@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../../../../../generated/l10n.dart';
-import '../../../../../../../Core/utiles/Colors.dart';
-
+import 'package:tawqalnajah/Core/utiles/Colors.dart';
+import 'package:tawqalnajah/generated/l10n.dart';
 
 class NameSeller extends StatelessWidget {
   const NameSeller({super.key});
@@ -13,12 +12,12 @@ class NameSeller extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-           S.of(context).ShopSellerName,
-            style: TextStyle(
-              color: KprimaryText,
-              fontSize: screenWidth * 0.035,
-              fontWeight: FontWeight.bold,
-            ),
+          S.of(context).ShopSellerName,
+          style: TextStyle(
+            color: KprimaryText,
+            fontSize: screenWidth * 0.035,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         SizedBox(height: screenHeight * 0.01),
         SizedBox(
@@ -41,7 +40,7 @@ class NameSeller extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                   color: Colors.grey.shade600,
                 ),
-                hintText: S.of(context).FullName,
+                hintText: S.of(context).ShopSellerName,
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(
                   vertical: screenWidth * 0.035,

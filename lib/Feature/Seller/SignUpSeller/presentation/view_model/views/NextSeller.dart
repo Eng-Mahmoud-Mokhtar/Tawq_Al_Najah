@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../../../../../Core/Widgets/Button.dart';
-import '../../../../../../Core/utiles/Colors.dart';
-import '../../../../../../Core/utiles/Images.dart';
-import '../../../../../../generated/l10n.dart';
+import 'package:tawqalnajah/core/utiles/colors.dart';
+import 'package:tawqalnajah/core/utiles/images.dart';
+import 'package:tawqalnajah/core/widgets/button.dart';
+import 'package:tawqalnajah/generated/l10n.dart';
 import 'PaymentSignUp.dart';
 
 class NextSignUp extends StatefulWidget {
   const NextSignUp({super.key});
-
   @override
   State<NextSignUp> createState() => _NextSignUpState();
 }
@@ -16,21 +15,18 @@ class NextSignUp extends StatefulWidget {
 class _NextSignUpState extends State<NextSignUp> {
   String? selectedContract;
   String? selectedActivity;
-
-  final TextEditingController customDurationController = TextEditingController();
+  final TextEditingController customDurationController =
+      TextEditingController();
   final TextEditingController socialLinkController = TextEditingController();
   final TextEditingController branchesCountController = TextEditingController();
   final TextEditingController areaController = TextEditingController();
   final TextEditingController pricePerMonthController = TextEditingController();
-
   double pricePerMeter = 1.0;
   final List<TextEditingController> branchLocationControllers = [];
   final List<Map<String, dynamic>> socialLinks = [];
-
   double totalPrice = 0.0;
   int months = 0;
   double monthlyPrice = 0.0;
-
   @override
   void dispose() {
     customDurationController.dispose();
@@ -46,26 +42,42 @@ class _NextSignUpState extends State<NextSignUp> {
 
   Map<String, dynamic>? detectPlatform(String url) {
     if (url.contains('facebook')) {
-      return {'name': 'Facebook', 'icon': FontAwesomeIcons.facebook, 'color': Colors.blue};
+      return {
+        'name': 'Facebook',
+        'icon': FontAwesomeIcons.facebook,
+        'color': Colors.blue,
+      };
     } else if (url.contains('instagram')) {
-      return {'name': 'Instagram', 'icon': FontAwesomeIcons.instagram, 'color': Colors.purple};
+      return {
+        'name': 'Instagram',
+        'icon': FontAwesomeIcons.instagram,
+        'color': Colors.purple,
+      };
     } else if (url.contains('whatsapp') || url.contains('wa.me')) {
-      return {'name': 'WhatsApp', 'icon': FontAwesomeIcons.whatsapp, 'color': Colors.green};
+      return {
+        'name': 'WhatsApp',
+        'icon': FontAwesomeIcons.whatsapp,
+        'color': Colors.green,
+      };
     } else if (url.contains('snapchat')) {
-      return {'name': 'Snapchat', 'icon': FontAwesomeIcons.snapchat, 'color': Colors.amber[700]};
+      return {
+        'name': 'Snapchat',
+        'icon': FontAwesomeIcons.snapchat,
+        'color': Colors.amber[700],
+      };
     }
     return null;
   }
 
   Widget buildField(
-      String label,
-      String hint, {
-        TextInputType? type,
-        String? suffix,
-        TextEditingController? controller,
-        Function(String)? onChanged,
-        bool readOnly = false,
-      }) {
+    String label,
+    String hint, {
+    TextInputType? type,
+    String? suffix,
+    TextEditingController? controller,
+    Function(String)? onChanged,
+    bool readOnly = false,
+  }) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     return Column(
@@ -118,7 +130,9 @@ class _NextSignUpState extends State<NextSignUp> {
                 ),
                 if (suffix != null)
                   Padding(
-                    padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.035),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.035,
+                    ),
                     child: Text(
                       suffix,
                       style: TextStyle(
@@ -139,7 +153,6 @@ class _NextSignUpState extends State<NextSignUp> {
   Widget buildActivityDropdown() {
     final s = S.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
-
     final List<String> activities = [
       s.fashion,
       s.electronics,
@@ -148,10 +161,8 @@ class _NextSignUpState extends State<NextSignUp> {
       s.furniture,
       s.kitchen,
       s.books,
-      s.food,
       s.otherCategory,
     ];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -166,7 +177,10 @@ class _NextSignUpState extends State<NextSignUp> {
         SizedBox(height: 8),
         Container(
           height: screenWidth * 0.12,
-          padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.035, vertical: 4),
+          padding: EdgeInsets.symmetric(
+            horizontal: screenWidth * 0.035,
+            vertical: 4,
+          ),
           decoration: BoxDecoration(
             color: const Color(0xffFAFAFA),
             borderRadius: BorderRadius.circular(8),
@@ -180,23 +194,24 @@ class _NextSignUpState extends State<NextSignUp> {
                 style: TextStyle(
                   fontSize: screenWidth * 0.03,
                   color: Colors.grey.shade600,
-                    fontFamily: 'Tajawal'
+                  fontFamily: 'Tajawal',
                 ),
               ),
               isExpanded: true,
-              icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey, size: screenWidth * 0.05),
+              icon: Icon(
+                Icons.keyboard_arrow_down,
+                color: Colors.grey,
+                size: screenWidth * 0.05,
+              ),
               dropdownColor: const Color(0xffFAFAFA),
               style: TextStyle(
                 fontSize: screenWidth * 0.03,
                 color: KprimaryText,
                 fontWeight: FontWeight.bold,
-                  fontFamily: 'Tajawal'
+                fontFamily: 'Tajawal',
               ),
               items: activities.map((activity) {
-                return DropdownMenuItem(
-                  value: activity,
-                  child: Text(activity),
-                );
+                return DropdownMenuItem(value: activity, child: Text(activity));
               }).toList(),
               onChanged: (value) {
                 setState(() {
@@ -238,7 +253,6 @@ class _NextSignUpState extends State<NextSignUp> {
     final s = S.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-
     return Scaffold(
       backgroundColor: SecoundColor,
       body: Stack(
@@ -261,8 +275,6 @@ class _NextSignUpState extends State<NextSignUp> {
                         ),
                       ),
                       SizedBox(height: screenHeight * 0.05),
-
-                      // نوع النشاط وعدد الفروع جنب بعض
                       Row(
                         children: [
                           Expanded(child: buildActivityDropdown()),
@@ -278,7 +290,9 @@ class _NextSignUpState extends State<NextSignUp> {
                                 setState(() {
                                   branchLocationControllers.clear();
                                   for (int i = 0; i < count; i++) {
-                                    branchLocationControllers.add(TextEditingController());
+                                    branchLocationControllers.add(
+                                      TextEditingController(),
+                                    );
                                   }
                                 });
                               },
@@ -286,16 +300,16 @@ class _NextSignUpState extends State<NextSignUp> {
                           ),
                         ],
                       ),
-
-                      // مواقع الفروع أسفلها
                       if (branchLocationControllers.isNotEmpty) ...[
                         SizedBox(height: screenHeight * 0.02),
                         Column(
                           mainAxisSize: MainAxisSize.min,
                           children: List.generate(
                             branchLocationControllers.length,
-                                (index) => Padding(
-                              padding: EdgeInsets.only(bottom: screenHeight * 0.02),
+                            (index) => Padding(
+                              padding: EdgeInsets.only(
+                                bottom: screenHeight * 0.02,
+                              ),
                               child: buildField(
                                 "${s.branch} ${index + 1}",
                                 s.enterBranchLocation,
@@ -305,7 +319,6 @@ class _NextSignUpState extends State<NextSignUp> {
                           ),
                         ),
                       ],
-
                       SizedBox(height: screenHeight * 0.02),
                       Row(
                         children: [
@@ -344,42 +357,44 @@ class _NextSignUpState extends State<NextSignUp> {
                       Wrap(
                         spacing: screenWidth * 0.05,
                         runSpacing: 8,
-                        children: [
-                          s.threeMonths,
-                          s.sixMonths,
-                          s.oneYear,
-                          s.other,
-                        ].map((value) => IntrinsicHeight(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Radio<String>(
-                                value: value,
-                                groupValue: selectedContract,
-                                onChanged: (val) {
-                                  setState(() {
-                                    selectedContract = val;
-                                    if (val != s.other) {
-                                      customDurationController.clear();
-                                    }
-                                    calculateTotalPrice();
-                                  });
-                                },
-                                activeColor: KprimaryColor,
-                                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              SizedBox(width: 4),
-                              Text(
-                                value,
-                                style: TextStyle(
-                                  fontSize: screenWidth * 0.03,
-                                  fontWeight: FontWeight.bold,
-                                  color: KprimaryText,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )).toList(),
+                        children:
+                            [s.threeMonths, s.sixMonths, s.oneYear, s.other]
+                                .map(
+                                  (value) => IntrinsicHeight(
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Radio<String>(
+                                          value: value,
+                                          groupValue: selectedContract,
+                                          onChanged: (val) {
+                                            setState(() {
+                                              selectedContract = val;
+                                              if (val != s.other) {
+                                                customDurationController
+                                                    .clear();
+                                              }
+                                              calculateTotalPrice();
+                                            });
+                                          },
+                                          activeColor: KprimaryColor,
+                                          materialTapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
+                                        ),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          value,
+                                          style: TextStyle(
+                                            fontSize: screenWidth * 0.03,
+                                            fontWeight: FontWeight.bold,
+                                            color: KprimaryText,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                                .toList(),
                       ),
                       if (selectedContract == s.other) ...[
                         SizedBox(height: screenHeight * 0.015),
@@ -415,8 +430,11 @@ class _NextSignUpState extends State<NextSignUp> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.cloud_upload_outlined,
-                                  size: screenWidth * 0.05, color: Colors.grey.shade600),
+                              Icon(
+                                Icons.cloud_upload_outlined,
+                                size: screenWidth * 0.05,
+                                color: Colors.grey.shade600,
+                              ),
                               SizedBox(height: 8),
                               Text(
                                 s.addFile,
@@ -441,41 +459,54 @@ class _NextSignUpState extends State<NextSignUp> {
                       ),
                       SizedBox(height: screenHeight * 0.01),
                       Column(
-                        children: socialLinks.map((link) => Container(
-                          margin: EdgeInsets.only(bottom: screenHeight * 0.01),
-                          padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
-                          height: screenWidth * 0.12,
-                          decoration: BoxDecoration(
-                            color: const Color(0xffFAFAFA),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xffE9E9E9)),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(link['icon'], color: link['color']),
-                              SizedBox(width: screenWidth * 0.03),
-                              Expanded(
-                                child: Text(
-                                  link['url'],
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: screenWidth * 0.03,
-                                    color: KprimaryText,
+                        children: socialLinks
+                            .map(
+                              (link) => Container(
+                                margin: EdgeInsets.only(
+                                  bottom: screenHeight * 0.01,
+                                ),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: screenWidth * 0.03,
+                                ),
+                                height: screenWidth * 0.12,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xffFAFAFA),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: const Color(0xffE9E9E9),
                                   ),
-                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(link['icon'], color: link['color']),
+                                    SizedBox(width: screenWidth * 0.03),
+                                    Expanded(
+                                      child: Text(
+                                        link['url'],
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: screenWidth * 0.03,
+                                          color: KprimaryText,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          socialLinks.remove(link);
+                                        });
+                                      },
+                                      icon: const Icon(
+                                        Icons.close,
+                                        color: Color(0xffDD0C0C),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    socialLinks.remove(link);
-                                  });
-                                },
-                                icon: const Icon(Icons.close, color: Color(0xffDD0C0C)),
-                              ),
-                            ],
-                          ),
-                        )).toList(),
+                            )
+                            .toList(),
                       ),
                       if (socialLinks.length < 3)
                         SizedBox(
@@ -484,13 +515,16 @@ class _NextSignUpState extends State<NextSignUp> {
                             decoration: BoxDecoration(
                               color: const Color(0xffFAFAFA),
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: const Color(0xffE9E9E9)),
+                              border: Border.all(
+                                color: const Color(0xffE9E9E9),
+                              ),
                             ),
                             child: TextField(
                               controller: socialLinkController,
                               onSubmitted: (value) {
                                 final platform = detectPlatform(value.trim());
-                                if (platform != null && value.trim().isNotEmpty) {
+                                if (platform != null &&
+                                    value.trim().isNotEmpty) {
                                   setState(() {
                                     socialLinks.add({
                                       'url': value.trim(),
@@ -527,7 +561,6 @@ class _NextSignUpState extends State<NextSignUp> {
                         text: s.Next,
                         onPressed: () {
                           calculateTotalPrice();
-
                           Navigator.push(
                             context,
                             MaterialPageRoute(

@@ -13,6 +13,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: ^0.20.2
+  connectivity_plus:
   cupertino_icons: ^1.0.8
   intl_utils: ^2.8.10
   flutter_bloc:
@@ -30,7 +31,18 @@ dependencies:
   smooth_page_indicator:
   flutter_credit_card:
   percent_indicator:
+  cached_network_image:
+  decimal:
+  dio:
+  formz:
+  fluttertoast:
+  file_picker:
+  flutter_spinkit:
+  pretty_dio_logger:
+  get_it:
+  awesome_dialog:
   fl_chart: ^0.68.0
+  flutter_secure_storage:
   open_file:
   pdf:
 dev_dependencies:

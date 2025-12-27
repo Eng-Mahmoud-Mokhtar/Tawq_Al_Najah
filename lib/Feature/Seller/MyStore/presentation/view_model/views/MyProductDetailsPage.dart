@@ -632,10 +632,10 @@ class _MyProductDetailsPageState extends State<MyProductDetailsPage> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: KprimaryColor,
                                   padding: EdgeInsets.symmetric(
-                                    vertical: w * 0.06,
+                                    vertical: w * 0.05,
                                   ),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
                               ),
@@ -655,10 +655,10 @@ class _MyProductDetailsPageState extends State<MyProductDetailsPage> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xffDD0C0C),
                                   padding: EdgeInsets.symmetric(
-                                    vertical: w * 0.06,
+                                    vertical: w * 0.05,
                                   ),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
                               ),

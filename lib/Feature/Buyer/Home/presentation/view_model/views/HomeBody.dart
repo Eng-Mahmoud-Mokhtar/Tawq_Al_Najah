@@ -1,39 +1,37 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:tawqalnajah/Feature/Buyer/Search/presentation/view_model/views/widgets/FilterBottomSheet.dart';
-import 'package:tawqalnajah/Feature/Buyer/Home/presentation/view_model/views/widgets/categoryItem.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:tawqalnajah/Feature/Buyer/Home/presentation/view_model/views/widgets/suggestions.dart';
 import 'package:tawqalnajah/Feature/Buyer/Home/presentation/view_model/views/widgets/tawqalOffers.dart';
-import '../../../../../../Core/utiles/Colors.dart';
-import '../../../../../../generated/l10n.dart';
-import '../../../../Notification/presentation/view_model/views/Notification.dart';
-import '../../../../Search/presentation/view_model/views/SearchPage.dart';
-import '../../../../Search/presentation/view_model/filter_cubit.dart';
+import 'package:tawqalnajah/Feature/Buyer/Home/presentation/view_model/views/widgets/HomeHeader.dart';
+import '../../../../../../../Core/utiles/Colors.dart';
+import '../../../../../../../generated/l10n.dart';
+import '../../../../../Buyer/Notification/presentation/view_model/views/Notification.dart';
+import '../../../../Categories/presentation/view_model/views/Widgets/CategoryList.dart';
+import '../../../../Categories/presentation/view_model/views/CategoryPage.dart';
+import '../../../../Product/Data/Models/ProductModel.dart';
+import '../../../Data/repo/BannerRepository.dart';
+import '../bannar_cubit.dart';
+import '../home_state.dart';
 import 'HomeStructure.dart';
+import 'widgets/BannerSection.dart';
+import 'package:tawqalnajah/Feature/Buyer/Home/Data/Model/CategoryModel.dart';
+import 'package:tawqalnajah/Feature/Buyer/Home/presentation/view_model/home_cubit.dart';
+import '../../../../Categories/presentation/view_model/views/Widgets/CategoriesHeader.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
-
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  String? userImage;
-  int currentPage = 0;
-  Timer? _timer;
-
-  final List<String> offers = [
-    'Assets/black-friday-sales-arrangement-with-tags.jpg',
-    'Assets/discount-jacket-podium.jpg',
-    'Assets/front-view-screaming-male-chef-holding-up-sale-sign-burger-kitchen.jpg',
-    'Assets/hands-holding-modern-smartphone.jpg',
-    'Assets/man-giving-some-keys-woman.jpg',
-  ];
-
+  String userImage = '';
+  String userName = '';
   final List<IconData> icons = [
+    Icons.storefront,
     Icons.smartphone_sharp,
     Icons.dry_cleaning_outlined,
     Icons.table_restaurant_outlined,
@@ -42,58 +40,71 @@ class _HomePageState extends State<HomePage> {
     Icons.health_and_safety_outlined,
   ];
 
+  late final BannerCubit _bannerCubit;
+  late final HomeCubit _homeCubit;
+  List<String> _banners = [];
+  List<ProductModel> _tawqalProducts = [];
+  List<ProductModel> _suggestedProducts = [];
+  bool _categoriesHasError = false;
+  bool _isLoadingBanners = false;
+  bool _bannerHasError = false;
+
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      setState(() {
-        currentPage = (currentPage + 1) % offers.length;
-      });
-    });
+    _bannerCubit = BannerCubit(repo: BannerRepository());
+    _homeCubit = HomeCubit();
+    _loadTokenAndBanners();
+    _homeCubit.loadProfile();
+    _homeCubit.loadCategories();
+  }
+
+  Future<void> _loadTokenAndBanners() async {
+    const storage = FlutterSecureStorage();
+    try {
+      final token = await storage.read(key: 'user_token');
+      if (token != null) {
+        _bannerCubit.repo.token = token;
+      }
+      _bannerCubit.loadBanners();
+    } catch (e) {
+      print('Error loading token: $e');
+      _bannerCubit.loadBanners();
+    }
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _bannerCubit.close();
+    _homeCubit.close();
     super.dispose();
   }
 
-  void _showFilterBottomSheet(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+  Future<void> _onRefresh() async {
+    _bannerCubit.loadBanners();
+    await _homeCubit.loadProfile();
+    await _homeCubit.loadCategories();
+    await Future.delayed(const Duration(seconds: 1));
+  }
 
-    showModalBottomSheet<Map<String, dynamic>?>(
-      context: context,
-      isScrollControlled: true,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(screenWidth * 0.05)),
+
+  void _navigateToCategoryPage(BuildContext context, CategoryModel category, {String? displayLabel}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CategoryPage(
+          apiName: category.name,
+          displayName: displayLabel ?? category.name,
+          categoryId: category.id,
+        ),
       ),
-      builder: (context) {
-        return FilterBottomSheet(screenWidth: screenWidth, screenHeight: screenHeight);
-      },
-    ).then((filters) {
-      if (filters != null) {
-        context.read<FilterCubit>().updateFilters(
-          category: filters['category'],
-          country: filters['country'],
-          minPrice: filters['minPrice'],
-          maxPrice: filters['maxPrice'],
-          sortOrder: filters['sortOrder'],
-          context: context,
-        );
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const SearchPage(),
-          ),
-        );
-      }
-    });
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final List<String> labels = [
+      S.of(context).marketplace,
       S.of(context).electronics,
       S.of(context).fashion,
       S.of(context).furniture,
@@ -101,257 +112,249 @@ class _HomePageState extends State<HomePage> {
       S.of(context).kitchen,
       S.of(context).health,
     ];
-
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
+    final cardHeight = screenHeight * 0.35;
+    final cardWidth = cardHeight * 0.65;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.white,
-        statusBarIconBrightness: Brightness.dark,
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.grey[100],
-        body: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: EdgeInsets.symmetric(
-            horizontal: screenWidth * 0.04,
-            vertical: screenHeight * 0.02,
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<BannerCubit>.value(value: _bannerCubit),
+        BlocProvider<HomeCubit>.value(value: _homeCubit),
+      ],
+      child: BlocListener<BannerCubit, BannerState>(
+        listener: (context, state) {
+          if (state is BannerLoading) {
+            setState(() {
+              _isLoadingBanners = true;
+              _bannerHasError = false;
+            });
+          } else if (state is BannerLoaded) {
+            print('Banners loaded successfully: ${state.banners.length} items');
+            setState(() {
+              _isLoadingBanners = false;
+              _bannerHasError = false;
+              _banners = state.banners;
+              _tawqalProducts = state.tawqalProducts;
+              _suggestedProducts = state.suggestedProducts;
+            });
+          } else if (state is BannerError) {
+            print('Banner error: ${state.message}');
+            setState(() {
+              _isLoadingBanners = false;
+              _bannerHasError = true;
+            });
+          }
+        },
+        child: AnnotatedRegion<SystemUiOverlayStyle>(
+          value: const SystemUiOverlayStyle(
+            statusBarColor: Colors.white,
+            statusBarIconBrightness: Brightness.dark,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(height: screenWidth * 0.06),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: screenWidth * 0.065,
-                        backgroundColor: Colors.white,
-                        backgroundImage: userImage != null ? NetworkImage(userImage!) : null,
-                        child: userImage == null
-                            ? Icon(
-                          Icons.person,
-                          color: KprimaryText,
-                          size: screenWidth * 0.06,
-                        )
-                            : null,
-                      ),
-                      SizedBox(width: screenWidth * 0.03),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            S.of(context).HelloMahmoud,
-                            style: TextStyle(
-                              fontSize: screenWidth * 0.04,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            S.of(context).happyShopping,
-                            style: TextStyle(
-                              fontSize: screenWidth * 0.03,
-                              color: Colors.grey[700],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.notifications_none,
-                      color: KprimaryColor,
-                      size: screenWidth * 0.07,
-                    ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const NotificationsPage(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-              SizedBox(height: screenHeight * 0.02),
-              Row(
-                children: [
-                  Expanded(
-                    flex: 4,
-                    child: GestureDetector(
-                      onTap: () {
-                        context.read<BottomNavBCubit>().setIndex(1);
-                      },
-                      child: SizedBox(
-                        height: screenWidth * 0.12, // نفس ارتفاع TextField
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xffE9E9E9)),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.2),
-                                blurRadius: 5,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              SizedBox(width: screenWidth * 0.035),
-                              Icon(
-                                Icons.search,
-                                color: Colors.grey,
-                                size: screenWidth * 0.06,
-                              ),
-                              SizedBox(width: screenWidth * 0.035),
-                              Expanded(
-                                child: TextField(
-                                  enabled: false,
-                                  style: TextStyle(
-                                    fontSize: screenWidth * 0.03,
-                                    color: Colors.black87,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  decoration: InputDecoration(
-                                    hintText: S.of(context).search,
-                                    hintStyle: TextStyle(
-                                      fontSize: screenWidth * 0.03,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                    border: InputBorder.none,
-                                    contentPadding: EdgeInsets.symmetric(
-                                      vertical: screenWidth * 0.035,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: screenWidth * 0.02),
-                  GestureDetector(
-                    onTap: () => _showFilterBottomSheet(context),
-                    child: Container(
-                      height: screenWidth * 0.12, // نفس ارتفاع TextField
-                      width: screenWidth * 0.12,  // مربع
-                      decoration: BoxDecoration(
-                        color: KprimaryColor,
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.2),
-                            blurRadius: 5,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.tune,
-                        color: Colors.white,
-                        size: screenWidth * 0.05,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: screenHeight * 0.02),
-              Text(
-                S.of(context).categories,
-                style: TextStyle(
-                  fontSize: screenWidth * 0.035,
-                  fontWeight: FontWeight.bold,
+          child: Scaffold(
+            backgroundColor: Colors.grey[100],
+            body: RefreshIndicator(
+              color: KprimaryColor,
+              onRefresh: _onRefresh,
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: EdgeInsets.symmetric(
+                  vertical: screenHeight * 0.02,
                 ),
-              ),
-              SizedBox(height: screenHeight * 0.015),
-              SizedBox(
-                height: screenWidth * 0.2,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: isArabic
-                      ? EdgeInsets.only(left: screenWidth * 0.02)
-                      : EdgeInsets.only(right: screenWidth * 0.02),
-                  itemBuilder: (_, index) => categoryItem(
-                    icons[index],
-                    labels[index],
-                    screenWidth,
-                    context,
-                  ),
-                  separatorBuilder: (_, __) => SizedBox(width: screenWidth * 0.02),
-                  itemCount: icons.length,
-                ),
-              ),
-              SizedBox(height: screenWidth * 0.04),
-              SizedBox(
-                height: screenWidth * 0.4,
-                child: Stack(
-                  alignment: Alignment.bottomCenter,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ...offers.asMap().entries.map((entry) {
-                      int idx = entry.key;
-                      String img = entry.value;
-                      return AnimatedOpacity(
-                        opacity: idx == currentPage ? 1.0 : 0.0,
-                        duration: const Duration(seconds: 1),
-                        curve: Curves.easeInOut,
-                        child: Container(
-                          margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.01),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                            image: DecorationImage(
-                              image: AssetImage(img),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                    Positioned(
-                      bottom: screenHeight * 0.02,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(3, (index) {
-                          int activeDot = currentPage % 3;
-                          bool isActive = index == activeDot;
-                          return AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                          margin: EdgeInsets.symmetric(
-                          horizontal: screenWidth * 0.01),
-                            width: isActive
-                                ? screenWidth * 0.04
-                                : screenWidth * 0.02,
-                            height: screenWidth * 0.02,
-                            decoration: BoxDecoration(
-                              color: isActive ? const Color(0xffFF580E) : Colors.white70,
-                              shape: BoxShape.circle,
-                            ),
+                    SizedBox(height: screenWidth * 0.06),
+                    BlocBuilder<HomeCubit, HomeState>(
+                      builder: (context, homeState) {
+                        return HomeHeader(
+                          isLoading: homeState.isProfileLoading,
+                          userName: homeState.userName.isEmpty ? userName : homeState.userName,
+                          userImage: homeState.userImage.isEmpty ? userImage : homeState.userImage,
+                          screenWidth: screenWidth,
+                          onNotificationPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const NotificationsPage(),
+                              ),
+                            );
+                          },
+                          onProfileTap: null,
+                        );
+                      },
+                    ),
+                    SizedBox(height: screenHeight * 0.02),
+                    SearchFilterBar(
+                      screenWidth: screenWidth,
+                      onSearchTap: () => context.read<BottomNavBCubit>().setIndex(1),
+                    ),
+                    SizedBox(height: screenHeight * 0.02),
+                    BlocBuilder<HomeCubit, HomeState>(
+                      builder: (context, homeState) {
+                        _categoriesHasError = homeState.categoriesHasError;
+                        return CategoriesHeader(
+                          screenWidth: screenWidth,
+                          title: S.of(context).categories,
+                          showRefresh: _categoriesHasError,
+                          onRefresh: () => context.read<HomeCubit>().loadCategories(),
+                        );
+                      },
+                    ),
+                    SizedBox(height: screenHeight * 0.015),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
+                      child: BlocBuilder<HomeCubit, HomeState>(
+                        builder: (context, homeState) {
+                          return CategoryList(
+                            categories: homeState.categories,
+                            icons: icons,
+                            labels: labels,
+                            width: screenWidth,
+                            onCategoryTap: (category, displayLabelLocal) {
+                              _navigateToCategoryPage(context, category, displayLabel: displayLabelLocal);
+                            },
                           );
-                        }),
+                        },
                       ),
+                    ),
+                    SizedBox(height: screenWidth * 0.04),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
+                      child: BannerSection(
+                        screenWidth: screenWidth,
+                        screenHeight: screenHeight,
+                        banners: _banners,
+                        isLoading: _isLoadingBanners,
+                        hasError: _bannerHasError,
+                      ),
+                    ),
+                    TawqalOffersSection(
+                      screenWidth: screenWidth,
+                      screenHeight: screenHeight,
+                      cardWidth: cardWidth,
+                      cardHeight: cardHeight,
+                      isLoading: _isLoadingBanners,
+                      tawqalProducts: _tawqalProducts,
+                    ),
+                    SizedBox(height: screenHeight * 0.01),
+                    SuggestionsSection(
+                      screenWidth: screenWidth,
+                      screenHeight: screenHeight,
+                      cardWidth: cardWidth,
+                      cardHeight: cardHeight,
+                      isLoading: _isLoadingBanners,
+                      suggestedProducts: _suggestedProducts,
                     ),
                   ],
                 ),
               ),
-              SizedBox(height: screenHeight * 0.01),
-              TawqalOffersSection(screenWidth: MediaQuery.of(context).size.width,
-                  screenHeight: MediaQuery.of(context).size.height),
-              SizedBox(height: screenHeight * 0.01),
-              SuggestionsSection(  screenWidth: MediaQuery.of(context).size.width,
-                screenHeight: MediaQuery.of(context).size.height),
-            ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+}
+class SearchFilterBar extends StatelessWidget {
+  final double screenWidth;
+  final VoidCallback onSearchTap;
+
+  const SearchFilterBar({
+    Key? key,
+    required this.screenWidth,
+    required this.onSearchTap,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 4,
+            child: GestureDetector(
+              onTap: onSearchTap,
+              child: SizedBox(
+                height: screenWidth * 0.12,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xffE9E9E9),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color.fromRGBO(128, 128, 128, 0.2),
+                        blurRadius: 5,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      SizedBox(width: screenWidth * 0.035),
+                      Icon(
+                        Icons.search,
+                        color: Colors.grey,
+                        size: screenWidth * 0.06,
+                      ),
+                      SizedBox(width: screenWidth * 0.035),
+                      Expanded(
+                        child: TextField(
+                          enabled: false,
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.03,
+                            color: Colors.black87,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: S.of(context).search,
+                            hintStyle: TextStyle(
+                              fontSize: screenWidth * 0.03,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey.shade600,
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(
+                              vertical: screenWidth * 0.035,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(width: screenWidth * 0.02),
+          GestureDetector(
+            onTap: () => context.read<BottomNavBCubit>().setIndex(1),
+            child: Container(
+              height: screenWidth * 0.12,
+              width: screenWidth * 0.12,
+              decoration: BoxDecoration(
+                color: KprimaryColor,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color.fromRGBO(128, 128, 128, 0.2),
+                    blurRadius: 5,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.tune,
+                color: Colors.white,
+                size: screenWidth * 0.05,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

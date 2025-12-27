@@ -284,7 +284,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const HomeStructure(),
+                      builder: (context) => const HomeStructureSeller(),
                     ),
                   );
                 },

@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:tawqalnajah/generated/l10n.dart';
 import '../../../../../../../Core/utiles/Colors.dart';
-import '../../../../../../../generated/l10n.dart';
+
 
 class ShipmentTabBar extends StatelessWidget {
   final int selectedIndex;
   final Function(int) onTap;
-  final int tabCount;
 
-  const ShipmentTabBar({super.key, required this.selectedIndex, required this.onTap, this.tabCount = 2});
+  const ShipmentTabBar({
+    super.key,
+    required this.selectedIndex,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -19,9 +23,12 @@ class ShipmentTabBar extends StatelessWidget {
     ];
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: MediaQuery.of(context).size.height * 0.015),
+      padding: EdgeInsets.symmetric(
+        horizontal: screenWidth * 0.04,
+        vertical: MediaQuery.of(context).size.height * 0.015,
+      ),
       child: Row(
-        children: List.generate(tabCount, (i) {
+        children: List.generate(tabs.length, (i) {
           final isSelected = selectedIndex == i;
           return Expanded(
             child: GestureDetector(
@@ -31,7 +38,10 @@ class ShipmentTabBar extends StatelessWidget {
                 padding: EdgeInsets.symmetric(vertical: screenWidth * 0.03),
                 decoration: BoxDecoration(
                   color: isSelected ? KprimaryColor : Colors.grey.shade200,
-                  border: Border.all(color: isSelected ? KprimaryColor : Colors.grey.shade400, width: 1),
+                  border: Border.all(
+                    color: isSelected ? KprimaryColor : Colors.grey.shade400,
+                    width: 1,
+                  ),
                   borderRadius: BorderRadius.circular(screenWidth * 0.05),
                 ),
                 child: Center(
@@ -52,7 +62,3 @@ class ShipmentTabBar extends StatelessWidget {
     );
   }
 }
-
-
-
-

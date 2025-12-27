@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../Feature/Auth/presentation/view_model/views/login.dart';
+import '../../Feature/Auth/presentation/login.dart';
 import '../../generated/l10n.dart';
 import '../utiles/Colors.dart';
 class AlreadyHaveAccount extends StatelessWidget {
@@ -24,7 +24,7 @@ class AlreadyHaveAccount extends StatelessWidget {
           onTap: () {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => Login()),
+              MaterialPageRoute(builder: (context) => LoginScreen()),
             );
           },
           child: Text(

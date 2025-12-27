@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../../../../../Core/Widgets/Button.dart';
-import '../../../../../../Core/utiles/Colors.dart';
-import 'SuccessPage.dart';
-import '../../../../../../generated/l10n.dart'; // استدعاء Localization
+import 'package:tawqalnajah/Feature/Seller/SignUpSeller/presentation/view_model/views/SuccessPage.dart';
+import 'package:tawqalnajah/generated/l10n.dart';
+import '../../../../../../../Core/utiles/Colors.dart';
 
 class PaymentPage extends StatelessWidget {
   final double totalPrice;
@@ -33,7 +32,7 @@ class PaymentPage extends StatelessWidget {
               children: [
                 SizedBox(height: screenHeight * 0.13),
                 Text(
-                  S.of(context).subscriptionDetails, // "تفاصيل الاشتراك"
+                  S.of(context).subscriptionDetails,
                   style: TextStyle(
                     fontSize: screenWidth * 0.035,
                     fontWeight: FontWeight.bold,
@@ -57,12 +56,14 @@ class PaymentPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildPriceRow(context, S.of(context).monthlyPrice, "${monthlyPrice.toStringAsFixed(0)} ${S.of(context).SYP}"),
-                      _buildPriceRow(context, S.of(context).duration, "$months ${S.of(context).months}"),
+                      _buildPriceRow(context, S.of(context).monthlyPrice,
+                          "${monthlyPrice.toStringAsFixed(0)} ${S.of(context).SYP}"),
+                      _buildPriceRow(context, S.of(context).duration,
+                          "$months ${S.of(context).months}"),
                       Divider(height: screenHeight * 0.03, thickness: 1),
                       _buildPriceRow(
                         context,
-                        S.of(context).total, // "الإجمالي"
+                        S.of(context).total,
                         "${totalPrice.toStringAsFixed(0)} ${S.of(context).SYP}",
                         isTotal: true,
                       ),
@@ -71,7 +72,7 @@ class PaymentPage extends StatelessWidget {
                 ),
                 SizedBox(height: screenHeight * 0.02),
                 Text(
-                  S.of(context).choosePaymentMethod, // "اختر طريقة الدفع"
+                  S.of(context).choosePaymentMethod,
                   style: TextStyle(
                     fontSize: screenWidth * 0.035,
                     fontWeight: FontWeight.bold,
@@ -82,25 +83,46 @@ class PaymentPage extends StatelessWidget {
                 _buildPaymentOption(
                   context,
                   image: 'Assets/visa.png',
-                  title: S.of(context).visa, // "Visa"
-                  subtitle: S.of(context).payWithVisa, // "ادفع باستخدام بطاقة فيزا الخاصة بك"
+                  title: S.of(context).visa,
+                  subtitle: S.of(context).payWithVisa,
                 ),
                 SizedBox(height: screenHeight * 0.02),
                 _buildPaymentOption(
                   context,
                   image: 'Assets/card.png',
-                  title: S.of(context).masterCard, // "MasterCard"
-                  subtitle: S.of(context).payWithMasterCard, // "ادفع باستخدام بطاقة ماستر كارد"
+                  title: S.of(context).masterCard,
+                  subtitle: S.of(context).payWithMasterCard,
                 ),
                 SizedBox(height: screenHeight * 0.02),
-                Button(
-                  text: S.of(context).payNow, // "ادفع الآن"
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const SuccessPage()),
-                    );
-                  },
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SuccessPage(),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: KprimaryColor,
+                      padding: EdgeInsets.symmetric(
+                        vertical: screenHeight * 0.024,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius:
+                        BorderRadius.circular(screenWidth * 0.02),
+                      ),
+                    ),
+                    child: Text(
+                      S.of(context).payNow,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: screenWidth * 0.035,
+                      ),
+                    ),
+                  ),
                 ),
                 SizedBox(height: screenHeight * 0.04),
               ],
@@ -124,7 +146,8 @@ class PaymentPage extends StatelessWidget {
     );
   }
 
-  Widget _buildPriceRow(BuildContext context, String label, String value, {bool isTotal = false}) {
+  Widget _buildPriceRow(BuildContext context, String label, String value,
+      {bool isTotal = false}) {
     final screenWidth = MediaQuery.of(context).size.width;
     return Padding(
       padding: EdgeInsets.symmetric(vertical: screenWidth * 0.02),
@@ -219,7 +242,8 @@ class PaymentPage extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios, size: screenWidth * 0.05, color: KprimaryColor),
+            Icon(Icons.arrow_forward_ios,
+                size: screenWidth * 0.05, color: KprimaryColor),
           ],
         ),
       ),

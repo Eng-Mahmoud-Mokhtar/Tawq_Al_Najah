@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../generated/l10n.dart';
-import '../../Feature/Auth/presentation/view_model/CountryCubit.dart';
+import 'CountryCubit.dart';
 
 class CountryContent extends StatelessWidget {
   final double screenWidth;

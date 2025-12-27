@@ -325,6 +325,7 @@ class _RelatedPageState extends State<RelatedPage> {
                                     alignment: Alignment.centerRight,
                                     child: Text(
                                       "${item['price']} ${item['currency']}",
+                                      textAlign: TextAlign.right,
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: screenWidth * 0.035,

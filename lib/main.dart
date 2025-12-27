@@ -4,13 +4,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'Core/Widgets/code.dart';
+import 'package:tawqalnajah/Feature/Buyer/Product/presentation/view_model/cart_cubit.dart';
+import 'Core/Widgets/CountryCubit.dart';
 import 'Core/utiles/LocaleCubit.dart';
-import 'Feature/Auth/presentation/view_model/CountryCubit.dart';
 import 'Feature/Buyer/Home/presentation/view_model/views/HomeStructure.dart';
-import 'Feature/Buyer/More/presentation/view_model/favorites_cubit.dart';
-import 'Feature/Buyer/Search/presentation/view_model/filter_cubit.dart';
-import 'Feature/Buyer/cart/presentation/view_model/cart_cubit.dart';
+import 'Feature/Buyer/MyPosts/presentation/view_model/MyPosts_Cubit.dart';
+import 'Feature/Buyer/Product/presentation/view_model/favorite_cubit.dart';
 import 'Feature/Seller/Home/presentation/view_model/views/HomeStructure.dart';
 import 'Feature/Seller/MyStore/presentation/view_model/my_store_cubit.dart';
 import 'Feature/Seller/Orders/presentation/view_model/OrdersCubit.dart';
@@ -36,15 +35,16 @@ void main() async {
             providers: [
               BlocProvider(create: (_) => BottomNavBCubit()),
               BlocProvider(create: (_) => BottomNavSCubit()),
-              BlocProvider(create: (_) =>  FilterCubit()),
               BlocProvider(create: (_) =>  FilterRelatedCubit()),
               BlocProvider(create: (_) => LocaleCubit()),
-              BlocProvider(create: (_) => CodeCubit()),
               BlocProvider(create: (_) => CountryCubit()),
-              BlocProvider(create: (_) => FavoritesCubit()),
-              BlocProvider(create: (_) => CartCubit()),
               BlocProvider(create: (_) => OrdersCubit()),
               BlocProvider(create: (_) => MyStoreCubit()),
+              BlocProvider(create: (_) => MyPostsCubit()),
+              BlocProvider(create: (context) => FavoriteCubit()),
+              BlocProvider(create: (context) => CartCubit()),
+
+
             ],
             child: const MyApp(),
           );

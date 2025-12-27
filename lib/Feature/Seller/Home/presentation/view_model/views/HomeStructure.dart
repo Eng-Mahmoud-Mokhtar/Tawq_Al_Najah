@@ -14,8 +14,8 @@ class BottomNavSCubit extends Cubit<int> {
   void setIndex(int index) => emit(index);
 }
 
-class HomeStructure extends StatelessWidget {
-  const HomeStructure({super.key});
+class HomeStructureSeller extends StatelessWidget {
+  const HomeStructureSeller({super.key});
 
 
   @override

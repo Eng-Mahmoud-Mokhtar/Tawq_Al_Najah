@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../Core/utiles/Colors.dart';
-import '../../Feature/Buyer/Home/presentation/view_model/views/HomeStructure.dart';
+import '../../Feature/Buyer/Home/presentation/view_model/views/HomeStructure.dart' hide BottomNavSCubit;
 import '../../Feature/Seller/Home/presentation/view_model/views/HomeStructure.dart';
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;

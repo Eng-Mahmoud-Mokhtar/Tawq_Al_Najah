@@ -78,7 +78,7 @@ class OnboardingPage extends StatelessWidget {
                     );
                   }),
                 ),
-                SizedBox(height:screenHeight * 0.03),
+                SizedBox(height:screenWidth * 0.03),
                 Text(
                   title,
                   textAlign: TextAlign.center,

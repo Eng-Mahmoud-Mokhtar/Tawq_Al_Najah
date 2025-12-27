@@ -6,3 +6,4 @@ const ThirdColor = Color(0xFF86A0D8);
 const KprimaryText = Color(0xff030303);
 const SecoundText = Color(0xff1A1A1A);
 
+

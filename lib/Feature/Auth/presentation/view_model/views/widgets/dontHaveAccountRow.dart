@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../../../Core/utiles/Colors.dart';
 import '../../../../../../generated/l10n.dart';
-import '../TypeAccount.dart';
+import '../../../TypeAccount.dart';
 
 class CreateAccount extends StatelessWidget {
   const CreateAccount({super.key});
