@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:tawqalnajah/Feature/Buyer/Home/presentation/view_model/views/widgets/ShimmerContainer.dart';
 import '../../../../../../../generated/l10n.dart';
 import 'ImageHome.dart';
@@ -33,67 +34,80 @@ class HomeHeader extends StatelessWidget {
             children: [
               isLoading
                   ? ShimmerContainer(
-                      height: screenWidth * 0.13,
-                      width: screenWidth * 0.13,
-                      radius: screenWidth * 0.13,
-                    )
+                height: screenWidth * 0.13,
+                width: screenWidth * 0.13,
+                radius: screenWidth * 0.13,
+              )
                   : GestureDetector(
-                      onTap: onProfileTap,
-                      child: ClipOval(
-                        child: Container(
-                          width: screenWidth * 0.13,
-                          height: screenWidth * 0.13,
-                          color: Colors.white,
-                          child: userImage.isEmpty ||
-                                  userImage == ImageHome.getValidImageUrl(null)
-                              ? Icon(
-                                  Icons.person,
-                                  color: KprimaryText,
-                                  size: screenWidth * 0.06,
-                                )
-                              : Image.network(
-                                  userImage,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Icon(
-                                      Icons.person,
-                                      color: KprimaryText,
-                                      size: screenWidth * 0.06,
-                                    );
-                                  },
-                                ),
+                onTap: onProfileTap,
+                child: ClipOval(
+                  child: Container(
+                    width: screenWidth * 0.13,
+                    height: screenWidth * 0.13,
+                    color: Colors.white,
+                    child: userImage.isEmpty ||
+                        userImage ==
+                            ImageHome.getValidImageUrl(null)
+                        ? Icon(
+                      Icons.person,
+                      color: KprimaryText,
+                      size: screenWidth * 0.06,
+                    )
+                        : CachedNetworkImage(
+                      imageUrl: userImage,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Center(
+                        child: SizedBox(
+                          width: screenWidth * 0.04,
+                          height: screenWidth * 0.04,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
                         ),
                       ),
+                      errorWidget: (context, url, error) => Icon(
+                        Icons.person,
+                        color: KprimaryText,
+                        size: screenWidth * 0.06,
+                      ),
                     ),
+                  ),
+                ),
+              ),
               SizedBox(width: screenWidth * 0.03),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   isLoading
                       ? Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ShimmerContainer(
-                              height: screenWidth * 0.035,
-                              width: screenWidth * 0.35,
-                              radius: 6,
-                            ),
-                            SizedBox(height: screenWidth * 0.015),
-                            ShimmerContainer(
-                              height: screenWidth * 0.028,
-                              width: screenWidth * 0.25,
-                              radius: 6,
-                            ),
-                          ],
-                        )
-                      : Text(
-                          userName,
-                          style: TextStyle(
-                            fontSize: screenWidth * 0.04,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ShimmerContainer(
+                        height: screenWidth * 0.035,
+                        width: screenWidth * 0.35,
+                        radius: 6,
+                      ),
+                      SizedBox(height: screenWidth * 0.015),
+                      ShimmerContainer(
+                        height: screenWidth * 0.028,
+                        width: screenWidth * 0.25,
+                        radius: 6,
+                      ),
+                    ],
+                  )
+                      : SizedBox(
+                    width: screenWidth * 0.45,
+                    child: Text(
+                      userName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.04,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
                   if (!isLoading)
                     Text(
                       S.of(context).happyShopping,
@@ -119,4 +133,3 @@ class HomeHeader extends StatelessWidget {
     );
   }
 }
-

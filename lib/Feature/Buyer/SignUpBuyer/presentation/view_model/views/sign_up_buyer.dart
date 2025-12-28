@@ -9,7 +9,6 @@ import '../../../../../../Core/utiles/Images.dart';
 import '../../../../../../generated/l10n.dart';
 import '../buyer_register_cubit.dart';
 
-
 class SignUpBuyer extends StatefulWidget {
   const SignUpBuyer({Key? key}) : super(key: key);
 
@@ -501,6 +500,7 @@ class _SignUpBuyerState extends State<SignUpBuyer> {
                                     'name': _nameController.text.trim(),
                                     'email': _emailController.text.trim(),
                                     'password': _passwordController.text,
+                                    'password_confirmation': _passwordController.text, // إضافة
                                     'code_phone': _selectedCountryCode,
                                     'phone': _phoneController.text.trim(),
                                     'country': _countryController.text.trim(),

@@ -718,6 +718,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "passwordMinLength": MessageLookupByLibrary.simpleMessage(
       "Password must be at least 6 characters",
     ),
+    "passwordMismatch": MessageLookupByLibrary.simpleMessage(
+      "Passwords do not match",
+    ),
     "passwordRequired": MessageLookupByLibrary.simpleMessage(
       "Password is required.",
     ),

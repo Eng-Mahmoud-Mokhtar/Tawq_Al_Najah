@@ -550,5 +550,6 @@
   "unnamedProduct": "منتج بدون اسم",
   "discountLabel": "خصم",
   "cancellingOrder": "جاري إلغاء الطلب...",
-  "orderCancelledSuccess": "تم حذف هذا الطلب بنجاح"
+  "orderCancelledSuccess": "تم حذف هذا الطلب بنجاح",
+  "passwordMismatch": "كلمات المرور غير متطابقة"
 }

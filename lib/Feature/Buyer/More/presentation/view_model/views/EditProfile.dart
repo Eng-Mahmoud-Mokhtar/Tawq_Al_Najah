@@ -1434,7 +1434,7 @@ class _EditProfileState extends State<EditProfile> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
-              padding: EdgeInsets.symmetric(vertical: screenHeight * 0.03),
+              padding: EdgeInsets.symmetric(vertical: screenHeight * 0.025),
             ),
             child: _isUpdating
                 ? SizedBox(
@@ -1502,7 +1502,7 @@ class _EditProfileState extends State<EditProfile> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
-              padding: EdgeInsets.symmetric(vertical: screenHeight * 0.03),
+              padding: EdgeInsets.symmetric(vertical: screenHeight * 0.025),
             ),
             child: Text(
               S.of(context).cancel,

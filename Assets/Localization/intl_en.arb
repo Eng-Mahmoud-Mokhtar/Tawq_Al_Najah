@@ -551,5 +551,6 @@
   "unnamedProduct": "Unnamed product",
   "discountLabel": "Discount",
   "cancellingOrder": "Cancelling order...",
-  "orderCancelledSuccess": "Order cancelled successfully"
+  "orderCancelledSuccess": "Order cancelled successfully",
+  "passwordMismatch": "Passwords do not match"
 }

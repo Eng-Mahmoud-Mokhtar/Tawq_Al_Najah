@@ -224,6 +224,11 @@ class BuyerRegisterCubit extends Cubit<BuyerRegisterState> {
       errors['password'] = s.passwordLength;
     }
 
+    // التحقق من مطابقة كلمة المرور مع التأكيد
+    if (formData['password'] != formData['password_confirmation']) {
+      errors['password'] = s.passwordMismatch ?? 'Passwords do not match';
+    }
+
     if (formData['code_phone']?.toString().isEmpty ?? true) {
       errors['code_phone'] = s.countryCodeRequired;
     }

@@ -28,14 +28,15 @@ class BuyerRegisterModel extends Equatable {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = {
       'name': name,
-      'username': _generateUsername(email),
+      'username': name.trim(),
       'email': email,
       'password': password,
+      'password_confirmation': password,
       'code_phone': codePhone,
       'phone': phone,
       'country': country,
-      'governorate': governorate,
-      'address': address,
+      'city': governorate,
+      'location': address,
       'type': type,
     };
 
@@ -45,8 +46,6 @@ class BuyerRegisterModel extends Equatable {
 
     return data;
   }
-
-  String _generateUsername(String email) => email.split('@').first;
 
   @override
   List<Object?> get props => [
