@@ -216,7 +216,7 @@ class _OrderDetailsAndTrackerState extends State<OrderDetailsAndTracker> {
   Color _getButtonColor() {
     if (widget.data.isCancelled) return Colors.grey;
     if (widget.data.isDelivered) return Colors.grey;
-    return KprimaryColor;
+    return  Color(0xffDD0C0C);
   }
 
   VoidCallback? _getButtonOnPressed() {

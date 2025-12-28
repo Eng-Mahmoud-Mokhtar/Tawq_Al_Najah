@@ -29,6 +29,8 @@ class _MyPostsState extends State<MyPosts> {
   String _errorMessage = '';
   List<Map<String, dynamic>> _displayedAds = [];
 
+  static const String _baseUrl = 'https://toknagah.viking-iceland.online';
+
   @override
   void initState() {
     super.initState();
@@ -62,7 +64,7 @@ class _MyPostsState extends State<MyPosts> {
       _cancelToken = CancelToken();
 
       final response = await _dio.get(
-        'https://toknagah.viking-iceland.online/api/user/products-my-ads',
+        '$_baseUrl/api/user/products-my-ads',
         options: Options(headers: headers, validateStatus: (_) => true),
         cancelToken: _cancelToken,
       );
@@ -79,9 +81,7 @@ class _MyPostsState extends State<MyPosts> {
             adsJson = data['data'] as List<dynamic>;
           } else {
             final values = data.values.toList();
-            adsJson = values.isNotEmpty && values[0] is List
-                ? values[0] as List<dynamic>
-                : [];
+            adsJson = values.isNotEmpty && values[0] is List ? values[0] as List<dynamic> : [];
           }
         } else if (data is List) {
           adsJson = data;
@@ -118,7 +118,11 @@ class _MyPostsState extends State<MyPosts> {
     await _fetchMyAds();
   }
 
-  Future<void> _navigateToProductDetails(BuildContext context, int productId, Map<String, dynamic> productData) async {
+  Future<void> _navigateToProductDetails(
+      BuildContext context,
+      int productId,
+      Map<String, dynamic> productData,
+      ) async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -164,20 +168,13 @@ class _MyPostsState extends State<MyPosts> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.error_outline,
-            color: Colors.grey,
-            size: screenWidth * 0.15,
-          ),
+          Icon(Icons.error_outline, color: Colors.grey, size: screenWidth * 0.15),
           SizedBox(height: screenHeight * 0.02),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
             child: Text(
               _errorMessage.isNotEmpty ? _errorMessage : S.of(context).connectionTimeout,
-              style: TextStyle(
-                fontSize: screenWidth * 0.035,
-                color: Colors.grey[700],
-              ),
+              style: TextStyle(fontSize: screenWidth * 0.035, color: Colors.grey[700]),
               textAlign: TextAlign.center,
             ),
           ),
@@ -186,16 +183,11 @@ class _MyPostsState extends State<MyPosts> {
             onPressed: _fetchMyAds,
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xffFF580E),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             child: Text(
               S.of(context).tryAgain,
-              style: TextStyle(
-                fontSize: screenWidth * 0.035,
-                color: Colors.white,
-              ),
+              style: TextStyle(fontSize: screenWidth * 0.035, color: Colors.white),
             ),
           ),
         ],
@@ -219,11 +211,65 @@ class _MyPostsState extends State<MyPosts> {
     );
   }
 
-  Widget _buildProductCard(Map<String, dynamic> ad, int originalIndex, double screenWidth, double screenHeight) {
+  // ✅ استخراج لينك الصورة من كل الأشكال المحتملة
+  String? _extractFirstImageUrl(Map<String, dynamic> ad) {
+    final images = ad['images'] ?? ad['image'] ?? ad['main_image'];
+
+    // 1) لو String مباشرة
+    if (images is String) {
+      if (images.trim().isEmpty) return null;
+      return _normalizeImageUrl(images.trim());
+    }
+
+    // 2) لو List
+    if (images is List && images.isNotEmpty) {
+      final first = images.first;
+
+      // list contains string
+      if (first is String) {
+        if (first.trim().isEmpty) return null;
+        return _normalizeImageUrl(first.trim());
+      }
+
+      // list contains map like {url: "..."} or {path: "..."}
+      if (first is Map) {
+        final possible = first['url'] ??
+            first['image'] ??
+            first['path'] ??
+            first['src'] ??
+            first['link'];
+        if (possible is String && possible.trim().isNotEmpty) {
+          return _normalizeImageUrl(possible.trim());
+        }
+      }
+    }
+
+    return null;
+  }
+
+  // ✅ توحيد الرابط: لو نسبي نركّب baseUrl
+  String _normalizeImageUrl(String url) {
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+
+    // لو url نسبي مثل: /storage/...
+    if (url.startsWith('/')) return '$_baseUrl$url';
+
+    // لو نسبي بدون / مثل: storage/...
+    return '$_baseUrl/$url';
+  }
+
+  Widget _buildProductCard(
+      Map<String, dynamic> ad,
+      int originalIndex,
+      double screenWidth,
+      double screenHeight,
+      ) {
     final cardWidth = (screenWidth - (screenWidth * 0.08 + 16)) / 2;
     final cardHeight = cardWidth * 1.4;
+
     final price = ad['price']?.toString() ?? '0';
     final currency = _getCurrencyFromAd(ad);
+
     return GestureDetector(
       onTap: () {
         final productId = ad['id'] as int? ?? 0;
@@ -266,9 +312,9 @@ class _MyPostsState extends State<MyPosts> {
                       child: Text(
                         ad['name'] ?? '',
                         style: TextStyle(
-                            fontSize: cardHeight * 0.05,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'Tajawal'
+                          fontSize: cardHeight * 0.05,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Tajawal',
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -280,9 +326,9 @@ class _MyPostsState extends State<MyPosts> {
                       child: Text(
                         ad['description'] ?? '',
                         style: TextStyle(
-                            fontSize: cardHeight * 0.045,
-                            color: Colors.grey[700],
-                            fontFamily: 'Tajawal'
+                          fontSize: cardHeight * 0.045,
+                          color: Colors.grey[700],
+                          fontFamily: 'Tajawal',
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -294,10 +340,10 @@ class _MyPostsState extends State<MyPosts> {
                       child: Text(
                         "$price $currency",
                         style: TextStyle(
-                            fontSize: cardHeight * 0.05,
-                            fontWeight: FontWeight.bold,
-                            color: const Color(0xffFF580E),
-                            fontFamily: 'Tajawal'
+                          fontSize: cardHeight * 0.05,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xffFF580E),
+                          fontFamily: 'Tajawal',
                         ),
                       ),
                     ),
@@ -318,7 +364,6 @@ class _MyPostsState extends State<MyPosts> {
     if (currency == null || currency.isEmpty) {
       return S.of(context).SYP;
     }
-
     return currency;
   }
 
@@ -334,43 +379,37 @@ class _MyPostsState extends State<MyPosts> {
   }
 
   Widget _buildImageSection(Map<String, dynamic> ad, double cardWidth, double cardHeight) {
-    final images = ad['images'];
-    final imageUrl = (images is List && images.isNotEmpty) ? images[0] : null;
+    final imageUrl = _extractFirstImageUrl(ad);
 
-    if (imageUrl == null || imageUrl.toString().isEmpty) {
+    // لو مفيش صورة صالحة → نعرض نفس handler الحالي
+    if (imageUrl == null || imageUrl.isEmpty) {
       return _buildImageErrorPlaceholder(cardWidth, cardHeight);
     }
 
-    if (imageUrl is String) {
-      if (imageUrl.startsWith('http')) {
-        return CachedNetworkImage(
-          imageUrl: imageUrl,
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
-          placeholder: (context, url) => Container(
-            color: Colors.grey[100],
-            child: Center(
-              child: CircularProgressIndicator(
-                color: const Color(0xffFF580E),
-                strokeWidth: 2,
-              ),
+    // لو رابط http(s) → CachedNetworkImage زي الصفحات السابقة
+    if (imageUrl.startsWith('http')) {
+      return CachedNetworkImage(
+        imageUrl: imageUrl,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        placeholder: (context, url) => Container(
+          color: Colors.grey[100],
+          child: Center(
+            child: CircularProgressIndicator(
+              color: const Color(0xffFF580E),
+              strokeWidth: 2,
             ),
           ),
-          errorWidget: (context, url, error) => _buildImageErrorPlaceholder(cardWidth, cardHeight),
-        );
-      } else {
-        return Image.file(
-          File(imageUrl),
-          width: double.infinity,
-          height: double.infinity,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildImageErrorPlaceholder(cardWidth, cardHeight),
-        );
-      }
-    } else if (kIsWeb && imageUrl is Uint8List) {
-      return Image.memory(
-        imageUrl,
+        ),
+        errorWidget: (context, url, error) => _buildImageErrorPlaceholder(cardWidth, cardHeight),
+      );
+    }
+
+    // لو path ملف محلي (لأسباب نادرة) نخليه زي ما كان عندك
+    if (!kIsWeb) {
+      return Image.file(
+        File(imageUrl),
         width: double.infinity,
         height: double.infinity,
         fit: BoxFit.cover,
@@ -378,6 +417,7 @@ class _MyPostsState extends State<MyPosts> {
       );
     }
 
+    // لو web path غير مناسب → fallback
     return _buildImageErrorPlaceholder(cardWidth, cardHeight);
   }
 
@@ -391,7 +431,11 @@ class _MyPostsState extends State<MyPosts> {
           SizedBox(height: cardHeight * 0.04),
           Text(
             S.of(context).errorLoadingCategories,
-            style: TextStyle(fontSize: cardWidth * 0.05, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+            style: TextStyle(
+              fontSize: cardWidth * 0.05,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -402,6 +446,7 @@ class _MyPostsState extends State<MyPosts> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: const Color(0xfffafafa),
       appBar: CustomAppBar(title: S.of(context).myAds),

@@ -1,15 +1,22 @@
+import 'dart:io';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:tawqalnajah/Feature/Buyer/Product/presentation/view_model/cart_cubit.dart';
 import 'package:tawqalnajah/Feature/Buyer/Product/presentation/view_model/favorite_cubit.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:share_plus/share_plus.dart';
+
 import '../../../../../../Core/Widgets/AppBar.dart';
 import '../../../../../../Core/utiles/Colors.dart';
 import '../../../../../../generated/l10n.dart';
 import '../../../Data/repository/ProductDetailsRepository.dart';
 import '../../../Data/repository/RatingRepository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'widgets/FullScreenGallery.dart';
 
 class ProductDetails extends StatefulWidget {
   final int productId;
@@ -23,6 +30,7 @@ class ProductDetails extends StatefulWidget {
   @override
   State<ProductDetails> createState() => _ProductDetailsState();
 }
+
 class _ProductDetailsState extends State<ProductDetails> {
   late Map<String, dynamic> _productData;
   Map<String, dynamic> _sellerData = {};
@@ -37,6 +45,8 @@ class _ProductDetailsState extends State<ProductDetails> {
   bool _isAddingToCart = false;
   final Map<int, bool> _relatedCartLoading = {};
   final Map<int, bool> _relatedFavoriteLoading = {};
+  final Dio _dio = Dio();
+
   @override
   void initState() {
     super.initState();
@@ -47,7 +57,9 @@ class _ProductDetailsState extends State<ProductDetails> {
 
   Future<void> _loadSavedRating() async {
     try {
-      final savedRating = await _storage.read(key: 'rating_${widget.productId}');
+      final savedRating = await _storage.read(
+        key: 'rating_${widget.productId}',
+      );
       if (savedRating != null) {
         setState(() {
           _selectedRating = int.parse(savedRating);
@@ -60,7 +72,10 @@ class _ProductDetailsState extends State<ProductDetails> {
   }
 
   Future<void> _saveRating(int rating) async {
-    await _storage.write(key: 'rating_${widget.productId}', value: rating.toString());
+    await _storage.write(
+      key: 'rating_${widget.productId}',
+      value: rating.toString(),
+    );
   }
 
   Future<void> _loadProductDetails() async {
@@ -70,7 +85,9 @@ class _ProductDetailsState extends State<ProductDetails> {
       final data = await _repository.fetchProductDetails(widget.productId);
       setState(() {
         _productData = data['productDetails'] ?? {};
-        _sellerData = (data['sallerDetails'] is Map) ? Map<String, dynamic>.from(data['sallerDetails']) : {};
+        _sellerData = (data['sallerDetails'] is Map)
+            ? Map<String, dynamic>.from(data['sallerDetails'])
+            : {};
         _relatedProducts = data['products'] ?? [];
         _isLoading = false;
       });
@@ -83,10 +100,26 @@ class _ProductDetailsState extends State<ProductDetails> {
       });
     }
   }
+
+  List<String> _getProductImages() {
+    final raw = _productData['images'] ?? _productData['image'] ?? [];
+    if (raw is List) {
+      return raw
+          .map((e) => e.toString())
+          .where((e) => e.trim().isNotEmpty)
+          .toList();
+    }
+    if (raw is String && raw.trim().isNotEmpty) {
+      return [raw.trim()];
+    }
+    return <String>[];
+  }
+
   Future<void> _handleAddToCart() async {
     if (_isAddingToCart) return;
     final cartCubit = context.read<CartCubit>();
-    final currentProductSellerId = _sellerData['id'] ?? _productData['saller_id'];
+    final currentProductSellerId =
+        _sellerData['id'] ?? _productData['saller_id'];
     if (cartCubit.state.currentSellerId != null &&
         cartCubit.state.currentSellerId != currentProductSellerId) {
       print('❌ Cannot add product: Different seller');
@@ -107,10 +140,12 @@ class _ProductDetailsState extends State<ProductDetails> {
       });
     }
   }
+
   Future<void> _toggleFavorite() async {
     final favoriteCubit = context.read<FavoriteCubit>();
     await favoriteCubit.toggleFavoriteWithApi(widget.productId);
   }
+
   Future<void> _toggleRelatedFavorite(int productId) async {
     if (_relatedFavoriteLoading[productId] == true) return;
 
@@ -129,12 +164,15 @@ class _ProductDetailsState extends State<ProductDetails> {
       });
     }
   }
+
   Future<void> _toggleRelatedCart(int productId) async {
     if (_relatedCartLoading[productId] == true) return;
+
     final relatedProduct = _relatedProducts.firstWhere(
-          (product) => product['id'] == productId,
+      (product) => product['id'] == productId,
       orElse: () => {},
     );
+
     if (relatedProduct.isEmpty) {
       print('❌ Related product data not found for ID: $productId');
       return;
@@ -143,7 +181,10 @@ class _ProductDetailsState extends State<ProductDetails> {
     final cartCubit = context.read<CartCubit>();
     final relatedProductSellerId = relatedProduct['saller_id'];
     final isAdded = cartCubit.state.cartIds.contains(productId);
-    if (!isAdded && cartCubit.state.currentSellerId != null && cartCubit.state.currentSellerId != relatedProductSellerId) {
+
+    if (!isAdded &&
+        cartCubit.state.currentSellerId != null &&
+        cartCubit.state.currentSellerId != relatedProductSellerId) {
       print('❌ Cannot add related product: Different seller');
       return;
     }
@@ -205,19 +246,80 @@ class _ProductDetailsState extends State<ProductDetails> {
     }
   }
 
-  void _shareProduct() {
-    final productName = _productData['name'] ?? '';
-    final productDescription = _productData['description'] ?? '';
-    final price = _productData['priceAfterDiscount'] ?? _productData['price'] ?? 0;
-    final currency = _productData['currency_type'] ?? 'ريال';
+  Future<XFile?> _downloadImageAsXFileWithDio(String imageUrl) async {
+    try {
+      final dir = await getTemporaryDirectory();
+      final filePath =
+          '${dir.path}/product_${widget.productId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
-    Share.share(
-      '$productName\n$productDescription\nالسعر: $price $currency',
-      subject: productName,
-    );
+      final response = await _dio.get<List<int>>(
+        imageUrl,
+        options: Options(
+          responseType: ResponseType.bytes,
+          followRedirects: true,
+          receiveTimeout: const Duration(seconds: 20),
+          sendTimeout: const Duration(seconds: 20),
+        ),
+      );
+
+      final bytes = response.data;
+      if (bytes == null || bytes.isEmpty) return null;
+
+      final file = File(filePath);
+      await file.writeAsBytes(bytes, flush: true);
+
+      return XFile(file.path);
+    } catch (e) {
+      print('Error downloading image with Dio: $e');
+      return null;
+    }
   }
 
-  Widget _buildCircleIcon(String path, double screenWidth, {VoidCallback? onTap, Color backgroundColor = Colors.white}) {
+  String _buildShareMessage() {
+    final productName = (_productData['name'] ?? '').toString();
+    final productDescription = (_productData['description'] ?? '').toString();
+    final price =
+        _productData['priceAfterDiscount'] ?? _productData['price'] ?? 0;
+    final currency = (_productData['currency_type'] ?? 'ريال').toString();
+    final avg = _productData['avg_rate'] ?? '0';
+
+    return '''
+$productName
+$productDescription
+السعر: $price $currency
+التقييم: $avg ⭐
+''';
+  }
+
+  Future<void> _shareProduct() async {
+    final subject = (_productData['name'] ?? '').toString();
+    final message = _buildShareMessage();
+
+    final images = (_productData['image'] as List?)?.cast<String>() ?? [];
+    final imageUrl = images.isNotEmpty ? images.first.toString() : '';
+
+    try {
+      if (imageUrl.trim().isNotEmpty) {
+        final xFile = await _downloadImageAsXFileWithDio(imageUrl);
+        if (xFile != null) {
+          await Share.shareXFiles([xFile], text: message, subject: subject);
+          return;
+        }
+      }
+
+      await Share.share(message, subject: subject);
+    } catch (e) {
+      print('Share error: $e');
+      await Share.share(message, subject: subject);
+    }
+  }
+
+  Widget _buildCircleIcon(
+    String path,
+    double screenWidth, {
+    VoidCallback? onTap,
+    Color backgroundColor = Colors.white,
+  }) {
     return Padding(
       padding: EdgeInsets.only(left: screenWidth * 0.015),
       child: GestureDetector(
@@ -229,7 +331,11 @@ class _ProductDetailsState extends State<ProductDetails> {
             shape: BoxShape.circle,
             color: backgroundColor,
             boxShadow: const [
-              BoxShadow(color: Colors.black12, blurRadius: 3, offset: Offset(0, 1)),
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 3,
+                offset: Offset(0, 1),
+              ),
             ],
           ),
           padding: EdgeInsets.all(screenWidth * 0.012),
@@ -255,11 +361,16 @@ class _ProductDetailsState extends State<ProductDetails> {
             : CrossAxisAlignment.end,
         children: [
           if (!hasSeller) ...[
-            Text(S.of(context).yourProductRating,
-                style: TextStyle(fontSize: screenWidth * 0.035, fontWeight: FontWeight.bold),
+            Text(
+              S.of(context).yourProductRating,
+              style: TextStyle(
+                fontSize: screenWidth * 0.035,
+                fontWeight: FontWeight.bold,
+              ),
               textAlign: Localizations.localeOf(context).languageCode == 'ar'
                   ? TextAlign.right
-                  : TextAlign.left,),
+                  : TextAlign.left,
+            ),
             SizedBox(height: screenHeight * 0.01),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -267,11 +378,15 @@ class _ProductDetailsState extends State<ProductDetails> {
                 return GestureDetector(
                   onTap: _ratingSubmitted ? null : () => _submitRating(i + 1),
                   child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.015),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.015,
+                    ),
                     child: Icon(
-                        Icons.star,
-                        color: i < _selectedRating ? const Color(0xffFFD900) : Colors.grey.shade400,
-                        size: screenWidth * 0.07
+                      Icons.star,
+                      color: i < _selectedRating
+                          ? const Color(0xffFFD900)
+                          : Colors.grey.shade400,
+                      size: screenWidth * 0.07,
                     ),
                   ),
                 );
@@ -283,38 +398,72 @@ class _ProductDetailsState extends State<ProductDetails> {
                 CircleAvatar(
                   radius: screenWidth * 0.07,
                   backgroundColor: Colors.grey.shade300,
-                  backgroundImage: (_sellerData['image'] != null && _sellerData['image'].toString().isNotEmpty)
+                  backgroundImage:
+                      (_sellerData['image'] != null &&
+                          _sellerData['image'].toString().isNotEmpty)
                       ? NetworkImage(_sellerData['image'])
-                      : const AssetImage('Assets/fallback_image.png') as ImageProvider,
+                      : const AssetImage('Assets/fallback_image.png')
+                            as ImageProvider,
                 ),
                 SizedBox(width: screenWidth * 0.03),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(_sellerData['name'] ?? S.of(context).unknown,
-                          style: TextStyle(fontSize: screenWidth * 0.035, fontWeight: FontWeight.bold)),
-                      if (_sellerData['address'] != null && _sellerData['address'].toString().isNotEmpty)
-                        Text(_sellerData['address'],
-                            style: TextStyle(fontSize: screenWidth * 0.03, color: Colors.grey[600])),
+                      Text(
+                        _sellerData['name'] ?? S.of(context).unknown,
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.035,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      if (_sellerData['address'] != null &&
+                          _sellerData['address'].toString().isNotEmpty)
+                        Text(
+                          _sellerData['address'],
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.03,
+                            color: Colors.grey[600],
+                          ),
+                        ),
                     ],
                   ),
                 ),
                 Row(
                   children: [
-                    if (_sellerData['linkWhatsapp'] != null && _sellerData['linkWhatsapp'].toString().isNotEmpty)
-                      _buildCircleIcon('Assets/whatsapp.png', screenWidth,
-                          onTap: () => _launchSocialLink("https://wa.me/${_sellerData['linkWhatsapp']}")),
-                    if (_sellerData['linkFacebook'] != null && _sellerData['linkFacebook'].toString().isNotEmpty)
-                      _buildCircleIcon('Assets/Facebook.png', screenWidth,
-                          onTap: () => _launchSocialLink(_sellerData['linkFacebook'])),
-                    if (_sellerData['linkInsta'] != null && _sellerData['linkInsta'].toString().isNotEmpty)
-                      _buildCircleIcon('Assets/instagram.png', screenWidth,
-                          onTap: () => _launchSocialLink(_sellerData['linkInsta'])),
-                    if (_sellerData['linkSnab'] != null && _sellerData['linkSnab'].toString().isNotEmpty)
-                      _buildCircleIcon('Assets/logo.png', screenWidth,
-                          backgroundColor: Colors.yellow,
-                          onTap: () => _launchSocialLink(_sellerData['linkSnab'])),
+                    if (_sellerData['linkWhatsapp'] != null &&
+                        _sellerData['linkWhatsapp'].toString().isNotEmpty)
+                      _buildCircleIcon(
+                        'Assets/whatsapp.png',
+                        screenWidth,
+                        onTap: () => _launchSocialLink(
+                          "https://wa.me/${_sellerData['linkWhatsapp']}",
+                        ),
+                      ),
+                    if (_sellerData['linkFacebook'] != null &&
+                        _sellerData['linkFacebook'].toString().isNotEmpty)
+                      _buildCircleIcon(
+                        'Assets/Facebook.png',
+                        screenWidth,
+                        onTap: () =>
+                            _launchSocialLink(_sellerData['linkFacebook']),
+                      ),
+                    if (_sellerData['linkInsta'] != null &&
+                        _sellerData['linkInsta'].toString().isNotEmpty)
+                      _buildCircleIcon(
+                        'Assets/instagram.png',
+                        screenWidth,
+                        onTap: () =>
+                            _launchSocialLink(_sellerData['linkInsta']),
+                      ),
+                    if (_sellerData['linkSnab'] != null &&
+                        _sellerData['linkSnab'].toString().isNotEmpty)
+                      _buildCircleIcon(
+                        'Assets/logo.png',
+                        screenWidth,
+                        backgroundColor: Colors.yellow,
+                        onTap: () => _launchSocialLink(_sellerData['linkSnab']),
+                      ),
                   ],
                 ),
               ],
@@ -323,12 +472,15 @@ class _ProductDetailsState extends State<ProductDetails> {
             Divider(color: Colors.grey.shade200, thickness: 2),
             SizedBox(height: screenHeight * 0.01),
             Column(
-              crossAxisAlignment: Directionality.of(context) == TextDirection.rtl
+              crossAxisAlignment:
+                  Directionality.of(context) == TextDirection.rtl
                   ? CrossAxisAlignment.start
                   : CrossAxisAlignment.end,
               children: [
                 Padding(
-                  padding: EdgeInsets.symmetric(horizontal: screenHeight * 0.01),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: screenHeight * 0.01,
+                  ),
                   child: Text(
                     S.of(context).yourProductRating,
                     style: TextStyle(
@@ -345,12 +497,18 @@ class _ProductDetailsState extends State<ProductDetails> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(5, (i) {
                     return GestureDetector(
-                      onTap: _ratingSubmitted ? null : () => _submitRating(i + 1),
+                      onTap: _ratingSubmitted
+                          ? null
+                          : () => _submitRating(i + 1),
                       child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.015),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.015,
+                        ),
                         child: Icon(
                           Icons.star,
-                          color: i < _selectedRating ? const Color(0xffFFD900) : Colors.grey.shade400,
+                          color: i < _selectedRating
+                              ? const Color(0xffFFD900)
+                              : Colors.grey.shade400,
                           size: screenWidth * 0.07,
                         ),
                       ),
@@ -358,7 +516,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                   }),
                 ),
               ],
-            )
+            ),
           ],
           SizedBox(height: screenHeight * 0.02),
         ],
@@ -374,32 +532,46 @@ class _ProductDetailsState extends State<ProductDetails> {
         return BlocBuilder<FavoriteCubit, Set<int>>(
           builder: (context, favoriteState) {
             return Column(
-              crossAxisAlignment: Localizations.localeOf(context).languageCode == 'ar'
+              crossAxisAlignment:
+                  Localizations.localeOf(context).languageCode == 'ar'
                   ? CrossAxisAlignment.start
                   : CrossAxisAlignment.end,
               children: [
                 SizedBox(height: screenHeight * 0.01),
-                Text(S.of(context).suggestions,
-                    style: TextStyle(fontSize: screenWidth * 0.035, fontWeight: FontWeight.bold),),
+                Text(
+                  S.of(context).suggestions,
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.035,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 SizedBox(height: screenHeight * 0.01),
                 SizedBox(
                   height: screenHeight * 0.37,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
-                    padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.02),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.02,
+                    ),
                     itemCount: _relatedProducts.length,
                     itemBuilder: (context, index) {
                       final product = _relatedProducts[index];
                       final productId = product['id'];
-                      final images = (product['image'] as List?)?.cast<String>() ?? [];
-                      final price = product['priceAfterDiscount'] ?? product['price'] ?? 0;
+                      final images =
+                          (product['image'] as List?)?.cast<String>() ?? [];
+                      final price =
+                          product['priceAfterDiscount'] ??
+                          product['price'] ??
+                          0;
                       final currency = product['currency_type'] ?? 'ريال';
                       final cardHeight = screenHeight * 0.35;
                       final cardWidth = cardHeight * 0.65;
                       final isFavorite = favoriteState.contains(productId);
                       final isInCart = cartState.cartIds.contains(productId);
-                      final isCartLoading = _relatedCartLoading[productId] == true;
-                      final isFavoriteLoading = _relatedFavoriteLoading[productId] == true;
+                      final isCartLoading =
+                          _relatedCartLoading[productId] == true;
+                      final isFavoriteLoading =
+                          _relatedFavoriteLoading[productId] == true;
 
                       return GestureDetector(
                         onTap: () {
@@ -418,7 +590,9 @@ class _ProductDetailsState extends State<ProductDetails> {
                           margin: EdgeInsets.only(left: screenWidth * 0.03),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(cardWidth * 0.05),
+                            borderRadius: BorderRadius.circular(
+                              cardWidth * 0.05,
+                            ),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -433,15 +607,22 @@ class _ProductDetailsState extends State<ProductDetails> {
                                     children: [
                                       images.isNotEmpty
                                           ? Image.network(
-                                        images.first,
-                                        fit: BoxFit.cover,
-                                        width: double.infinity,
-                                        height: double.infinity,
-                                        errorBuilder: (context, error, stackTrace) {
-                                          return _buildImageErrorPlaceholder(cardWidth, cardHeight);
-                                        },
-                                      )
-                                          : _buildImageErrorPlaceholder(cardWidth, cardHeight),
+                                              images.first,
+                                              fit: BoxFit.cover,
+                                              width: double.infinity,
+                                              height: double.infinity,
+                                              errorBuilder:
+                                                  (context, error, stackTrace) {
+                                                    return _buildImageErrorPlaceholder(
+                                                      cardWidth,
+                                                      cardHeight,
+                                                    );
+                                                  },
+                                            )
+                                          : _buildImageErrorPlaceholder(
+                                              cardWidth,
+                                              cardHeight,
+                                            ),
                                       Positioned(
                                         top: cardWidth * 0.04,
                                         left: cardWidth * 0.04,
@@ -450,25 +631,36 @@ class _ProductDetailsState extends State<ProductDetails> {
                                             _toggleRelatedFavorite(productId);
                                           },
                                           child: Container(
-                                            padding: EdgeInsets.all(cardWidth * 0.035),
+                                            padding: EdgeInsets.all(
+                                              cardWidth * 0.035,
+                                            ),
                                             decoration: BoxDecoration(
                                               shape: BoxShape.circle,
-                                              color: Colors.black.withOpacity(0.6),
+                                              color: Colors.black.withOpacity(
+                                                0.6,
+                                              ),
                                             ),
                                             child: isFavoriteLoading
                                                 ? SizedBox(
-                                              width: cardWidth * 0.06,
-                                              height: cardWidth * 0.06,
-                                              child: const CircularProgressIndicator(
-                                                color: Colors.white,
-                                                strokeWidth: 2,
-                                              ),
-                                            )
+                                                    width: cardWidth * 0.06,
+                                                    height: cardWidth * 0.06,
+                                                    child:
+                                                        const CircularProgressIndicator(
+                                                          color: Colors.white,
+                                                          strokeWidth: 2,
+                                                        ),
+                                                  )
                                                 : Icon(
-                                              isFavorite ? Icons.favorite : Icons.favorite_border,
-                                              color: isFavorite ? const Color(0xffFF580E) : Colors.white,
-                                              size: cardWidth * 0.08,
-                                            ),
+                                                    isFavorite
+                                                        ? Icons.favorite
+                                                        : Icons.favorite_border,
+                                                    color: isFavorite
+                                                        ? const Color(
+                                                            0xffFF580E,
+                                                          )
+                                                        : Colors.white,
+                                                    size: cardWidth * 0.08,
+                                                  ),
                                           ),
                                         ),
                                       ),
@@ -482,43 +674,55 @@ class _ProductDetailsState extends State<ProductDetails> {
                                   padding: EdgeInsets.all(cardWidth * 0.045),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.end,
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.end,
-                                          mainAxisAlignment: MainAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.end,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
                                           children: [
                                             Container(
                                               width: double.infinity,
                                               alignment: Alignment.centerRight,
                                               child: Text(
-                                                product['name'] ?? S.of(context).none,
+                                                product['name'] ??
+                                                    S.of(context).none,
                                                 style: TextStyle(
                                                   fontSize: cardHeight * 0.04,
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
-                                                textDirection: TextDirection.rtl,
+                                                textDirection:
+                                                    TextDirection.rtl,
                                               ),
                                             ),
-                                            SizedBox(height: cardHeight * 0.012),
+                                            SizedBox(
+                                              height: cardHeight * 0.012,
+                                            ),
                                             Container(
                                               width: double.infinity,
                                               alignment: Alignment.centerRight,
                                               child: Text(
-                                                product['description']?.toString() ?? S.of(context).noData,
+                                                product['description']
+                                                        ?.toString() ??
+                                                    S.of(context).noData,
                                                 style: TextStyle(
                                                   fontSize: cardHeight * 0.035,
                                                   color: Colors.grey[700],
                                                 ),
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
-                                                textDirection: TextDirection.rtl,
+                                                textDirection:
+                                                    TextDirection.rtl,
                                               ),
                                             ),
-                                            SizedBox(height: cardHeight * 0.012),
+                                            SizedBox(
+                                              height: cardHeight * 0.012,
+                                            ),
                                             Container(
                                               width: double.infinity,
                                               alignment: Alignment.centerRight,
@@ -527,41 +731,69 @@ class _ProductDetailsState extends State<ProductDetails> {
                                                 style: TextStyle(
                                                   fontSize: cardHeight * 0.04,
                                                   fontWeight: FontWeight.bold,
-                                                  color: const Color(0xffFF580E),
+                                                  color: const Color(
+                                                    0xffFF580E,
+                                                  ),
                                                 ),
-                                                textDirection: TextDirection.rtl,
+                                                textDirection:
+                                                    TextDirection.rtl,
                                               ),
                                             ),
                                             const Spacer(),
                                             SizedBox(
                                               width: double.infinity,
                                               child: ElevatedButton(
-                                                onPressed: isCartLoading ? null : () => _toggleRelatedCart(productId),
+                                                onPressed: isCartLoading
+                                                    ? null
+                                                    : () => _toggleRelatedCart(
+                                                        productId,
+                                                      ),
                                                 style: ElevatedButton.styleFrom(
-                                                  backgroundColor: isInCart ? Colors.grey : const Color(0xffFF580E),
-                                                  minimumSize: Size(double.infinity, cardHeight * 0.13),
+                                                  backgroundColor: isInCart
+                                                      ? Colors.grey
+                                                      : const Color(0xffFF580E),
+                                                  minimumSize: Size(
+                                                    double.infinity,
+                                                    cardHeight * 0.13,
+                                                  ),
                                                   shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(cardWidth * 0.12),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          cardWidth * 0.12,
+                                                        ),
                                                   ),
                                                 ),
                                                 child: isCartLoading
                                                     ? SizedBox(
-                                                  width: cardHeight * 0.03,
-                                                  height: cardHeight * 0.03,
-                                                  child: const CircularProgressIndicator(
-                                                    color: Colors.white,
-                                                    strokeWidth: 2,
-                                                  ),
-                                                )
+                                                        width:
+                                                            cardHeight * 0.03,
+                                                        height:
+                                                            cardHeight * 0.03,
+                                                        child:
+                                                            const CircularProgressIndicator(
+                                                              color:
+                                                                  Colors.white,
+                                                              strokeWidth: 2,
+                                                            ),
+                                                      )
                                                     : Text(
-                                                  isInCart ? S.of(context).addedToCart : S.of(context).AddtoCart,
-                                                  style: TextStyle(
-                                                    fontSize: cardHeight * 0.04,
-                                                    color: Colors.white,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                  textDirection: TextDirection.rtl,
-                                                ),
+                                                        isInCart
+                                                            ? S
+                                                                  .of(context)
+                                                                  .addedToCart
+                                                            : S
+                                                                  .of(context)
+                                                                  .AddtoCart,
+                                                        style: TextStyle(
+                                                          fontSize:
+                                                              cardHeight * 0.04,
+                                                          color: Colors.white,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                        ),
+                                                        textDirection:
+                                                            TextDirection.rtl,
+                                                      ),
                                               ),
                                             ),
                                             const Spacer(),
@@ -588,7 +820,7 @@ class _ProductDetailsState extends State<ProductDetails> {
   }
 
   Widget _buildImageErrorPlaceholder(double cardWidth, double cardHeight) {
-    return Container(
+    return SizedBox(
       width: double.infinity,
       height: double.infinity,
       child: Column(
@@ -617,11 +849,7 @@ class _ProductDetailsState extends State<ProductDetails> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(50),
         boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 8,
-            offset: Offset(0, 3),
-          ),
+          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 3)),
         ],
       ),
       child: Row(
@@ -629,7 +857,9 @@ class _ProductDetailsState extends State<ProductDetails> {
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: isDeliverable ? const Color(0xffFF580E) : Colors.grey.shade400,
+                color: isDeliverable
+                    ? const Color(0xffFF580E)
+                    : Colors.grey.shade400,
                 borderRadius: const BorderRadius.only(
                   topRight: Radius.circular(50),
                   bottomRight: Radius.circular(50),
@@ -663,7 +893,9 @@ class _ProductDetailsState extends State<ProductDetails> {
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: hasInstallment ? const Color(0xff1D3A77) : Colors.grey.shade400,
+                color: hasInstallment
+                    ? const Color(0xff1D3A77)
+                    : Colors.grey.shade400,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(50),
                   bottomLeft: Radius.circular(50),
@@ -700,7 +932,7 @@ class _ProductDetailsState extends State<ProductDetails> {
   }
 
   Widget _buildImageSection(double screenWidth, double screenHeight) {
-    final images = (_productData['image'] as List?)?.cast<String>() ?? [];
+    final images = _getProductImages();
 
     return BlocBuilder<FavoriteCubit, Set<int>>(
       builder: (context, favoriteState) {
@@ -716,17 +948,37 @@ class _ProductDetailsState extends State<ProductDetails> {
                 width: double.infinity,
                 child: images.isNotEmpty
                     ? PageView.builder(
-                  itemCount: images.length,
-                  onPageChanged: (i) => setState(() => _currentPage = i),
-                  itemBuilder: (_, i) => Image.network(
-                    images[i],
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return _buildMainImageErrorPlaceholder(screenWidth, screenHeight);
-                    },
-                  ),
-                )
-                    : _buildMainImageErrorPlaceholder(screenWidth, screenHeight),
+                        itemCount: images.length,
+                        onPageChanged: (i) => setState(() => _currentPage = i),
+                        itemBuilder: (_, i) => GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => FullScreenGallery(
+                                  images: images,
+                                  initialIndex: i,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Image.network(
+                            images[i],
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return _buildMainImageErrorPlaceholder(
+                                screenWidth,
+                                screenHeight,
+                              );
+                            },
+                          ),
+                        ),
+                      )
+                    : _buildMainImageErrorPlaceholder(
+                        screenWidth,
+                        screenHeight,
+                      ),
               ),
               if (images.length > 1)
                 Positioned(
@@ -739,11 +991,17 @@ class _ProductDetailsState extends State<ProductDetails> {
                       bool isActive = _currentPage == dotIndex;
                       return AnimatedContainer(
                         duration: const Duration(milliseconds: 300),
-                        margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.01),
-                        width: isActive ? screenWidth * 0.02 : screenWidth * 0.015,
+                        margin: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.01,
+                        ),
+                        width: isActive
+                            ? screenWidth * 0.02
+                            : screenWidth * 0.015,
                         height: screenWidth * 0.015,
                         decoration: BoxDecoration(
-                          color: isActive ? const Color(0xffFF580E) : Colors.grey,
+                          color: isActive
+                              ? const Color(0xffFF580E)
+                              : Colors.grey,
                           borderRadius: BorderRadius.circular(12),
                         ),
                       );
@@ -756,7 +1014,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     GestureDetector(
-                      onTap: _shareProduct,
+                      onTap: () => _shareProduct(),
                       child: Container(
                         width: screenWidth * 0.1,
                         height: screenWidth * 0.1,
@@ -771,7 +1029,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                         ),
                       ),
                     ),
-                    SizedBox(width:screenWidth * 0.02),
+                    SizedBox(width: screenWidth * 0.02),
                     GestureDetector(
                       onTap: _toggleFavorite,
                       child: Container(
@@ -783,7 +1041,9 @@ class _ProductDetailsState extends State<ProductDetails> {
                         ),
                         child: Icon(
                           isFavorite ? Icons.favorite : Icons.favorite_border,
-                          color: isFavorite ? const Color(0xffFF580E) : Colors.white,
+                          color: isFavorite
+                              ? const Color(0xffFF580E)
+                              : Colors.white,
                           size: screenWidth * 0.05,
                         ),
                       ),
@@ -791,7 +1051,6 @@ class _ProductDetailsState extends State<ProductDetails> {
                   ],
                 ),
               ),
-
             ],
           ),
         );
@@ -799,7 +1058,10 @@ class _ProductDetailsState extends State<ProductDetails> {
     );
   }
 
-  Widget _buildMainImageErrorPlaceholder(double screenWidth, double screenHeight) {
+  Widget _buildMainImageErrorPlaceholder(
+    double screenWidth,
+    double screenHeight,
+  ) {
     return Container(
       width: double.infinity,
       height: double.infinity,
@@ -822,7 +1084,9 @@ class _ProductDetailsState extends State<ProductDetails> {
     if (_isLoading) {
       return Scaffold(
         backgroundColor: const Color(0xfffafafa),
-        body: Center(child: CircularProgressIndicator(color: const Color(0xffFF580E))),
+        body: Center(
+          child: CircularProgressIndicator(color: const Color(0xffFF580E)),
+        ),
       );
     }
 
@@ -833,14 +1097,14 @@ class _ProductDetailsState extends State<ProductDetails> {
     final discount = _productData['discount'] ?? 0;
     final currency = _productData['currency_type'] ?? 'ريال';
     final avgRate = _productData['avg_rate']?.toStringAsFixed(1) ?? '0.0';
-
     return BlocBuilder<CartCubit, CartState>(
       builder: (context, cartState) {
         final isInCart = cartState.cartIds.contains(widget.productId);
-
         return Scaffold(
           backgroundColor: Colors.grey[100],
-          appBar: CustomAppBar(title: _productData['name'] ?? S.of(context).unknown),
+          appBar: CustomAppBar(
+            title: _productData['name'] ?? S.of(context).unknown,
+          ),
           body: Directionality(
             textDirection: TextDirection.rtl,
             child: Stack(
@@ -860,23 +1124,37 @@ class _ProductDetailsState extends State<ProductDetails> {
                                 Expanded(
                                   child: Text(
                                     _productData['name'] ?? '',
-                                    style: TextStyle(fontSize: screenWidth * 0.04, fontWeight: FontWeight.bold),
+                                    style: TextStyle(
+                                      fontSize: screenWidth * 0.04,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                                 Text(
                                   avgRate,
-                                  style: TextStyle(fontSize: screenWidth * 0.035, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.035,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                                 SizedBox(width: screenWidth * 0.01),
-                                Icon(Icons.star, color: const Color(0xffFFD900), size: screenWidth * 0.07),
+                                Icon(
+                                  Icons.star,
+                                  color: const Color(0xffFFD900),
+                                  size: screenWidth * 0.07,
+                                ),
                               ],
                             ),
                             SizedBox(height: screenHeight * 0.01),
                             Text(
-                              _productData['description'] ?? S.of(context).noDescription,
-                              style: TextStyle(fontSize: screenWidth * 0.035, color: Colors.grey[700]),
+                              _productData['description'] ??
+                                  S.of(context).noDescription,
+                              style: TextStyle(
+                                fontSize: screenWidth * 0.035,
+                                color: Colors.grey[700],
+                              ),
                             ),
                             SizedBox(height: screenHeight * 0.01),
                             Row(
@@ -930,7 +1208,9 @@ class _ProductDetailsState extends State<ProductDetails> {
                   child: ElevatedButton(
                     onPressed: _isAddingToCart ? null : _handleAddToCart,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isInCart ? Colors.grey : const Color(0xffFF580E),
+                      backgroundColor: isInCart
+                          ? Colors.grey
+                          : const Color(0xffFF580E),
                       minimumSize: Size(double.infinity, screenHeight * 0.06),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(screenWidth * 0.03),
@@ -939,21 +1219,23 @@ class _ProductDetailsState extends State<ProductDetails> {
                     ),
                     child: _isAddingToCart
                         ? SizedBox(
-                      width: screenWidth * 0.05,
-                      height: screenWidth * 0.05,
-                      child: const CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
+                            width: screenWidth * 0.05,
+                            height: screenWidth * 0.05,
+                            child: const CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
                         : Text(
-                      isInCart ? S.of(context).addedToCart : S.of(context).AddtoCart,
-                      style: TextStyle(
-                        fontSize: screenWidth * 0.035,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                            isInCart
+                                ? S.of(context).addedToCart
+                                : S.of(context).AddtoCart,
+                            style: TextStyle(
+                              fontSize: screenWidth * 0.035,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
               ],

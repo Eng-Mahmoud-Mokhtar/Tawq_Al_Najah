@@ -1,15 +1,18 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../../../Core/Widgets/AppBar.dart';
 import '../../../../../../Core/utiles/Colors.dart';
 import '../../../../../../generated/l10n.dart';
 import '../../../../Product/Data/repository/ProductDetailsRepository.dart';
 import '../../../../Product/Data/repository/RatingRepository.dart';
+import '../../../../Product/presentation/view_model/views/widgets/FullScreenGallery.dart';
 import 'CreatPost.dart';
 
 class AdsDetails extends StatefulWidget {
@@ -33,6 +36,7 @@ class _AdsDetailsState extends State<AdsDetails> {
   int _currentPage = 0;
   int _selectedRating = 0;
   bool _ratingSubmitted = false;
+
   final ProductDetailsRepository _repository = ProductDetailsRepository();
   final RatingRepository _ratingRepository = RatingRepository();
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
@@ -46,6 +50,16 @@ class _AdsDetailsState extends State<AdsDetails> {
     _loadSavedRating();
     _loadProductDetails();
   }
+  List<String> _getProductImages() {
+    final raw = _productData['images'] ?? _productData['image'] ?? [];
+    if (raw is List) {
+      return raw.map((e) => e.toString()).where((e) => e.trim().isNotEmpty).toList();
+    }
+    if (raw is String && raw.trim().isNotEmpty) {
+      return [raw.trim()];
+    }
+    return <String>[];
+  }
 
   Future<void> _loadSavedRating() async {
     final savedRating = await _storage.read(key: 'rating_${widget.productId}');
@@ -58,8 +72,7 @@ class _AdsDetailsState extends State<AdsDetails> {
   }
 
   Future<void> _saveRating(int rating) async {
-    await _storage.write(key: 'rating_${widget.productId}',
-        value: rating.toString());
+    await _storage.write(key: 'rating_${widget.productId}', value: rating.toString());
   }
 
   Future<void> _loadProductDetails() async {
@@ -121,16 +134,70 @@ class _AdsDetailsState extends State<AdsDetails> {
     }
   }
 
-  void _shareProduct() {
-    final productName = _productData['name'] ?? '';
-    final productDescription = _productData['description'] ?? '';
-    final price =
-        _productData['priceAfterDiscount'] ?? _productData['price'] ?? 0;
-    final currency = _productData['currency_type'] ?? S.of(context).SYP;
-    Share.share(
-      '$productName\n$productDescription\n${S.of(context).priceLabel}: $price $currency',
-      subject: productName,
-    );
+  String _buildShareMessage() {
+    final productName = (_productData['name'] ?? '').toString();
+    final productDescription = (_productData['description'] ?? '').toString();
+    final price = _productData['priceAfterDiscount'] ?? _productData['price'] ?? 0;
+    final currency = (_productData['currency_type'] ?? S.of(context).SYP).toString();
+    return '''
+$productName
+$productDescription
+${S.of(context).priceLabel}: $price $currency
+''';
+  }
+
+  Future<XFile?> _downloadImageAsXFileWithDio(String imageUrl) async {
+    try {
+      final dir = await getTemporaryDirectory();
+      final filePath =
+          '${dir.path}/ad_${widget.productId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+      final res = await _dio.get<List<int>>(
+        imageUrl,
+        options: Options(
+          responseType: ResponseType.bytes,
+          followRedirects: true,
+          receiveTimeout: const Duration(seconds: 20),
+          sendTimeout: const Duration(seconds: 20),
+        ),
+      );
+
+      final bytes = res.data;
+      if (bytes == null || bytes.isEmpty) return null;
+
+      final file = File(filePath);
+      await file.writeAsBytes(bytes, flush: true);
+
+      return XFile(file.path);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Share image download error: $e');
+      }
+      return null;
+    }
+  }
+
+  void _shareProduct() async {
+    final subject = (_productData['name'] ?? '').toString();
+    final message = _buildShareMessage();
+    final images = _getProductImages();
+    final imageUrl = images.isNotEmpty ? images.first.trim() : '';
+
+    try {
+      if (imageUrl.isNotEmpty) {
+        final xFile = await _downloadImageAsXFileWithDio(imageUrl);
+        if (xFile != null) {
+          await Share.shareXFiles([xFile], text: message, subject: subject);
+          return;
+        }
+      }
+      await Share.share(message, subject: subject);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Share error: $e');
+      }
+      await Share.share(message, subject: subject);
+    }
   }
 
   Future<bool?> _showDeleteConfirmationDialog() async {
@@ -202,17 +269,15 @@ class _AdsDetailsState extends State<AdsDetails> {
                       child: Container(
                         margin: EdgeInsets.only(right: screenWidth * 0.01),
                         child: TextButton(
-                          onPressed: () => Navigator.of(dialogContext,
-                              rootNavigator: true)
-                              .pop(false),
+                          onPressed: () =>
+                              Navigator.of(dialogContext, rootNavigator: true).pop(false),
                           style: TextButton.styleFrom(
                             backgroundColor: Colors.grey.shade200,
                             padding: EdgeInsets.symmetric(
                               vertical: screenHeight * 0.02,
                             ),
                             shape: RoundedRectangleBorder(
-                              borderRadius:
-                              BorderRadius.circular(screenWidth * 0.02),
+                              borderRadius: BorderRadius.circular(screenWidth * 0.02),
                             ),
                           ),
                           child: Text(
@@ -226,24 +291,20 @@ class _AdsDetailsState extends State<AdsDetails> {
                         ),
                       ),
                     ),
-                    Container(
-                      width: screenWidth * 0.02,
-                    ),
+                    SizedBox(width: screenWidth * 0.02),
                     Expanded(
                       child: Container(
                         margin: EdgeInsets.only(left: screenWidth * 0.01),
                         child: ElevatedButton(
-                          onPressed: () => Navigator.of(dialogContext,
-                              rootNavigator: true)
-                              .pop(true),
+                          onPressed: () =>
+                              Navigator.of(dialogContext, rootNavigator: true).pop(true),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xffDD0C0C),
+                            backgroundColor: const Color(0xffDD0C0C),
                             padding: EdgeInsets.symmetric(
                               vertical: screenHeight * 0.02,
                             ),
                             shape: RoundedRectangleBorder(
-                              borderRadius:
-                              BorderRadius.circular(screenWidth * 0.02),
+                              borderRadius: BorderRadius.circular(screenWidth * 0.02),
                             ),
                             elevation: 0,
                             shadowColor: Colors.transparent,
@@ -345,8 +406,7 @@ class _AdsDetailsState extends State<AdsDetails> {
                         vertical: screenHeight * 0.02,
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius:
-                        BorderRadius.circular(screenWidth * 0.02),
+                        borderRadius: BorderRadius.circular(screenWidth * 0.02),
                       ),
                       elevation: 0,
                       shadowColor: Colors.transparent,
@@ -375,54 +435,30 @@ class _AdsDetailsState extends State<AdsDetails> {
     List<Map<String, dynamic>> socialLinks = [];
 
     void addLinksFromSource(Map<String, dynamic> source) {
-      if (source['linkInsta'] != null &&
-          source['linkInsta'].toString().isNotEmpty) {
-        String instaUrl = source['linkInsta'].toString();
-        instaUrl = _normalizeLink(instaUrl);
-        if (instaUrl.isNotEmpty) {
-          socialLinks.add({'url': instaUrl});
-        }
+      if (source['linkInsta'] != null && source['linkInsta'].toString().isNotEmpty) {
+        String instaUrl = _normalizeLink(source['linkInsta'].toString());
+        if (instaUrl.isNotEmpty) socialLinks.add({'url': instaUrl});
       }
-
-      if (source['linkWhatsapp'] != null &&
-          source['linkWhatsapp'].toString().isNotEmpty) {
-        String whatsappUrl = source['linkWhatsapp'].toString();
-        whatsappUrl = _normalizeLink(whatsappUrl);
-        if (whatsappUrl.isNotEmpty) {
-          socialLinks.add({'url': whatsappUrl});
-        }
+      if (source['linkWhatsapp'] != null && source['linkWhatsapp'].toString().isNotEmpty) {
+        String whatsappUrl = _normalizeLink(source['linkWhatsapp'].toString());
+        if (whatsappUrl.isNotEmpty) socialLinks.add({'url': whatsappUrl});
       }
-
-      if (source['linkSnab'] != null &&
-          source['linkSnab'].toString().isNotEmpty) {
-        String snapUrl = source['linkSnab'].toString();
-        snapUrl = _normalizeLink(snapUrl);
-        if (snapUrl.isNotEmpty) {
-          socialLinks.add({'url': snapUrl});
-        }
+      if (source['linkSnab'] != null && source['linkSnab'].toString().isNotEmpty) {
+        String snapUrl = _normalizeLink(source['linkSnab'].toString());
+        if (snapUrl.isNotEmpty) socialLinks.add({'url': snapUrl});
       }
-
-      if (source['linkFacebook'] != null &&
-          source['linkFacebook'].toString().isNotEmpty) {
-        String fbUrl = source['linkFacebook'].toString();
-        fbUrl = _normalizeLink(fbUrl);
-        if (fbUrl.isNotEmpty) {
-          socialLinks.add({'url': fbUrl});
-        }
+      if (source['linkFacebook'] != null && source['linkFacebook'].toString().isNotEmpty) {
+        String fbUrl = _normalizeLink(source['linkFacebook'].toString());
+        if (fbUrl.isNotEmpty) socialLinks.add({'url': fbUrl});
       }
     }
 
     addLinksFromSource(_productData);
-
-    if (socialLinks.isEmpty && _sellerData.isNotEmpty) {
-      addLinksFromSource(_sellerData);
-    }
+    if (socialLinks.isEmpty && _sellerData.isNotEmpty) addLinksFromSource(_sellerData);
 
     List<dynamic> imageList = [];
-    final images = _productData['images'] ?? _productData['image'] ?? [];
-    if (images is List) {
-      imageList = List.from(images);
-    }
+    final imagesRaw = _productData['images'] ?? _productData['image'] ?? [];
+    if (imagesRaw is List) imageList = List.from(imagesRaw);
 
     final Map<String, dynamic> editData = {
       'id': _productData['id'] ?? widget.productId,
@@ -454,9 +490,8 @@ class _AdsDetailsState extends State<AdsDetails> {
   Future<void> _deleteProduct() async {
     final confirmed = await _showDeleteConfirmationDialog();
     if (confirmed == true) {
-      setState(() {
-        _isDeleting = true;
-      });
+      setState(() => _isDeleting = true);
+
       try {
         final token = await _storage.read(key: 'user_token');
         final headers = {
@@ -464,6 +499,7 @@ class _AdsDetailsState extends State<AdsDetails> {
           'Content-Type': 'application/json',
           if (token != null) 'Authorization': 'Bearer $token',
         };
+
         final response = await _dio.delete(
           'https://toknagah.viking-iceland.online/api/user/products/delete-ad/${widget.productId}',
           options: Options(headers: headers),
@@ -481,17 +517,17 @@ class _AdsDetailsState extends State<AdsDetails> {
           );
         }
       } finally {
-        if (mounted) {
-          setState(() {
-            _isDeleting = false;
-          });
-        }
+        if (mounted) setState(() => _isDeleting = false);
       }
     }
   }
 
-  Widget _buildCircleIcon(String path, double screenWidth,
-      {VoidCallback? onTap, Color backgroundColor = Colors.white}) {
+  Widget _buildCircleIcon(
+      String path,
+      double screenWidth, {
+        VoidCallback? onTap,
+        Color backgroundColor = Colors.white,
+      }) {
     return Padding(
       padding: EdgeInsets.only(left: screenWidth * 0.015),
       child: GestureDetector(
@@ -515,6 +551,7 @@ class _AdsDetailsState extends State<AdsDetails> {
 
   Widget _buildSellerInfo(double screenWidth, double screenHeight) {
     final bool hasSeller = _sellerData.isNotEmpty;
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -531,8 +568,7 @@ class _AdsDetailsState extends State<AdsDetails> {
           if (!hasSeller) ...[
             Text(
               S.of(context).yourProductRating,
-              style: TextStyle(
-                  fontSize: screenWidth * 0.035, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: screenWidth * 0.035, fontWeight: FontWeight.bold),
               textAlign: Localizations.localeOf(context).languageCode == 'ar'
                   ? TextAlign.right
                   : TextAlign.left,
@@ -545,12 +581,10 @@ class _AdsDetailsState extends State<AdsDetails> {
                 return GestureDetector(
                   onTap: _ratingSubmitted ? null : () => _submitRating(i + 1),
                   child: Padding(
-                    padding:
-                    EdgeInsets.symmetric(horizontal: screenWidth * 0.015),
+                    padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.015),
                     child: Icon(
                       Icons.star,
-                      color:
-                      filled ? const Color(0xffFFD900) : Colors.grey.shade400,
+                      color: filled ? const Color(0xffFFD900) : Colors.grey.shade400,
                       size: screenWidth * 0.07,
                     ),
                   ),
@@ -563,12 +597,10 @@ class _AdsDetailsState extends State<AdsDetails> {
                 CircleAvatar(
                   radius: screenWidth * 0.07,
                   backgroundColor: Colors.grey.shade300,
-                  backgroundImage:
-                  (_sellerData['image'] != null &&
+                  backgroundImage: (_sellerData['image'] != null &&
                       _sellerData['image'].toString().isNotEmpty)
                       ? NetworkImage(_sellerData['image'])
-                      : const AssetImage('Assets/fallback_image.png')
-                  as ImageProvider,
+                      : const AssetImage('Assets/fallback_image.png') as ImageProvider,
                 ),
                 SizedBox(width: screenWidth * 0.03),
                 Expanded(
@@ -577,17 +609,13 @@ class _AdsDetailsState extends State<AdsDetails> {
                     children: [
                       Text(
                         _sellerData['name'] ?? S.of(context).unknown,
-                        style: TextStyle(
-                            fontSize: screenWidth * 0.035,
-                            fontWeight: FontWeight.bold),
+                        style: TextStyle(fontSize: screenWidth * 0.035, fontWeight: FontWeight.bold),
                       ),
                       if (_sellerData['address'] != null &&
                           _sellerData['address'].toString().isNotEmpty)
                         Text(
                           _sellerData['address'],
-                          style: TextStyle(
-                              fontSize: screenWidth * 0.03,
-                              color: Colors.grey[600]),
+                          style: TextStyle(fontSize: screenWidth * 0.03, color: Colors.grey[600]),
                         ),
                     ],
                   ),
@@ -596,25 +624,33 @@ class _AdsDetailsState extends State<AdsDetails> {
                   children: [
                     if (_sellerData['linkWhatsapp'] != null &&
                         _sellerData['linkWhatsapp'].toString().isNotEmpty)
-                      _buildCircleIcon('Assets/whatsapp.png', screenWidth,
-                          onTap: () => _launchSocialLink(
-                              _sellerData['linkWhatsapp'])),
+                      _buildCircleIcon(
+                        'Assets/whatsapp.png',
+                        screenWidth,
+                        onTap: () => _launchSocialLink(_sellerData['linkWhatsapp']),
+                      ),
                     if (_sellerData['linkFacebook'] != null &&
                         _sellerData['linkFacebook'].toString().isNotEmpty)
-                      _buildCircleIcon('Assets/Facebook.png', screenWidth,
-                          onTap: () =>
-                              _launchSocialLink(_sellerData['linkFacebook'])),
+                      _buildCircleIcon(
+                        'Assets/Facebook.png',
+                        screenWidth,
+                        onTap: () => _launchSocialLink(_sellerData['linkFacebook']),
+                      ),
                     if (_sellerData['linkInsta'] != null &&
                         _sellerData['linkInsta'].toString().isNotEmpty)
-                      _buildCircleIcon('Assets/instagram.png', screenWidth,
-                          onTap: () =>
-                              _launchSocialLink(_sellerData['linkInsta'])),
+                      _buildCircleIcon(
+                        'Assets/instagram.png',
+                        screenWidth,
+                        onTap: () => _launchSocialLink(_sellerData['linkInsta']),
+                      ),
                     if (_sellerData['linkSnab'] != null &&
                         _sellerData['linkSnab'].toString().isNotEmpty)
-                      _buildCircleIcon('Assets/logo.png', screenWidth,
-                          backgroundColor: Colors.yellow,
-                          onTap: () =>
-                              _launchSocialLink(_sellerData['linkSnab'])),
+                      _buildCircleIcon(
+                        'Assets/logo.png',
+                        screenWidth,
+                        backgroundColor: Colors.yellow,
+                        onTap: () => _launchSocialLink(_sellerData['linkSnab']),
+                      ),
                   ],
                 ),
               ],
@@ -626,8 +662,7 @@ class _AdsDetailsState extends State<AdsDetails> {
               padding: EdgeInsets.symmetric(horizontal: screenHeight * 0.01),
               child: Text(
                 S.of(context).yourProductRating,
-                style: TextStyle(
-                    fontSize: screenWidth * 0.035, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: screenWidth * 0.035, fontWeight: FontWeight.bold),
                 textAlign: Directionality.of(context) == TextDirection.rtl
                     ? TextAlign.right
                     : TextAlign.left,
@@ -641,12 +676,10 @@ class _AdsDetailsState extends State<AdsDetails> {
                 return GestureDetector(
                   onTap: _ratingSubmitted ? null : () => _submitRating(i + 1),
                   child: Padding(
-                    padding:
-                    EdgeInsets.symmetric(horizontal: screenWidth * 0.015),
+                    padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.015),
                     child: Icon(
                       Icons.star,
-                      color:
-                      filled ? const Color(0xffFFD900) : Colors.grey.shade400,
+                      color: filled ? const Color(0xffFFD900) : Colors.grey.shade400,
                       size: screenWidth * 0.07,
                     ),
                   ),
@@ -662,19 +695,17 @@ class _AdsDetailsState extends State<AdsDetails> {
   Widget buildShippingCard(double screenWidth, double screenHeight) {
     final isDeliverable = _productData['is_deliverd'] == 1;
     final hasInstallment = _productData['is_installment'] == 1;
+
     String shippingText = isDeliverable ? S.of(context).localShipping : S.of(context).noShipping;
     String installmentText = hasInstallment ? S.of(context).installment : S.of(context).installmentNotAvailable;
+
     return Container(
       margin: EdgeInsets.symmetric(vertical: screenWidth * 0.015),
       height: screenWidth * 0.12,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(50),
         boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 8,
-            offset: Offset(0, 3),
-          ),
+          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 3)),
         ],
       ),
       child: Row(
@@ -753,7 +784,8 @@ class _AdsDetailsState extends State<AdsDetails> {
   }
 
   Widget _buildImageSection(double screenWidth, double screenHeight) {
-    final images = (_productData['image'] as List?)?.cast<String>() ?? [];
+    final images = _getProductImages();
+
     return SizedBox(
       height: screenHeight * 0.25,
       width: double.infinity,
@@ -766,13 +798,26 @@ class _AdsDetailsState extends State<AdsDetails> {
                 ? PageView.builder(
               itemCount: images.length,
               onPageChanged: (i) => setState(() => _currentPage = i),
-              itemBuilder: (_, i) => Image.network(
-                images[i],
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return _buildMainImageErrorPlaceholder(
-                      screenWidth, screenHeight);
+              itemBuilder: (_, i) => GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => FullScreenGallery(
+                        images: images,
+                        initialIndex: i,
+                      ),
+                    ),
+                  );
                 },
+                child: Image.network(
+                  images[i],
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return _buildMainImageErrorPlaceholder(screenWidth, screenHeight);
+                  },
+                ),
               ),
             )
                 : _buildMainImageErrorPlaceholder(screenWidth, screenHeight),
@@ -788,8 +833,7 @@ class _AdsDetailsState extends State<AdsDetails> {
                   bool isActive = _currentPage == dotIndex;
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
-                    margin:
-                    EdgeInsets.symmetric(horizontal: screenWidth * 0.01),
+                    margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.01),
                     width: isActive ? screenWidth * 0.02 : screenWidth * 0.015,
                     height: screenWidth * 0.015,
                     decoration: BoxDecoration(
@@ -829,21 +873,17 @@ class _AdsDetailsState extends State<AdsDetails> {
     );
   }
 
-  Widget _buildMainImageErrorPlaceholder(
-      double screenWidth, double screenHeight) {
+  Widget _buildMainImageErrorPlaceholder(double screenWidth, double screenHeight) {
     return Container(
       width: double.infinity,
       height: double.infinity,
       color: Colors.grey.shade100,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.image_not_supported_outlined,
-            color: Colors.grey.shade400,
-            size: screenWidth * 0.1,
-          ),
-        ],
+      child: Center(
+        child: Icon(
+          Icons.image_not_supported_outlined,
+          color: Colors.grey.shade400,
+          size: screenWidth * 0.1,
+        ),
       ),
     );
   }
@@ -851,19 +891,21 @@ class _AdsDetailsState extends State<AdsDetails> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Scaffold(
-        backgroundColor: const Color(0xfffafafa),
-        body:
-        const Center(child: CircularProgressIndicator(color: Color(0xffFF580E))),
+      return const Scaffold(
+        backgroundColor: Color(0xfffafafa),
+        body: Center(child: CircularProgressIndicator(color: Color(0xffFF580E))),
       );
     }
+
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+
     final price = _productData['price'] ?? 0;
     final priceAfter = _productData['priceAfterDiscount'] ?? price;
     final discount = _productData['discount'] ?? 0;
     final currency = _productData['currency_type'] ?? S.of(context).SYP;
     final avgRate = _productData['avg_rate']?.toStringAsFixed(1) ?? '0.0';
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: CustomAppBar(title: _productData['name'] ?? S.of(context).unknown),
@@ -885,10 +927,11 @@ class _AdsDetailsState extends State<AdsDetails> {
                           children: [
                             Expanded(
                               child: Text(
-                                _productData['name'] ?? '',
+                                (_productData['name'] ?? '').toString(),
                                 style: TextStyle(
-                                    fontSize: screenWidth * 0.04,
-                                    fontWeight: FontWeight.bold),
+                                  fontSize: screenWidth * 0.04,
+                                  fontWeight: FontWeight.bold,
+                                ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -896,13 +939,12 @@ class _AdsDetailsState extends State<AdsDetails> {
                             Text(
                               avgRate,
                               style: TextStyle(
-                                  fontSize: screenWidth * 0.035,
-                                  fontWeight: FontWeight.bold),
+                                fontSize: screenWidth * 0.035,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             SizedBox(width: screenWidth * 0.01),
-                            Icon(Icons.star,
-                                color: const Color(0xffFFD900),
-                                size: screenWidth * 0.07),
+                            Icon(Icons.star, color: const Color(0xffFFD900), size: screenWidth * 0.07),
                           ],
                         ),
                         SizedBox(height: screenHeight * 0.01),
@@ -961,11 +1003,10 @@ class _AdsDetailsState extends State<AdsDetails> {
                       child: ElevatedButton(
                         onPressed: _isDeleting ? null : _deleteProduct,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xffDD0C0C),
+                          backgroundColor: const Color(0xffDD0C0C),
                           minimumSize: Size(double.infinity, screenWidth * 0.12),
                           shape: RoundedRectangleBorder(
-                            borderRadius:
-                            BorderRadius.circular(screenWidth * 0.02),
+                            borderRadius: BorderRadius.circular(screenWidth * 0.02),
                           ),
                           elevation: 3,
                         ),
@@ -981,11 +1022,7 @@ class _AdsDetailsState extends State<AdsDetails> {
                             : Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              Icons.delete_outlined,
-                              color: Colors.white,
-                              size: screenWidth * 0.05,
-                            ),
+                            Icon(Icons.delete_outlined, color: Colors.white, size: screenWidth * 0.05),
                             SizedBox(width: screenWidth * 0.02),
                             Text(
                               S.of(context).delete,
@@ -1010,19 +1047,14 @@ class _AdsDetailsState extends State<AdsDetails> {
                           backgroundColor: KprimaryColor,
                           minimumSize: Size(double.infinity, screenWidth * 0.12),
                           shape: RoundedRectangleBorder(
-                            borderRadius:
-                            BorderRadius.circular(screenWidth * 0.02),
+                            borderRadius: BorderRadius.circular(screenWidth * 0.02),
                           ),
                           elevation: 3,
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              Icons.edit,
-                              color: Colors.white,
-                              size: screenWidth * 0.05,
-                            ),
+                            Icon(Icons.edit, color: Colors.white, size: screenWidth * 0.05),
                             SizedBox(width: screenWidth * 0.02),
                             Text(
                               S.of(context).edit,

@@ -74,7 +74,7 @@ class _OnboardingState extends State<Onboarding> {
                       ),
                       OnboardingPage(
                         image:
-                        'Assets/Online Groceries-cuate.png',
+                        'Assets/Online Groceries-amico.png',
                         title: S.of(context).OnBoarding2title,
                         description: S.of(context).OnBoarding2description,
                         onNextPressed: _nextPage,

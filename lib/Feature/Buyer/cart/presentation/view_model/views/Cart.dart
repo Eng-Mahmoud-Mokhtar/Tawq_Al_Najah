@@ -699,39 +699,38 @@ class __CartPageContentState extends State<_CartPageContent> {
                       ),
                     ),
                   ),
-                  Container(
-                    padding: EdgeInsets.all(screenWidth * 0.04),
-                    color: Colors.white,
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: state.isDeletingItem
-                            ? null
-                            : () {
-                          _navigateToCheckout(context, state.cartId);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: state.isDeletingItem
-                              ? Colors.grey
-                              : KprimaryColor,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                 Padding(
+                   padding:  EdgeInsets.symmetric(horizontal:screenWidth * 0.04),
+                   child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: state.isDeletingItem
+                              ? null
+                              : () {
+                            _navigateToCheckout(context, state.cartId);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: state.isDeletingItem
+                                ? Colors.grey
+                                : KprimaryColor,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: EdgeInsets.symmetric(
+                              vertical: screenHeight * 0.025,
+                            ),
                           ),
-                          padding: EdgeInsets.symmetric(
-                            vertical: screenHeight * 0.03,
-                          ),
-                        ),
-                        child: Text(
-                          S.of(context).Checkout,
-                          style: TextStyle(
-                            fontSize: screenWidth * 0.03,
-                            fontWeight: FontWeight.bold,
-                            color: SecoundColor,
+                          child: Text(
+                            S.of(context).Checkout,
+                            style: TextStyle(
+                              fontSize: screenWidth * 0.03,
+                              fontWeight: FontWeight.bold,
+                              color: SecoundColor,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ),
+                 ),
                   SizedBox(height: screenWidth * 0.05),
                 ],
               ),

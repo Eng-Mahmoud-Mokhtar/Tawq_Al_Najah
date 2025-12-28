@@ -27,16 +27,19 @@ class TawqalOffersPage extends StatefulWidget {
 class _TawqalOffersPageState extends State<TawqalOffersPage> {
   final Dio _dio = Dio();
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
+
   late List<ProductModel> _displayedProducts = [];
   bool _isLoading = true;
   bool _hasError = false;
   String _errorMessage = '';
   bool _isSearchLoading = false;
   bool _isFilterActive = false;
+
   final ScrollController _gridViewController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
   CancelToken _cancelToken = CancelToken();
   Timer? _searchDebounce;
+
   double _currentMinPrice = 0;
   double _currentMaxPrice = kFilterMaxPrice;
 
@@ -121,10 +124,12 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
         }
       }
 
-      if (mounted) setState(() {
-        _displayedProducts = loaded;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _displayedProducts = loaded;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       debugPrint('Load offers error: $e');
       if (mounted) setState(() => _isLoading = false);
@@ -156,10 +161,8 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
       if (query.isNotEmpty) {
         _fetchProducts(
           searchQuery: query,
-          minPrice: _currentMinPrice > 0 ? _currentMinPrice : null,
-          maxPrice: _currentMaxPrice != kFilterMaxPrice
-              ? _currentMaxPrice
-              : null,
+          minPrice: _currentMinPrice,
+          maxPrice: _currentMaxPrice,
         );
       }
     });
@@ -172,9 +175,15 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
       _isSearchLoading = false;
     });
     _fetchProducts(
-      minPrice: _currentMinPrice > 0 ? _currentMinPrice : null,
-      maxPrice: _currentMaxPrice != kFilterMaxPrice ? _currentMaxPrice : null,
+      minPrice: _currentMinPrice,
+      maxPrice: _currentMaxPrice,
     );
+  }
+
+  int _safeInt(double v) {
+    if (v.isNaN || v.isInfinite) return 0;
+    if (v < 0) return 0;
+    return v.round();
   }
 
   Future<void> _fetchProducts({
@@ -194,12 +203,14 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
           _isLoading = true;
           _isSearchLoading = false;
           _hasError = false;
+          _errorMessage = '';
         });
       }
 
       final token = await _storage.read(key: 'user_token');
       final headers = {
         'Accept': 'application/json',
+        // خليها زي كودك القديم عشان التصميم مايتغيرش، بس لو حبيت نقدر نشيل Content-Type
         'Content-Type': 'application/json',
       };
       if (token != null) headers['Authorization'] = 'Bearer $token';
@@ -209,18 +220,19 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
       } catch (_) {}
       _cancelToken = CancelToken();
 
+      // ✅ Server-side زي Postman (نبعتهم دايمًا حتى لو min=0)
+      final double effectiveMin = minPrice ?? _currentMinPrice;
+      final double effectiveMax = maxPrice ?? _currentMaxPrice;
+
       final Map<String, dynamic> queryParams = {
         'type': 'normal',
+        'min_price': _safeInt(effectiveMin),
+        'max_price': _safeInt(effectiveMax),
       };
 
       if (searchQuery != null && searchQuery.isNotEmpty) {
         queryParams['search'] = searchQuery;
       }
-
-      final int minParam = (minPrice ?? _currentMinPrice).toInt();
-      final int maxParam = (maxPrice ?? _currentMaxPrice).toInt();
-      queryParams['min_price'] = minParam;
-      queryParams['max_price'] = maxParam;
 
       final response = await _dio.get(
         'https://toknagah.viking-iceland.online/api/user/products',
@@ -236,8 +248,11 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
 
       if (response.statusCode == 200) {
         try {
-          final responseMap = response.data as Map<String, dynamic>;
+          // ✅ Fix: أحيانًا بيرجع String على الموبايل
+          dynamic raw = response.data;
+          if (raw is String) raw = jsonDecode(raw);
 
+          final responseMap = raw as Map<String, dynamic>;
           final data = responseMap['data'];
 
           List<dynamic> productsJson;
@@ -259,13 +274,17 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
             productsJson = [];
           }
 
-          final products = productsJson.map((e) {
+          final products = productsJson
+              .map((e) {
             try {
               return ProductModel.fromJson(e as Map<String, dynamic>);
-            } catch (e) {
+            } catch (_) {
               return null;
             }
-          }).where((product) => product != null).cast<ProductModel>().toList();
+          })
+              .where((product) => product != null)
+              .cast<ProductModel>()
+              .toList();
 
           if (!mounted) return;
 
@@ -274,16 +293,18 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
             _isLoading = false;
             _isSearchLoading = false;
             _hasError = false;
+
+            // ✅ الفلتر يبقى Active لو فيه Search أو السعر اتغير عن الافتراضي
             _isFilterActive = (searchQuery != null && searchQuery.isNotEmpty) ||
-                (minPrice != null) ||
-                (maxPrice != null);
+                (_currentMinPrice > 0) ||
+                (_currentMaxPrice != kFilterMaxPrice);
 
             if (minPrice != null) _currentMinPrice = minPrice;
             if (maxPrice != null) _currentMaxPrice = maxPrice;
 
             _filterCubit.updateFilters(
-              minPrice: minPrice ?? _currentMinPrice,
-              maxPrice: maxPrice ?? _currentMaxPrice,
+              minPrice: _currentMinPrice,
+              maxPrice: _currentMaxPrice,
             );
           });
         } catch (parseError) {
@@ -293,7 +314,7 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
             _isLoading = false;
             _isSearchLoading = false;
             _hasError = true;
-            _errorMessage = 'Parsing error';
+            _errorMessage = 'Parsing error: $parseError';
           });
         }
       } else {
@@ -302,7 +323,7 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
           _isLoading = false;
           _isSearchLoading = false;
           _hasError = true;
-          _errorMessage = 'Server error: ${response.statusCode}';
+          _errorMessage = 'Server error: ${response.statusCode}\n${response.data ?? ''}';
         });
       }
     } catch (e) {
@@ -320,8 +341,8 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
   Future<void> _onRefresh() async {
     await _fetchProducts(
       searchQuery: _searchController.text.isNotEmpty ? _searchController.text : null,
-      minPrice: _currentMinPrice > 0 ? _currentMinPrice : null,
-      maxPrice: _currentMaxPrice != kFilterMaxPrice ? _currentMaxPrice : null,
+      minPrice: _currentMinPrice,
+      maxPrice: _currentMaxPrice,
     );
   }
 
@@ -354,19 +375,18 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
   void _handleFilterApply(Map<String, dynamic> filters) {
     if (!mounted) return;
 
+    // ✅ Fix: رجّعها زي ما Explore بيعمل: minPrice/maxPrice فقط
     setState(() {
-      _currentMinPrice = filters['minPrice'] ?? 0;
-      _currentMaxPrice = filters['max_price'] ?? filters['maxPrice'] ?? kFilterMaxPrice;
+      _currentMinPrice = (filters['minPrice'] as num?)?.toDouble() ?? 0;
+      _currentMaxPrice = (filters['maxPrice'] as num?)?.toDouble() ?? kFilterMaxPrice;
     });
 
     final searchQuery = _searchController.text.isNotEmpty ? _searchController.text : null;
 
     _fetchProducts(
       searchQuery: searchQuery,
-      minPrice: _currentMinPrice > 0 ? _currentMinPrice : null,
-      maxPrice: (_currentMaxPrice != kFilterMaxPrice && _currentMaxPrice > 0)
-          ? _currentMaxPrice
-          : null,
+      minPrice: _currentMinPrice,
+      maxPrice: _currentMaxPrice,
     );
   }
 
@@ -377,7 +397,7 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
       _currentMaxPrice = kFilterMaxPrice;
     });
 
-    _fetchProducts();
+    _fetchProducts(minPrice: 0, maxPrice: kFilterMaxPrice);
   }
 
   void _navigateToProductDetails(BuildContext context, int productId, Map<String, dynamic> productData) {
@@ -533,9 +553,7 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
     final cardHeight = cardWidth * 1.4;
 
     final price = product.priceAfterDiscount > 0 ? product.priceAfterDiscount : product.price;
-    final currency = product.currencyType?.isNotEmpty == true
-        ? product.currencyType!
-        : S.of(context).SYP;
+    final currency = product.currencyType?.isNotEmpty == true ? product.currencyType! : S.of(context).SYP;
 
     return GestureDetector(
       onTap: () => _navigateToProductDetails(context, productId, productMap),
@@ -649,7 +667,12 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
           height: double.infinity,
           placeholder: (context, url) => Container(
             color: Colors.grey[100],
-            child: Center(child: CircularProgressIndicator(color: const Color(0xffFF580E), strokeWidth: 2)),
+            child: Center(
+              child: CircularProgressIndicator(
+                color: const Color(0xffFF580E),
+                strokeWidth: 2,
+              ),
+            ),
           ),
           errorWidget: (context, url, error) => _buildImageErrorPlaceholder(cardWidth, cardHeight),
         ),
@@ -660,7 +683,10 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
             onTap: () => context.read<FavoriteCubit>().toggleFavoriteWithApi(productId),
             child: Container(
               padding: EdgeInsets.all(cardWidth * 0.03),
-              decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.black.withAlpha((0.5 * 255).round())),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.black.withAlpha((0.5 * 255).round()),
+              ),
               child: Icon(
                 isFav ? Icons.favorite : Icons.favorite_border,
                 color: isFav ? const Color(0xffFF580E) : Colors.white,
@@ -679,11 +705,19 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.image_not_supported_outlined, color: Colors.grey.shade400, size: cardWidth * 0.15),
+          Icon(
+            Icons.image_not_supported_outlined,
+            color: Colors.grey.shade400,
+            size: cardWidth * 0.15,
+          ),
           SizedBox(height: cardHeight * 0.04),
           Text(
             S.of(context).errorLoadingCategories,
-            style: TextStyle(fontSize: cardWidth * 0.05, color: Colors.grey.shade600, fontWeight: FontWeight.w500),
+            style: TextStyle(
+              fontSize: cardWidth * 0.05,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -820,20 +854,13 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.network_check,
-                        color: Colors.grey,
-                        size: screenWidth * 0.15,
-                      ),
+                      Icon(Icons.network_check, color: Colors.grey, size: screenWidth * 0.15),
                       SizedBox(height: screenHeight * 0.02),
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
                         child: Text(
                           _errorMessage.isNotEmpty ? _errorMessage : S.of(context).connectionTimeout,
-                          style: TextStyle(
-                            fontSize: screenWidth * 0.035,
-                            color: Colors.grey[700],
-                          ),
+                          style: TextStyle(fontSize: screenWidth * 0.035, color: Colors.grey[700]),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -841,21 +868,16 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
                       ElevatedButton(
                         onPressed: () => _fetchProducts(
                           searchQuery: _searchController.text.isNotEmpty ? _searchController.text : null,
-                          minPrice: _currentMinPrice > 0 ? _currentMinPrice : null,
-                          maxPrice: _currentMaxPrice != kFilterMaxPrice ? _currentMaxPrice : null,
+                          minPrice: _currentMinPrice,
+                          maxPrice: _currentMaxPrice,
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xffFF580E),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
                         child: Text(
                           S.of(context).tryAgain,
-                          style: TextStyle(
-                            fontSize: screenWidth * 0.035,
-                            color: Colors.white,
-                          ),
+                          style: TextStyle(fontSize: screenWidth * 0.035, color: Colors.white),
                         ),
                       ),
                       SizedBox(height: screenHeight * 0.1),

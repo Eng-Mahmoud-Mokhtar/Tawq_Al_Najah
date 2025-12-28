@@ -4,7 +4,11 @@ class FullScreenGallery extends StatefulWidget {
   final List<String> images;
   final int initialIndex;
 
-  const FullScreenGallery({super.key, required this.images, required this.initialIndex});
+  const FullScreenGallery({
+    super.key,
+    required this.images,
+    required this.initialIndex,
+  });
 
   @override
   State<FullScreenGallery> createState() => _FullScreenGalleryState();
@@ -30,15 +34,11 @@ class _FullScreenGalleryState extends State<FullScreenGallery> {
           PageView.builder(
             controller: _pageController,
             itemCount: widget.images.length,
-            onPageChanged: (index) {
-              setState(() {
-                currentIndex = index;
-              });
-            },
+            onPageChanged: (index) => setState(() => currentIndex = index),
             itemBuilder: (context, index) {
               return InteractiveViewer(
                 child: Center(
-                  child: Image.asset(
+                  child: Image.network(
                     widget.images[index],
                     fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) {

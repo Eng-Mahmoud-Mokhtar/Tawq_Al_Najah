@@ -36,7 +36,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   Future<void> _loadNotifications() async {
-    await Future.delayed(const Duration(seconds: 2)); // وقت التحميل
+    await Future.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
+
     setState(() {
       notifications = [
         NotificationItem(
@@ -59,6 +61,103 @@ class _NotificationsPageState extends State<NotificationsPage> {
     });
   }
 
+  Future<void> _showDeleteSuccessDialogAfterLoading() async {
+    if (!mounted) return;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // 1) Dialog Loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        content: Directionality(
+          textDirection: TextDirection.rtl,
+          child: Row(
+            children: [
+              CircularProgressIndicator(color: KprimaryColor),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  S.of(context).loading, // لو مش موجود عندك غيّرها لنص ثابت
+                  style: TextStyle(
+                    color: KprimaryText,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // 2) simulate request/processing
+    await Future.delayed(const Duration(milliseconds: 900));
+    if (!mounted) return;
+
+    Navigator.pop(context); // close loading dialog
+
+    // 3) Success dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(screenWidth * 0.02),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.delete_outline,
+                color: Colors.red,
+                size: screenWidth * 0.06,
+              ),
+            ),
+            SizedBox(width: screenWidth * 0.03),
+            Text(
+              S.of(context).itemRemoved,
+              style: TextStyle(
+                color: KprimaryText,
+                fontWeight: FontWeight.bold,
+                fontSize: screenWidth * 0.035,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              S.of(context).ok,
+              style: TextStyle(
+                color: KprimaryColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+  }
+
+  Future<void> _deleteNotification(int index) async {
+    if (!mounted) return;
+
+    setState(() {
+      notifications.removeAt(index);
+    });
+    await _showDeleteSuccessDialogAfterLoading();
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -78,6 +177,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
           itemCount: notifications.length,
           itemBuilder: (context, index) {
             final item = notifications[index];
+
             return Container(
               margin:
               EdgeInsets.symmetric(vertical: screenHeight * 0.01),
@@ -107,25 +207,8 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     extentRatio: 0.25,
                     children: [
                       SlidableAction(
-                        onPressed: (context) {
-                          setState(() {
-                            notifications.removeAt(index);
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                S.of(context).itemRemoved,
-                                style: TextStyle(
-                                  fontSize: screenWidth * 0.035,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              backgroundColor:
-                              const Color(0xffDD0C0C),
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
+                        onPressed: (_) async {
+                          await _deleteNotification(index);
                         },
                         backgroundColor: const Color(0xffDD0C0C),
                         foregroundColor: Colors.white,
@@ -158,18 +241,18 @@ class _NotificationsPageState extends State<NotificationsPage> {
                               color: Colors.white,
                               shape: BoxShape.circle,
                               image: const DecorationImage(
-                                image: AssetImage(
-                                    'Assets/Ellipse 9.png'),
+                                image:
+                                AssetImage('Assets/Ellipse 9.png'),
                                 fit: BoxFit.contain,
                               ),
                               border: Border.all(
-                                color:
-                                KprimaryColor.withOpacity(0.4),
+                                color: KprimaryColor.withOpacity(0.4),
                                 width: 2,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: KprimaryColor.withOpacity(0.2),
+                                  color:
+                                  KprimaryColor.withOpacity(0.2),
                                   blurRadius: 4,
                                   offset: const Offset(0, 2),
                                 ),
@@ -240,7 +323,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   Widget _buildEmptyState(
-      double screenWidth, double screenHeight, BuildContext context) {
+      double screenWidth,
+      double screenHeight,
+      BuildContext context,
+      ) {
     return Center(
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -47,6 +48,7 @@ class _CategoryPageState extends State<CategoryPage> {
   bool _isSearchLoading = false;
   Timer? _searchDebounce;
   final FilterProductsCubit _filterCubit = FilterProductsCubit();
+
   @override
   void initState() {
     super.initState();
@@ -81,10 +83,9 @@ class _CategoryPageState extends State<CategoryPage> {
       if (query.isNotEmpty) {
         fetchCategoryProducts(
           searchQuery: query,
-          minPrice: _currentMinPrice > 0 ? _currentMinPrice : null,
-          maxPrice: _currentMaxPrice != kFilterMaxPrice
-              ? _currentMaxPrice
-              : null,
+          // ✅ نفس حل العروض/الاقتراحات: Server-side (نبعت القيم كما هي)
+          minPrice: _currentMinPrice,
+          maxPrice: _currentMaxPrice,
         );
       }
     });
@@ -97,9 +98,16 @@ class _CategoryPageState extends State<CategoryPage> {
       _isSearchLoading = false;
     });
     fetchCategoryProducts(
-      minPrice: _currentMinPrice > 0 ? _currentMinPrice : null,
-      maxPrice: _currentMaxPrice != kFilterMaxPrice ? _currentMaxPrice : null,
+      // ✅ Server-side
+      minPrice: _currentMinPrice,
+      maxPrice: _currentMaxPrice,
     );
+  }
+
+  int _safeInt(double v) {
+    if (v.isNaN || v.isInfinite) return 0;
+    if (v < 0) return 0;
+    return v.round();
   }
 
   Future<void> fetchCategoryProducts({
@@ -109,6 +117,7 @@ class _CategoryPageState extends State<CategoryPage> {
   }) async {
     try {
       if (!mounted) return;
+
       if (searchQuery != null && searchQuery.isNotEmpty) {
         setState(() {
           _isSearchLoading = true;
@@ -119,60 +128,82 @@ class _CategoryPageState extends State<CategoryPage> {
           _isLoading = true;
           _isSearchLoading = false;
           _hasError = false;
+          _errorMessage = '';
         });
       }
+
       final token = await _storage.read(key: 'user_token');
       final headers = {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       };
       if (token != null) headers['Authorization'] = 'Bearer $token';
+
       try {
         if (!_cancelToken.isCancelled) {
           _cancelToken.cancel('cancelling previous');
         }
       } catch (_) {}
       _cancelToken = CancelToken();
+
+      // ✅ Server-side: min_price/max_price دايمًا زي Postman حتى لو 0
+      final double effectiveMin = minPrice ?? _currentMinPrice;
+      final double effectiveMax = maxPrice ?? _currentMaxPrice;
+
       final Map<String, dynamic> queryParams = {'name': widget.apiName};
+
       if (searchQuery != null && searchQuery.isNotEmpty) {
         queryParams['search'] = searchQuery;
       }
-      final int minParam = (minPrice ?? _currentMinPrice).toInt();
-      final int maxParam = (maxPrice ?? _currentMaxPrice).toInt();
-      queryParams['min_price'] = minParam;
-      queryParams['max_price'] = maxParam;
+
+      queryParams['min_price'] = _safeInt(effectiveMin);
+      queryParams['max_price'] = _safeInt(effectiveMax);
+
       final response = await _dio.get(
         'https://toknagah.viking-iceland.online/api/user/products-byCategory',
         queryParameters: queryParams,
         options: Options(headers: headers, validateStatus: (_) => true),
         cancelToken: _cancelToken,
       );
+
       if (!mounted) return;
+
       if (response.statusCode == 200) {
         try {
-          final responseMap = response.data as Map<String, dynamic>;
+          // ✅ نفس حل العروض/الاقتراحات: decode لو response String
+          dynamic raw = response.data;
+          if (raw is String) raw = jsonDecode(raw);
+
+          final responseMap = raw as Map<String, dynamic>;
           final dataMap = responseMap['data'] as Map<String, dynamic>;
+
           final List<dynamic> productsJson = (dataMap['data'] is List)
               ? dataMap['data'] as List<dynamic>
               : <dynamic>[];
+
           final products = productsJson
               .map((e) => ProductModel.fromJson(e as Map<String, dynamic>))
               .toList();
+
           if (!mounted) return;
+
           setState(() {
             _filteredProducts = products;
             _isLoading = false;
             _isSearchLoading = false;
             _hasError = false;
-            _isFilterActive =
-                (searchQuery != null && searchQuery.isNotEmpty) ||
-                (minPrice != null) ||
-                (maxPrice != null);
-            if (minPrice != null) _currentMinPrice = minPrice;
-            if (maxPrice != null) _currentMaxPrice = maxPrice;
+
+            _isFilterActive = (searchQuery != null && searchQuery.isNotEmpty) ||
+                (_currentMinPrice > 0) ||
+                (_currentMaxPrice != kFilterMaxPrice);
+
+            // ✅ تحديث القيم الفعلية
+            _currentMinPrice = effectiveMin;
+            _currentMaxPrice = effectiveMax;
+
             _filterCubit.updateFilters(
-              minPrice: minPrice ?? _currentMinPrice,
-              maxPrice: maxPrice ?? _currentMaxPrice,
+              minPrice: _currentMinPrice,
+              maxPrice: _currentMaxPrice,
             );
           });
         } catch (parseError) {
@@ -182,7 +213,7 @@ class _CategoryPageState extends State<CategoryPage> {
             _isLoading = false;
             _isSearchLoading = false;
             _hasError = true;
-            _errorMessage = 'Parsing error';
+            _errorMessage = 'Parsing error: $parseError';
           });
         }
       } else {
@@ -191,7 +222,7 @@ class _CategoryPageState extends State<CategoryPage> {
           _isLoading = false;
           _isSearchLoading = false;
           _hasError = true;
-          _errorMessage = 'Server error: ${response.statusCode}';
+          _errorMessage = 'Server error: ${response.statusCode}\n${response.data ?? ''}';
         });
       }
     } catch (e) {
@@ -208,11 +239,10 @@ class _CategoryPageState extends State<CategoryPage> {
 
   Future<void> _onRefresh() async {
     await fetchCategoryProducts(
-      searchQuery: _searchController.text.isNotEmpty
-          ? _searchController.text
-          : null,
-      minPrice: _currentMinPrice > 0 ? _currentMinPrice : null,
-      maxPrice: _currentMaxPrice != kFilterMaxPrice ? _currentMaxPrice : null,
+      searchQuery: _searchController.text.isNotEmpty ? _searchController.text : null,
+      // ✅ Server-side
+      minPrice: _currentMinPrice,
+      maxPrice: _currentMaxPrice,
     );
   }
 
@@ -243,20 +273,20 @@ class _CategoryPageState extends State<CategoryPage> {
 
   void _handleFilterApply(Map<String, dynamic> filters) {
     if (!mounted) return;
+
+    // ✅ نفس حل العروض/الاقتراحات: keys موحدة
     setState(() {
-      _currentMinPrice = filters['minPrice'] ?? 0;
-      _currentMaxPrice =
-          filters['max_price'] ?? filters['maxPrice'] ?? kFilterMaxPrice;
+      _currentMinPrice = (filters['minPrice'] as num?)?.toDouble() ?? 0;
+      _currentMaxPrice = (filters['maxPrice'] as num?)?.toDouble() ?? kFilterMaxPrice;
     });
-    final searchQuery = _searchController.text.isNotEmpty
-        ? _searchController.text
-        : null;
+
+    final searchQuery = _searchController.text.isNotEmpty ? _searchController.text : null;
+
     fetchCategoryProducts(
       searchQuery: searchQuery,
-      minPrice: _currentMinPrice > 0 ? _currentMinPrice : null,
-      maxPrice: (_currentMaxPrice != kFilterMaxPrice && _currentMaxPrice > 0)
-          ? _currentMaxPrice
-          : null,
+      // ✅ Server-side
+      minPrice: _currentMinPrice,
+      maxPrice: _currentMaxPrice,
     );
   }
 
@@ -266,7 +296,8 @@ class _CategoryPageState extends State<CategoryPage> {
       _currentMinPrice = 0;
       _currentMaxPrice = kFilterMaxPrice;
     });
-    fetchCategoryProducts();
+    // ✅ Server-side reset
+    fetchCategoryProducts(minPrice: 0, maxPrice: kFilterMaxPrice);
   }
 
   void _goToDetails(int id, Map<String, dynamic> data) {
@@ -340,7 +371,7 @@ class _CategoryPageState extends State<CategoryPage> {
                         TextField(
                           controller: _searchController,
                           textDirection:
-                              Directionality.of(context) == TextDirection.rtl
+                          Directionality.of(context) == TextDirection.rtl
                               ? TextDirection.rtl
                               : TextDirection.ltr,
                           textAlign: TextAlign.start,
@@ -352,7 +383,7 @@ class _CategoryPageState extends State<CategoryPage> {
                           decoration: InputDecoration(
                             hintText: S.of(context).search,
                             hintTextDirection:
-                                Directionality.of(context) == TextDirection.rtl
+                            Directionality.of(context) == TextDirection.rtl
                                 ? TextDirection.rtl
                                 : TextDirection.ltr,
                             hintStyle: TextStyle(
@@ -432,11 +463,11 @@ class _CategoryPageState extends State<CategoryPage> {
   }
 
   Widget buildCard(
-    ProductModel product,
-    bool isFav,
-    bool isAdded,
-    double screenWidth,
-  ) {
+      ProductModel product,
+      bool isFav,
+      bool isAdded,
+      double screenWidth,
+      ) {
     final cardWidth = (screenWidth - 48) / 2;
     final cardHeight = cardWidth * 1.4;
     final productMap = product.toMap()
@@ -683,7 +714,7 @@ class _CategoryPageState extends State<CategoryPage> {
                         ),
                       ),
                       if ((_isFilterActive ||
-                              _searchController.text.isNotEmpty) &&
+                          _searchController.text.isNotEmpty) &&
                           _filteredProducts.isNotEmpty)
                         TextButton(
                           onPressed: _resetFilters,
@@ -709,98 +740,94 @@ class _CategoryPageState extends State<CategoryPage> {
                         ? _buildShimmer(screenWidth)
                         : _hasError
                         ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.network_check,
-                                  color: Colors.grey,
-                                  size: screenWidth * 0.15,
-                                ),
-                                SizedBox(height: screenHeight * 0.02),
-                                Padding(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: screenWidth * 0.03,
-                                  ),
-                                  child: Text(
-                                    _errorMessage.isNotEmpty
-                                        ? _errorMessage
-                                        : S.of(context).connectionTimeout,
-                                    style: TextStyle(
-                                      fontSize: screenWidth * 0.035,
-                                      color: Colors.grey[700],
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                                SizedBox(height: screenHeight * 0.02),
-                                ElevatedButton(
-                                  onPressed: () => fetchCategoryProducts(
-                                    searchQuery:
-                                        _searchController.text.isNotEmpty
-                                        ? _searchController.text
-                                        : null,
-                                    minPrice: _currentMinPrice > 0
-                                        ? _currentMinPrice
-                                        : null,
-                                    maxPrice:
-                                        _currentMaxPrice != kFilterMaxPrice
-                                        ? _currentMaxPrice
-                                        : null,
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: KprimaryColor,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    S.of(context).tryAgain,
-                                    style: TextStyle(
-                                      fontSize: screenWidth * 0.035,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(height: screenHeight * 0.1),
-                              ],
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.network_check,
+                            color: Colors.grey,
+                            size: screenWidth * 0.15,
+                          ),
+                          SizedBox(height: screenHeight * 0.02),
+                          Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: screenWidth * 0.03,
                             ),
-                          )
+                            child: Text(
+                              _errorMessage.isNotEmpty
+                                  ? _errorMessage
+                                  : S.of(context).connectionTimeout,
+                              style: TextStyle(
+                                fontSize: screenWidth * 0.035,
+                                color: Colors.grey[700],
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                          SizedBox(height: screenHeight * 0.02),
+                          ElevatedButton(
+                            onPressed: () => fetchCategoryProducts(
+                              searchQuery: _searchController.text.isNotEmpty
+                                  ? _searchController.text
+                                  : null,
+                              // ✅ Server-side: نبعت القيم كما هي
+                              minPrice: _currentMinPrice,
+                              maxPrice: _currentMaxPrice,
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: KprimaryColor,
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: Text(
+                              S.of(context).tryAgain,
+                              style: TextStyle(
+                                fontSize: screenWidth * 0.035,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: screenHeight * 0.1),
+                        ],
+                      ),
+                    )
                         : _filteredProducts.isEmpty
                         ? buildEmptyState()
                         : BlocBuilder<FavoriteCubit, Set<int>>(
-                            builder: (context, favoriteIds) {
-                              return BlocBuilder<CartCubit, CartState>(
-                                builder: (context, cartState) {
-                                  return GridView.builder(
-                                    controller: _scrollController,
-                                    gridDelegate:
-                                        const SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount: 2,
-                                          crossAxisSpacing: 16,
-                                          mainAxisSpacing: 16,
-                                          childAspectRatio: 0.65,
-                                        ),
-                                    itemCount: _filteredProducts.length,
-                                    itemBuilder: (context, index) {
-                                      final product = _filteredProducts[index];
-                                      final isFav = favoriteIds.contains(
-                                        product.id,
-                                      );
-                                      final isAdded = cartState.cartIds
-                                          .contains(product.id);
-                                      return buildCard(
-                                        product,
-                                        isFav,
-                                        isAdded,
-                                        screenWidth,
-                                      );
-                                    },
-                                  );
-                                },
-                              );
-                            },
-                          ),
+                      builder: (context, favoriteIds) {
+                        return BlocBuilder<CartCubit, CartState>(
+                          builder: (context, cartState) {
+                            return GridView.builder(
+                              controller: _scrollController,
+                              gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                                childAspectRatio: 0.65,
+                              ),
+                              itemCount: _filteredProducts.length,
+                              itemBuilder: (context, index) {
+                                final product =
+                                _filteredProducts[index];
+                                final isFav =
+                                favoriteIds.contains(product.id);
+                                final isAdded =
+                                cartState.cartIds.contains(product.id);
+                                return buildCard(
+                                  product,
+                                  isFav,
+                                  isAdded,
+                                  screenWidth,
+                                );
+                              },
+                            );
+                          },
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),
