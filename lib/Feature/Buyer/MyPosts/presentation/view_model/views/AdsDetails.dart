@@ -1,11 +1,6 @@
-import 'dart:async';
-import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../../../Core/Widgets/AppBar.dart';
 import '../../../../../../Core/utiles/Colors.dart';
@@ -50,6 +45,7 @@ class _AdsDetailsState extends State<AdsDetails> {
     _loadSavedRating();
     _loadProductDetails();
   }
+
   List<String> _getProductImages() {
     final raw = _productData['images'] ?? _productData['image'] ?? [];
     if (raw is List) {
@@ -121,83 +117,106 @@ class _AdsDetailsState extends State<AdsDetails> {
   String _normalizeLink(String? rawLink) {
     if (rawLink == null || rawLink.trim().isEmpty) return '';
     final link = rawLink.trim();
+
+    // معالجة روابط الواتساب بشكل خاص
+    if (link.startsWith('+') || RegExp(r'^[\d\s\-]+$').hasMatch(link)) {
+      // إذا كان الرقم يبدأ بـ + أو أرقام فقط
+      final cleanedNumber = link.replaceAll(RegExp(r'[^\d+]'), '');
+      if (cleanedNumber.startsWith('+')) {
+        return 'https://wa.me/$cleanedNumber';
+      } else {
+        return 'https://wa.me/+$cleanedNumber';
+      }
+    }
+
     if (link.startsWith('http://') || link.startsWith('https://')) return link;
     return 'https://$link';
   }
 
   Future<void> _launchSocialLink(String? rawLink) async {
-    final link = _normalizeLink(rawLink);
-    if (link.isEmpty) return;
-    final uri = Uri.tryParse(link);
-    if (uri != null && await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
+    if (rawLink == null || rawLink.trim().isEmpty) return;
 
-  String _buildShareMessage() {
-    final productName = (_productData['name'] ?? '').toString();
-    final productDescription = (_productData['description'] ?? '').toString();
-    final price = _productData['priceAfterDiscount'] ?? _productData['price'] ?? 0;
-    final currency = (_productData['currency_type'] ?? S.of(context).SYP).toString();
-    return '''
-$productName
-$productDescription
-${S.of(context).priceLabel}: $price $currency
-''';
-  }
-
-  Future<XFile?> _downloadImageAsXFileWithDio(String imageUrl) async {
     try {
-      final dir = await getTemporaryDirectory();
-      final filePath =
-          '${dir.path}/ad_${widget.productId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      String link = rawLink.trim();
 
-      final res = await _dio.get<List<int>>(
-        imageUrl,
-        options: Options(
-          responseType: ResponseType.bytes,
-          followRedirects: true,
-          receiveTimeout: const Duration(seconds: 20),
-          sendTimeout: const Duration(seconds: 20),
-        ),
-      );
-
-      final bytes = res.data;
-      if (bytes == null || bytes.isEmpty) return null;
-
-      final file = File(filePath);
-      await file.writeAsBytes(bytes, flush: true);
-
-      return XFile(file.path);
-    } catch (e) {
-      if (kDebugMode) {
-        print('Share image download error: $e');
+      // تحويل الروابط التابعة
+      if (link.startsWith('www.')) {
+        link = 'https://$link';
       }
-      return null;
-    }
-  }
 
-  void _shareProduct() async {
-    final subject = (_productData['name'] ?? '').toString();
-    final message = _buildShareMessage();
-    final images = _getProductImages();
-    final imageUrl = images.isNotEmpty ? images.first.trim() : '';
-
-    try {
-      if (imageUrl.isNotEmpty) {
-        final xFile = await _downloadImageAsXFileWithDio(imageUrl);
-        if (xFile != null) {
-          await Share.shareXFiles([xFile], text: message, subject: subject);
-          return;
+      // معالجة روابط الواتساب بشكل خاص
+      if (link.contains('whatsapp') || link.contains('wa.me') ||
+          RegExp(r'^\+?[\d\s\-]+$').hasMatch(link)) {
+        if (!link.startsWith('https://')) {
+          link = 'https://$link';
         }
       }
-      await Share.share(message, subject: subject);
-    } catch (e) {
-      if (kDebugMode) {
-        print('Share error: $e');
+
+      final uri = Uri.parse(link);
+
+      // محاولة فتح الرابط بطرق متعددة
+      bool canLaunch = false;
+
+      // التحقق من إمكانية فتح الرابط
+      try {
+        canLaunch = await canLaunchUrl(uri);
+      } catch (e) {
+        print('Error checking launch capability: $e');
       }
-      await Share.share(message, subject: subject);
+
+      if (canLaunch) {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+          webViewConfiguration: const WebViewConfiguration(
+            enableJavaScript: true,
+            enableDomStorage: true,
+          ),
+          webOnlyWindowName: '_blank',
+        );
+      } else {
+        // طريقة بديلة إذا فشلت الطريقة الأولى
+        await _launchUrlFallback(link);
+      }
+    } catch (e) {
+      print('Error launching social link: $e');
+      // عرض رسالة للمستخدم
+      _showLaunchError(context);
     }
+  }
+
+  // طريقة بديلة لفتح الروابط
+  Future<void> _launchUrlFallback(String url) async {
+    try {
+      // محاولة باستخدام launch مباشرة
+      if (await canLaunch(url)) {
+        await launch(
+          url,
+          forceSafariVC: false,
+          forceWebView: false,
+          enableJavaScript: true,
+        );
+      } else {
+        // فتح في متصفح النظام
+        if (url.startsWith('http')) {
+          await launch(
+            url,
+            forceSafariVC: false,
+            forceWebView: false,
+          );
+        }
+      }
+    } catch (e) {
+      print('Fallback launch failed: $e');
+    }
+  }
+
+  void _showLaunchError(BuildContext context) {
+    final snackBar = SnackBar(
+      content: Text(S.of(context).error),
+      backgroundColor: Colors.red,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
   Future<bool?> _showDeleteConfirmationDialog() async {
@@ -844,30 +863,6 @@ ${S.of(context).priceLabel}: $price $currency
                 }),
               ),
             ),
-          Padding(
-            padding: EdgeInsets.all(screenWidth * 0.04),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                GestureDetector(
-                  onTap: _shareProduct,
-                  child: Container(
-                    width: screenWidth * 0.1,
-                    height: screenWidth * 0.1,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.black.withOpacity(0.5),
-                    ),
-                    child: Icon(
-                      Icons.ios_share_outlined,
-                      color: Colors.white,
-                      size: screenWidth * 0.05,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );

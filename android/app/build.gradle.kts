@@ -9,7 +9,7 @@ import java.util.Properties
 
 android {
     namespace = "com.example.tawqalnajah"
-    compileSdk = 35
+    compileSdk = 36
     ndkVersion = "27.3.13750724"
 
     compileOptions {
@@ -25,7 +25,7 @@ android {
     defaultConfig {
         applicationId = "com.example.tawqalnajah"
         minSdk = flutter.minSdkVersion
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 5
         versionName = "1.0.5"
         multiDexEnabled = true

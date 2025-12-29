@@ -1,21 +1,15 @@
-import 'dart:io';
-
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:tawqalnajah/Feature/Buyer/Product/presentation/view_model/cart_cubit.dart';
 import 'package:tawqalnajah/Feature/Buyer/Product/presentation/view_model/favorite_cubit.dart';
 import 'package:url_launcher/url_launcher.dart';
-
 import '../../../../../../Core/Widgets/AppBar.dart';
 import '../../../../../../Core/utiles/Colors.dart';
 import '../../../../../../generated/l10n.dart';
 import '../../../Data/repository/ProductDetailsRepository.dart';
 import '../../../Data/repository/RatingRepository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'widgets/FullScreenGallery.dart';
 
 class ProductDetails extends StatefulWidget {
@@ -169,7 +163,7 @@ class _ProductDetailsState extends State<ProductDetails> {
     if (_relatedCartLoading[productId] == true) return;
 
     final relatedProduct = _relatedProducts.firstWhere(
-      (product) => product['id'] == productId,
+          (product) => product['id'] == productId,
       orElse: () => {},
     );
 
@@ -232,94 +226,102 @@ class _ProductDetailsState extends State<ProductDetails> {
 
   Future<void> _launchSocialLink(String? rawLink) async {
     if (rawLink == null || rawLink.trim().isEmpty) return;
+
     try {
       String link = rawLink.trim();
-      if (!link.startsWith('http://') && !link.startsWith('https://')) {
+
+      // تحويل الروابط التابعة
+      if (link.startsWith('www.')) {
         link = 'https://$link';
       }
-      final uri = Uri.parse(link);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
-    } catch (e) {
-      print('Error launching social link: $e');
-    }
-  }
 
-  Future<XFile?> _downloadImageAsXFileWithDio(String imageUrl) async {
-    try {
-      final dir = await getTemporaryDirectory();
-      final filePath =
-          '${dir.path}/product_${widget.productId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-
-      final response = await _dio.get<List<int>>(
-        imageUrl,
-        options: Options(
-          responseType: ResponseType.bytes,
-          followRedirects: true,
-          receiveTimeout: const Duration(seconds: 20),
-          sendTimeout: const Duration(seconds: 20),
-        ),
-      );
-
-      final bytes = response.data;
-      if (bytes == null || bytes.isEmpty) return null;
-
-      final file = File(filePath);
-      await file.writeAsBytes(bytes, flush: true);
-
-      return XFile(file.path);
-    } catch (e) {
-      print('Error downloading image with Dio: $e');
-      return null;
-    }
-  }
-
-  String _buildShareMessage() {
-    final productName = (_productData['name'] ?? '').toString();
-    final productDescription = (_productData['description'] ?? '').toString();
-    final price =
-        _productData['priceAfterDiscount'] ?? _productData['price'] ?? 0;
-    final currency = (_productData['currency_type'] ?? 'ريال').toString();
-    final avg = _productData['avg_rate'] ?? '0';
-
-    return '''
-$productName
-$productDescription
-السعر: $price $currency
-التقييم: $avg ⭐
-''';
-  }
-
-  Future<void> _shareProduct() async {
-    final subject = (_productData['name'] ?? '').toString();
-    final message = _buildShareMessage();
-
-    final images = (_productData['image'] as List?)?.cast<String>() ?? [];
-    final imageUrl = images.isNotEmpty ? images.first.toString() : '';
-
-    try {
-      if (imageUrl.trim().isNotEmpty) {
-        final xFile = await _downloadImageAsXFileWithDio(imageUrl);
-        if (xFile != null) {
-          await Share.shareXFiles([xFile], text: message, subject: subject);
-          return;
+      // معالجة روابط الواتساب بشكل خاص
+      if (link.contains('whatsapp') || link.contains('wa.me')) {
+        if (!link.startsWith('https://')) {
+          link = 'https://$link';
         }
       }
 
-      await Share.share(message, subject: subject);
+      // معالجة روابط الهاتف
+      if (RegExp(r'^\+?[\d\s\-]+$').hasMatch(link)) {
+        if (!link.startsWith('tel:')) {
+          link = 'tel:$link';
+        }
+      }
+
+      final uri = Uri.parse(link);
+
+      // محاولة فتح الرابط بطرق متعددة
+      bool canLaunch = false;
+
+      // التحقق من إمكانية فتح الرابط
+      try {
+        canLaunch = await canLaunchUrl(uri);
+      } catch (e) {
+        print('Error checking launch capability: $e');
+      }
+
+      if (canLaunch) {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+          webViewConfiguration: const WebViewConfiguration(
+            enableJavaScript: true,
+            enableDomStorage: true,
+          ),
+          webOnlyWindowName: '_blank',
+        );
+      } else {
+        // طريقة بديلة إذا فشلت الطريقة الأولى
+        await _launchUrlFallback(link);
+      }
     } catch (e) {
-      print('Share error: $e');
-      await Share.share(message, subject: subject);
+      print('Error launching social link: $e');
+      // عرض رسالة للمستخدم
+      _showLaunchError(context);
     }
   }
 
+// طريقة بديلة لفتح الروابط
+  Future<void> _launchUrlFallback(String url) async {
+    try {
+      // محاولة باستخدام launch مباشرة
+      if (await canLaunch(url)) {
+        await launch(
+          url,
+          forceSafariVC: false,
+          forceWebView: false,
+          enableJavaScript: true,
+        );
+      } else {
+        // فتح في متصفح النظام
+        if (url.startsWith('http')) {
+          await launch(
+            url,
+            forceSafariVC: false,
+            forceWebView: false,
+          );
+        }
+      }
+    } catch (e) {
+      print('Fallback launch failed: $e');
+    }
+  }
+
+  void _showLaunchError(BuildContext context) {
+    final snackBar = SnackBar(
+      content: Text(S.of(context).error),
+      backgroundColor: Colors.red,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  }
+
   Widget _buildCircleIcon(
-    String path,
-    double screenWidth, {
-    VoidCallback? onTap,
-    Color backgroundColor = Colors.white,
-  }) {
+      String path,
+      double screenWidth, {
+        VoidCallback? onTap,
+        Color backgroundColor = Colors.white,
+      }) {
     return Padding(
       padding: EdgeInsets.only(left: screenWidth * 0.015),
       child: GestureDetector(
@@ -399,11 +401,11 @@ $productDescription
                   radius: screenWidth * 0.07,
                   backgroundColor: Colors.grey.shade300,
                   backgroundImage:
-                      (_sellerData['image'] != null &&
-                          _sellerData['image'].toString().isNotEmpty)
+                  (_sellerData['image'] != null &&
+                      _sellerData['image'].toString().isNotEmpty)
                       ? NetworkImage(_sellerData['image'])
                       : const AssetImage('Assets/fallback_image.png')
-                            as ImageProvider,
+                  as ImageProvider,
                 ),
                 SizedBox(width: screenWidth * 0.03),
                 Expanded(
@@ -473,7 +475,7 @@ $productDescription
             SizedBox(height: screenHeight * 0.01),
             Column(
               crossAxisAlignment:
-                  Directionality.of(context) == TextDirection.rtl
+              Directionality.of(context) == TextDirection.rtl
                   ? CrossAxisAlignment.start
                   : CrossAxisAlignment.end,
               children: [
@@ -497,9 +499,8 @@ $productDescription
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(5, (i) {
                     return GestureDetector(
-                      onTap: _ratingSubmitted
-                          ? null
-                          : () => _submitRating(i + 1),
+                      onTap:
+                      _ratingSubmitted ? null : () => _submitRating(i + 1),
                       child: Padding(
                         padding: EdgeInsets.symmetric(
                           horizontal: screenWidth * 0.015,
@@ -533,7 +534,7 @@ $productDescription
           builder: (context, favoriteState) {
             return Column(
               crossAxisAlignment:
-                  Localizations.localeOf(context).languageCode == 'ar'
+              Localizations.localeOf(context).languageCode == 'ar'
                   ? CrossAxisAlignment.start
                   : CrossAxisAlignment.end,
               children: [
@@ -559,8 +560,7 @@ $productDescription
                       final productId = product['id'];
                       final images =
                           (product['image'] as List?)?.cast<String>() ?? [];
-                      final price =
-                          product['priceAfterDiscount'] ??
+                      final price = product['priceAfterDiscount'] ??
                           product['price'] ??
                           0;
                       final currency = product['currency_type'] ?? 'ريال';
@@ -607,22 +607,22 @@ $productDescription
                                     children: [
                                       images.isNotEmpty
                                           ? Image.network(
-                                              images.first,
-                                              fit: BoxFit.cover,
-                                              width: double.infinity,
-                                              height: double.infinity,
-                                              errorBuilder:
-                                                  (context, error, stackTrace) {
-                                                    return _buildImageErrorPlaceholder(
-                                                      cardWidth,
-                                                      cardHeight,
-                                                    );
-                                                  },
-                                            )
+                                        images.first,
+                                        fit: BoxFit.cover,
+                                        width: double.infinity,
+                                        height: double.infinity,
+                                        errorBuilder: (context, error,
+                                            stackTrace) {
+                                          return _buildImageErrorPlaceholder(
+                                            cardWidth,
+                                            cardHeight,
+                                          );
+                                        },
+                                      )
                                           : _buildImageErrorPlaceholder(
-                                              cardWidth,
-                                              cardHeight,
-                                            ),
+                                        cardWidth,
+                                        cardHeight,
+                                      ),
                                       Positioned(
                                         top: cardWidth * 0.04,
                                         left: cardWidth * 0.04,
@@ -642,25 +642,23 @@ $productDescription
                                             ),
                                             child: isFavoriteLoading
                                                 ? SizedBox(
-                                                    width: cardWidth * 0.06,
-                                                    height: cardWidth * 0.06,
-                                                    child:
-                                                        const CircularProgressIndicator(
-                                                          color: Colors.white,
-                                                          strokeWidth: 2,
-                                                        ),
-                                                  )
+                                              width: cardWidth * 0.06,
+                                              height: cardWidth * 0.06,
+                                              child:
+                                              const CircularProgressIndicator(
+                                                color: Colors.white,
+                                                strokeWidth: 2,
+                                              ),
+                                            )
                                                 : Icon(
-                                                    isFavorite
-                                                        ? Icons.favorite
-                                                        : Icons.favorite_border,
-                                                    color: isFavorite
-                                                        ? const Color(
-                                                            0xffFF580E,
-                                                          )
-                                                        : Colors.white,
-                                                    size: cardWidth * 0.08,
-                                                  ),
+                                              isFavorite
+                                                  ? Icons.favorite
+                                                  : Icons.favorite_border,
+                                              color: isFavorite
+                                                  ? const Color(0xffFF580E)
+                                                  : Colors.white,
+                                              size: cardWidth * 0.08,
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -673,16 +671,17 @@ $productDescription
                                 child: Padding(
                                   padding: EdgeInsets.all(cardWidth * 0.045),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    crossAxisAlignment:
+                                    CrossAxisAlignment.end,
                                     mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
+                                    MainAxisAlignment.spaceBetween,
                                     children: [
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment:
-                                              CrossAxisAlignment.end,
+                                          CrossAxisAlignment.end,
                                           mainAxisAlignment:
-                                              MainAxisAlignment.start,
+                                          MainAxisAlignment.start,
                                           children: [
                                             Container(
                                               width: double.infinity,
@@ -697,7 +696,7 @@ $productDescription
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                                 textDirection:
-                                                    TextDirection.rtl,
+                                                TextDirection.rtl,
                                               ),
                                             ),
                                             SizedBox(
@@ -708,7 +707,7 @@ $productDescription
                                               alignment: Alignment.centerRight,
                                               child: Text(
                                                 product['description']
-                                                        ?.toString() ??
+                                                    ?.toString() ??
                                                     S.of(context).noData,
                                                 style: TextStyle(
                                                   fontSize: cardHeight * 0.035,
@@ -717,7 +716,7 @@ $productDescription
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                                 textDirection:
-                                                    TextDirection.rtl,
+                                                TextDirection.rtl,
                                               ),
                                             ),
                                             SizedBox(
@@ -731,12 +730,10 @@ $productDescription
                                                 style: TextStyle(
                                                   fontSize: cardHeight * 0.04,
                                                   fontWeight: FontWeight.bold,
-                                                  color: const Color(
-                                                    0xffFF580E,
-                                                  ),
+                                                  color: const Color(0xffFF580E),
                                                 ),
                                                 textDirection:
-                                                    TextDirection.rtl,
+                                                TextDirection.rtl,
                                               ),
                                             ),
                                             const Spacer(),
@@ -746,8 +743,8 @@ $productDescription
                                                 onPressed: isCartLoading
                                                     ? null
                                                     : () => _toggleRelatedCart(
-                                                        productId,
-                                                      ),
+                                                  productId,
+                                                ),
                                                 style: ElevatedButton.styleFrom(
                                                   backgroundColor: isInCart
                                                       ? Colors.grey
@@ -758,42 +755,39 @@ $productDescription
                                                   ),
                                                   shape: RoundedRectangleBorder(
                                                     borderRadius:
-                                                        BorderRadius.circular(
-                                                          cardWidth * 0.12,
-                                                        ),
+                                                    BorderRadius.circular(
+                                                      cardWidth * 0.12,
+                                                    ),
                                                   ),
                                                 ),
                                                 child: isCartLoading
                                                     ? SizedBox(
-                                                        width:
-                                                            cardHeight * 0.03,
-                                                        height:
-                                                            cardHeight * 0.03,
-                                                        child:
-                                                            const CircularProgressIndicator(
-                                                              color:
-                                                                  Colors.white,
-                                                              strokeWidth: 2,
-                                                            ),
-                                                      )
+                                                  width:
+                                                  cardHeight * 0.03,
+                                                  height:
+                                                  cardHeight * 0.03,
+                                                  child:
+                                                  const CircularProgressIndicator(
+                                                    color: Colors.white,
+                                                    strokeWidth: 2,
+                                                  ),
+                                                )
                                                     : Text(
-                                                        isInCart
-                                                            ? S
-                                                                  .of(context)
-                                                                  .addedToCart
-                                                            : S
-                                                                  .of(context)
-                                                                  .AddtoCart,
-                                                        style: TextStyle(
-                                                          fontSize:
-                                                              cardHeight * 0.04,
-                                                          color: Colors.white,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                        ),
-                                                        textDirection:
-                                                            TextDirection.rtl,
-                                                      ),
+                                                  isInCart
+                                                      ? S.of(context)
+                                                      .addedToCart
+                                                      : S.of(context)
+                                                      .AddtoCart,
+                                                  style: TextStyle(
+                                                    fontSize:
+                                                    cardHeight * 0.04,
+                                                    color: Colors.white,
+                                                    fontWeight:
+                                                    FontWeight.bold,
+                                                  ),
+                                                  textDirection:
+                                                  TextDirection.rtl,
+                                                ),
                                               ),
                                             ),
                                             const Spacer(),
@@ -948,37 +942,37 @@ $productDescription
                 width: double.infinity,
                 child: images.isNotEmpty
                     ? PageView.builder(
-                        itemCount: images.length,
-                        onPageChanged: (i) => setState(() => _currentPage = i),
-                        itemBuilder: (_, i) => GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => FullScreenGallery(
-                                  images: images,
-                                  initialIndex: i,
-                                ),
-                              ),
-                            );
-                          },
-                          child: Image.network(
-                            images[i],
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return _buildMainImageErrorPlaceholder(
-                                screenWidth,
-                                screenHeight,
-                              );
-                            },
+                  itemCount: images.length,
+                  onPageChanged: (i) => setState(() => _currentPage = i),
+                  itemBuilder: (_, i) => GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => FullScreenGallery(
+                            images: images,
+                            initialIndex: i,
                           ),
                         ),
-                      )
+                      );
+                    },
+                    child: Image.network(
+                      images[i],
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return _buildMainImageErrorPlaceholder(
+                          screenWidth,
+                          screenHeight,
+                        );
+                      },
+                    ),
+                  ),
+                )
                     : _buildMainImageErrorPlaceholder(
-                        screenWidth,
-                        screenHeight,
-                      ),
+                  screenWidth,
+                  screenHeight,
+                ),
               ),
               if (images.length > 1)
                 Positioned(
@@ -1013,22 +1007,6 @@ $productDescription
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    GestureDetector(
-                      onTap: () => _shareProduct(),
-                      child: Container(
-                        width: screenWidth * 0.1,
-                        height: screenWidth * 0.1,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.black.withOpacity(0.5),
-                        ),
-                        child: Icon(
-                          Icons.ios_share_outlined,
-                          color: Colors.white,
-                          size: screenWidth * 0.05,
-                        ),
-                      ),
-                    ),
                     SizedBox(width: screenWidth * 0.02),
                     GestureDetector(
                       onTap: _toggleFavorite,
@@ -1059,9 +1037,9 @@ $productDescription
   }
 
   Widget _buildMainImageErrorPlaceholder(
-    double screenWidth,
-    double screenHeight,
-  ) {
+      double screenWidth,
+      double screenHeight,
+      ) {
     return Container(
       width: double.infinity,
       height: double.infinity,
@@ -1208,9 +1186,8 @@ $productDescription
                   child: ElevatedButton(
                     onPressed: _isAddingToCart ? null : _handleAddToCart,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isInCart
-                          ? Colors.grey
-                          : const Color(0xffFF580E),
+                      backgroundColor:
+                      isInCart ? Colors.grey : const Color(0xffFF580E),
                       minimumSize: Size(double.infinity, screenHeight * 0.06),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(screenWidth * 0.03),
@@ -1219,23 +1196,23 @@ $productDescription
                     ),
                     child: _isAddingToCart
                         ? SizedBox(
-                            width: screenWidth * 0.05,
-                            height: screenWidth * 0.05,
-                            child: const CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
+                      width: screenWidth * 0.05,
+                      height: screenWidth * 0.05,
+                      child: const CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
                         : Text(
-                            isInCart
-                                ? S.of(context).addedToCart
-                                : S.of(context).AddtoCart,
-                            style: TextStyle(
-                              fontSize: screenWidth * 0.035,
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                      isInCart
+                          ? S.of(context).addedToCart
+                          : S.of(context).AddtoCart,
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.035,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
               ],

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:share_plus/share_plus.dart';
 import '../../../../../../../Core/Widgets/AppBar.dart';
 import '../../../../../../../Core/utiles/Colors.dart';
 import '../../../../../../../generated/l10n.dart';
@@ -18,20 +17,82 @@ class _ProductDetailsState extends State<ProductDetails> {
   int currentPage = 0;
   int selectedRating = 0;
 
+
   Future<void> _launchSocialLink(String rawLink) async {
+    if (rawLink.isEmpty) return;
+
     try {
       String link = rawLink.trim();
-      if (!link.startsWith('http://') && !link.startsWith('https://')) {
+
+      // تحويل الروابط التابعة
+      if (link.startsWith('www.')) {
         link = 'https://$link';
       }
-      final Uri uri = Uri.parse(link);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+
+      // معالجة روابط الواتساب بشكل خاص
+      if (link.contains('whatsapp') || link.contains('wa.me') ||
+          RegExp(r'^\+?[\d\s\-]+$').hasMatch(link)) {
+        if (!link.startsWith('https://')) {
+          link = 'https://$link';
+        }
+      }
+
+      final uri = Uri.parse(link);
+
+      // محاولة فتح الرابط بطرق متعددة
+      bool canLaunch = false;
+
+      // التحقق من إمكانية فتح الرابط
+      try {
+        canLaunch = await canLaunchUrl(uri);
+      } catch (e) {
+        print('Error checking launch capability: $e');
+      }
+
+      if (canLaunch) {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+          webViewConfiguration: const WebViewConfiguration(
+            enableJavaScript: true,
+            enableDomStorage: true,
+          ),
+          webOnlyWindowName: '_blank',
+        );
       } else {
-        _showErrorSnackBar(context);
+        // طريقة بديلة إذا فشلت الطريقة الأولى
+        await _launchUrlFallback(link);
       }
     } catch (e) {
+      print('Error launching social link: $e');
+      // عرض رسالة للمستخدم
       _showErrorSnackBar(context);
+    }
+  }
+
+  // طريقة بديلة لفتح الروابط
+  Future<void> _launchUrlFallback(String url) async {
+    try {
+      // محاولة باستخدام launch مباشرة
+      if (await canLaunch(url)) {
+        await launch(
+          url,
+          forceSafariVC: false,
+          forceWebView: false,
+          enableJavaScript: true,
+        );
+      } else {
+        // فتح في متصفح النظام
+        if (url.startsWith('http')) {
+          await launch(
+            url,
+            forceSafariVC: false,
+            forceWebView: false,
+          );
+        }
+      }
+    } catch (e) {
+      print('Fallback launch failed: $e');
     }
   }
 
@@ -97,6 +158,7 @@ class _ProductDetailsState extends State<ProductDetails> {
         : S.of(context).noShipping;
     final locale = Localizations.localeOf(context);
     final isEnglish = locale.languageCode == 'en';
+
     return Scaffold(
       backgroundColor: const Color(0xfffafafa),
       appBar: CustomAppBar(title: widget.ad['name'] ?? S.of(context).unknown),
@@ -170,27 +232,6 @@ class _ProductDetailsState extends State<ProductDetails> {
                             ),
                           ),
                         ),
-                      Positioned(
-                        top: screenWidth * 0.02,
-                        left: screenWidth * 0.04,
-                        child: GestureDetector(
-                          onTap: () {
-                            Share.share(
-                              '${widget.ad['name']}\n${widget.ad['description']}\nالسعر: ${price.toStringAsFixed(2)} ${widget.ad['currency']}',
-                              subject: widget.ad['name'],
-                            );
-                          },
-                          child: Container(
-                            width: screenWidth * 0.1,
-                            height: screenWidth * 0.1,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.black.withOpacity(0.5),
-                            ),
-                            child: Icon(Icons.ios_share_outlined, color: Colors.white, size: screenWidth * 0.05),
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -408,7 +449,7 @@ class _ProductDetailsState extends State<ProductDetails> {
                                   );
                                 }),
                               ),
-                          ],
+                            ],
                           ),
                           SizedBox(height: screenHeight * 0.02),
                         ],

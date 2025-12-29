@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../../../Core/Widgets/AppBar.dart';
 import '../../../../../../../Core/utiles/Colors.dart';
@@ -100,30 +99,96 @@ class _MyProductDetailsPageState extends State<MyProductDetailsPage> {
   }
 
   Future<void> _launchSocialLink(String rawLink) async {
+    if (rawLink.isEmpty) return;
+
     try {
       String link = rawLink.trim();
-      if (!link.startsWith('http://') && !link.startsWith('https://')) {
+
+      // تحويل الروابط التابعة
+      if (link.startsWith('www.')) {
         link = 'https://$link';
       }
-      final Uri uri = Uri.parse(link);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        _showActionDialog(
-          title: S.of(context).linkErrorTitle,
-          content: S.of(context).errorOpeningLink,
-          confirmText: S.of(context).ok,
-          onConfirm: () {},
+
+      // معالجة روابط الواتساب بشكل خاص
+      if (link.contains('whatsapp') || link.contains('wa.me') ||
+          RegExp(r'^\+?[\d\s\-]+$').hasMatch(link)) {
+        if (!link.startsWith('https://')) {
+          link = 'https://$link';
+        }
+      }
+
+      final uri = Uri.parse(link);
+
+      // محاولة فتح الرابط بطرق متعددة
+      bool canLaunch = false;
+
+      // التحقق من إمكانية فتح الرابط
+      try {
+        canLaunch = await canLaunchUrl(uri);
+      } catch (e) {
+        if (kDebugMode) {
+          print('Error checking launch capability: $e');
+        }
+      }
+
+      if (canLaunch) {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+          webViewConfiguration: const WebViewConfiguration(
+            enableJavaScript: true,
+            enableDomStorage: true,
+          ),
+          webOnlyWindowName: '_blank',
         );
+      } else {
+        // طريقة بديلة إذا فشلت الطريقة الأولى
+        await _launchUrlFallback(link);
       }
     } catch (e) {
-      _showActionDialog(
-        title: S.of(context).error,
-        content: S.of(context).errorOpeningLink,
-        confirmText: S.of(context).ok,
-        onConfirm: () {},
-      );
+      if (kDebugMode) {
+        print('Error launching social link: $e');
+      }
+      // عرض رسالة للمستخدم
+      _showLaunchError();
     }
+  }
+
+  // طريقة بديلة لفتح الروابط
+  Future<void> _launchUrlFallback(String url) async {
+    try {
+      // محاولة باستخدام launch مباشرة
+      if (await canLaunch(url)) {
+        await launch(
+          url,
+          forceSafariVC: false,
+          forceWebView: false,
+          enableJavaScript: true,
+        );
+      } else {
+        // فتح في متصفح النظام
+        if (url.startsWith('http')) {
+          await launch(
+            url,
+            forceSafariVC: false,
+            forceWebView: false,
+          );
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Fallback launch failed: $e');
+      }
+    }
+  }
+
+  void _showLaunchError() {
+    _showActionDialog(
+      title: S.of(context).linkErrorTitle,
+      content: S.of(context).errorOpeningLink,
+      confirmText: S.of(context).ok,
+      onConfirm: () {},
+    );
   }
 
   Widget _buildCircleIcon(
@@ -291,29 +356,6 @@ class _MyProductDetailsPageState extends State<MyProductDetailsPage> {
                                 }),
                               ),
                             ),
-                          Positioned(
-                            top: w * 0.02,
-                            left: w * 0.04,
-                            child: GestureDetector(
-                              onTap: () => Share.share(
-                                '${ad['name']}\n${ad['description']}\n${S.of(context).price}: ${price.toStringAsFixed(2)} ${ad['currency']}',
-                                subject: ad['name'],
-                              ),
-                              child: Container(
-                                width: w * 0.1,
-                                height: w * 0.1,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.black.withOpacity(0.5),
-                                ),
-                                child: Icon(
-                                  Icons.ios_share_outlined,
-                                  color: Colors.white,
-                                  size: w * 0.05,
-                                ),
-                              ),
-                            ),
-                          ),
                         ],
                       ),
                     ),
@@ -425,7 +467,7 @@ class _MyProductDetailsPageState extends State<MyProductDetailsPage> {
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Image.asset(
-                                          'Assets/material-symbols_delivery-truck-speed-rounded.png',
+                                            'Assets/material-symbols_delivery-truck-speed-rounded.png',
                                             width: w * 0.05, height: w * 0.05, color: Colors.white, fit: BoxFit.contain
                                         ),
                                         Text(
@@ -458,7 +500,7 @@ class _MyProductDetailsPageState extends State<MyProductDetailsPage> {
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Image.asset(
-                                          'Assets/iconoir_cash-solid.png',
+                                            'Assets/iconoir_cash-solid.png',
                                             width: w * 0.05, height: w * 0.05, color: Colors.white, fit: BoxFit.contain
                                         ),
                                         Text(
