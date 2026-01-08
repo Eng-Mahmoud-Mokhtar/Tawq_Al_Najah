@@ -210,7 +210,6 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
       final token = await _storage.read(key: 'user_token');
       final headers = {
         'Accept': 'application/json',
-        // خليها زي كودك القديم عشان التصميم مايتغيرش، بس لو حبيت نقدر نشيل Content-Type
         'Content-Type': 'application/json',
       };
       if (token != null) headers['Authorization'] = 'Bearer $token';
@@ -904,7 +903,6 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
                             final product = _displayedProducts[index];
                             final productMap = product.toMap()
                               ..['images'] = ImageHome.processImageList(product.images);
-
                             return _buildProductCard(
                               product,
                               productMap,

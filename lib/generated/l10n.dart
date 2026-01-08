@@ -1714,10 +1714,10 @@ class S {
     );
   }
 
-  /// `Local & International Shipping`
+  /// `Local  & International Shipping`
   String get bothShipping {
     return Intl.message(
-      'Local & International Shipping',
+      'Local  & International Shipping',
       name: 'bothShipping',
       desc: '',
       args: [],
@@ -4649,6 +4649,111 @@ class S {
     return Intl.message(
       'Passwords do not match',
       name: 'passwordMismatch',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `International shipping price`
+  String get internationalShipping {
+    return Intl.message(
+      'International shipping price',
+      name: 'internationalShipping',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Internal shipping price`
+  String get internalShipping {
+    return Intl.message(
+      'Internal shipping price',
+      name: 'internalShipping',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Not Supported Link`
+  String get notSupportedLink {
+    return Intl.message(
+      'Not Supported Link',
+      name: 'notSupportedLink',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Payment Type`
+  String get paymentType {
+    return Intl.message(
+      'Payment Type',
+      name: 'paymentType',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Wallet`
+  String get wallet {
+    return Intl.message('Wallet', name: 'wallet', desc: '', args: []);
+  }
+
+  /// `Includes`
+  String get includes {
+    return Intl.message('Includes', name: 'includes', desc: '', args: []);
+  }
+
+  /// `Bank Transfer`
+  String get bankTransfer {
+    return Intl.message(
+      'Bank Transfer',
+      name: 'bankTransfer',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `fees`
+  String get fees {
+    return Intl.message('fees', name: 'fees', desc: '', args: []);
+  }
+
+  /// `Processing`
+  String get processingStatus {
+    return Intl.message(
+      'Processing',
+      name: 'processingStatus',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Are you sure you want to ship this order?`
+  String get confirmShippingMessage {
+    return Intl.message(
+      'Are you sure you want to ship this order?',
+      name: 'confirmShippingMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Are you sure this order has been delivered?`
+  String get confirmDeliveryMessage {
+    return Intl.message(
+      'Are you sure this order has been delivered?',
+      name: 'confirmDeliveryMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to update order status`
+  String get updateFailed {
+    return Intl.message(
+      'Failed to update order status',
+      name: 'updateFailed',
       desc: '',
       args: [],
     );

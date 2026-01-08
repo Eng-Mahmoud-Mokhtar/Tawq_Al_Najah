@@ -182,9 +182,10 @@ class MessageLookup extends MessageLookupByLibrary {
     "bankSubmittedSuccessfully": MessageLookupByLibrary.simpleMessage(
       "Bank account details submitted successfully",
     ),
+    "bankTransfer": MessageLookupByLibrary.simpleMessage("Bank Transfer"),
     "books": MessageLookupByLibrary.simpleMessage("Books"),
     "bothShipping": MessageLookupByLibrary.simpleMessage(
-      "Local & International Shipping",
+      "Local  & International Shipping",
     ),
     "branch": MessageLookupByLibrary.simpleMessage("Branch Location"),
     "branchesCount": MessageLookupByLibrary.simpleMessage("Number of Branches"),
@@ -280,8 +281,14 @@ class MessageLookup extends MessageLookupByLibrary {
     "confirmActionMessage": MessageLookupByLibrary.simpleMessage(
       "Are you sure you want to perform this action?",
     ),
+    "confirmDeliveryMessage": MessageLookupByLibrary.simpleMessage(
+      "Are you sure this order has been delivered?",
+    ),
     "confirmOrder": MessageLookupByLibrary.simpleMessage("Confirm Order"),
     "confirmPassword": MessageLookupByLibrary.simpleMessage("Confirm Password"),
+    "confirmShippingMessage": MessageLookupByLibrary.simpleMessage(
+      "Are you sure you want to ship this order?",
+    ),
     "confirmed": MessageLookupByLibrary.simpleMessage("Confirmed"),
     "confirmedOrders": MessageLookupByLibrary.simpleMessage("Confirmed"),
     "confirmedTab": MessageLookupByLibrary.simpleMessage("Confirmed"),
@@ -472,6 +479,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Favorite Products",
     ),
     "february": MessageLookupByLibrary.simpleMessage("February"),
+    "fees": MessageLookupByLibrary.simpleMessage("fees"),
     "fieldRequired": MessageLookupByLibrary.simpleMessage(
       "This field is required",
     ),
@@ -530,6 +538,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "inKindSupportType": MessageLookupByLibrary.simpleMessage(
       "Type of In-Kind Support",
     ),
+    "includes": MessageLookupByLibrary.simpleMessage("Includes"),
     "incompleteData": MessageLookupByLibrary.simpleMessage("Incomplete Data"),
     "installment": MessageLookupByLibrary.simpleMessage("installment"),
     "installmentAvailable": MessageLookupByLibrary.simpleMessage(
@@ -540,6 +549,12 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "insufficientStock": MessageLookupByLibrary.simpleMessage(
       "Insufficient stock",
+    ),
+    "internalShipping": MessageLookupByLibrary.simpleMessage(
+      "Internal shipping price",
+    ),
+    "internationalShipping": MessageLookupByLibrary.simpleMessage(
+      "International shipping price",
     ),
     "invalidCode": MessageLookupByLibrary.simpleMessage(
       "Invalid verification code",
@@ -675,6 +690,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "no_ratings_yet": MessageLookupByLibrary.simpleMessage("No ratings yet"),
     "none": MessageLookupByLibrary.simpleMessage("None"),
+    "notSupportedLink": MessageLookupByLibrary.simpleMessage(
+      "Not Supported Link",
+    ),
     "notificationsTitle": MessageLookupByLibrary.simpleMessage("Notifications"),
     "november": MessageLookupByLibrary.simpleMessage("November"),
     "october": MessageLookupByLibrary.simpleMessage("October"),
@@ -753,6 +771,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "paymentSuccess": MessageLookupByLibrary.simpleMessage(
       "Payment Successful",
     ),
+    "paymentType": MessageLookupByLibrary.simpleMessage("Payment Type"),
     "pending": MessageLookupByLibrary.simpleMessage("Pending"),
     "pendingTab": MessageLookupByLibrary.simpleMessage("New Orders"),
     "phoneAlreadyUsed": MessageLookupByLibrary.simpleMessage(
@@ -786,6 +805,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "priceRange": MessageLookupByLibrary.simpleMessage("Price Range"),
     "priceRequired": MessageLookupByLibrary.simpleMessage("Le prix est requis"),
     "processing": MessageLookupByLibrary.simpleMessage("Processing..."),
+    "processingStatus": MessageLookupByLibrary.simpleMessage("Processing"),
     "productDescription": MessageLookupByLibrary.simpleMessage(
       "Product Description",
     ),
@@ -987,6 +1007,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "unsupportedPlatform": MessageLookupByLibrary.simpleMessage(
       "Invalid or unsupported platform",
     ),
+    "updateFailed": MessageLookupByLibrary.simpleMessage(
+      "Failed to update order status",
+    ),
     "uploadDocs": MessageLookupByLibrary.simpleMessage(
       "Upload commercial registration and documents",
     ),
@@ -1006,6 +1029,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "verify": MessageLookupByLibrary.simpleMessage("Verify"),
     "verifying": MessageLookupByLibrary.simpleMessage("Verifying..."),
     "visa": MessageLookupByLibrary.simpleMessage("Visa"),
+    "wallet": MessageLookupByLibrary.simpleMessage("Wallet"),
     "withdrawEarnings": MessageLookupByLibrary.simpleMessage(
       "Withdraw Earnings",
     ),

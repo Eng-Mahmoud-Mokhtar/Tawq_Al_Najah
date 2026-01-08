@@ -6,7 +6,7 @@ import 'package:tawqalnajah/Feature/Seller/Home/presentation/view_model/views/wi
 import '../../../../../../Core/utiles/Colors.dart';
 import '../../../../../../generated/l10n.dart';
 import '../../../../More/presentation/view_model/views/MorePage.dart';
-import '../../../../MyStore/presentation/view_model/views/MyStore.dart';
+import '../../../../MyStore/presentation/view_model/views/MyStorePage.dart';
 import '../../../../Orders/presentation/view_model/views/SellerActiveOrdersPage.dart';
 
 class BottomNavSCubit extends Cubit<int> {
@@ -24,7 +24,7 @@ class HomeStructureSeller extends StatelessWidget {
 
     final List<Widget> pages = [
       const HomePage(),
-      MyStorePage(),
+      MyStore(),
       const SellerActiveOrdersPage(fromBottomNav: true),
       const MorePage(),
     ];

@@ -83,7 +83,7 @@ class _CategoryPageState extends State<CategoryPage> {
       if (query.isNotEmpty) {
         fetchCategoryProducts(
           searchQuery: query,
-          // ✅ نفس حل العروض/الاقتراحات: Server-side (نبعت القيم كما هي)
+          // ✅ Server-side (نبعت القيم كما هي)
           minPrice: _currentMinPrice,
           maxPrice: _currentMaxPrice,
         );
@@ -122,6 +122,8 @@ class _CategoryPageState extends State<CategoryPage> {
         setState(() {
           _isSearchLoading = true;
           _isLoading = false;
+          _hasError = false;
+          _errorMessage = '';
         });
       } else {
         setState(() {
@@ -170,7 +172,7 @@ class _CategoryPageState extends State<CategoryPage> {
 
       if (response.statusCode == 200) {
         try {
-          // ✅ نفس حل العروض/الاقتراحات: decode لو response String
+          // ✅ decode لو response String
           dynamic raw = response.data;
           if (raw is String) raw = jsonDecode(raw);
 
@@ -207,32 +209,41 @@ class _CategoryPageState extends State<CategoryPage> {
             );
           });
         } catch (parseError) {
+          // لا نعرض الاستثناءات للمستخدم، فقط نسجلها في الـ log
+          debugPrint('Parsing error: $parseError');
           if (!mounted) return;
           setState(() {
             _filteredProducts = [];
             _isLoading = false;
             _isSearchLoading = false;
             _hasError = true;
-            _errorMessage = 'Parsing error: $parseError';
+            // لا نعرض تفاصيل الاستثناء
+            _errorMessage = '';
           });
         }
       } else {
+        // نسجل تفاصيل الخطأ في الـ log فقط
+        debugPrint('Server error: ${response.statusCode} | ${response.data}');
         if (!mounted) return;
         setState(() {
           _isLoading = false;
           _isSearchLoading = false;
           _hasError = true;
-          _errorMessage = 'Server error: ${response.statusCode}\n${response.data ?? ''}';
+          // لا نعرض تفاصيل السيرفر للمستخدم
+          _errorMessage = '';
         });
       }
     } catch (e) {
       if (e is DioException && e.type == DioExceptionType.cancel) return;
+      // نسجل الاستثناء في الـ log فقط
+      debugPrint('Request error: $e');
       if (!mounted) return;
       setState(() {
         _isLoading = false;
         _isSearchLoading = false;
         _hasError = true;
-        _errorMessage = e.toString();
+        // لا نعرض نص الاستثناء
+        _errorMessage = '';
       });
     }
   }
@@ -274,7 +285,7 @@ class _CategoryPageState extends State<CategoryPage> {
   void _handleFilterApply(Map<String, dynamic> filters) {
     if (!mounted) return;
 
-    // ✅ نفس حل العروض/الاقتراحات: keys موحدة
+    // ✅ مفاتيح موحدة
     setState(() {
       _currentMinPrice = (filters['minPrice'] as num?)?.toDouble() ?? 0;
       _currentMaxPrice = (filters['maxPrice'] as num?)?.toDouble() ?? kFilterMaxPrice;
@@ -754,9 +765,8 @@ class _CategoryPageState extends State<CategoryPage> {
                               horizontal: screenWidth * 0.03,
                             ),
                             child: Text(
-                              _errorMessage.isNotEmpty
-                                  ? _errorMessage
-                                  : S.of(context).connectionTimeout,
+                              // نعرض رسالة موحدة فقط بدون تفاصيل الاستثناءات
+                              S.of(context).connectionTimeout,
                               style: TextStyle(
                                 fontSize: screenWidth * 0.035,
                                 color: Colors.grey[700],

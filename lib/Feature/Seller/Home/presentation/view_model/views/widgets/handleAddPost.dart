@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tawqalnajah/generated/l10n.dart';
 import '../../../../../../../Core/utiles/Colors.dart';
-import '../../../../../MyStore/presentation/view_model/views/widgets/AddPostPage.dart';
+import '../../../../../MyStore/presentation/view_model/views/AddPostPage.dart';
 
 Future<void> handleAddPost(BuildContext context) async {
   bool seenSheet = false;

@@ -165,8 +165,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "bankSubmittedSuccessfully": MessageLookupByLibrary.simpleMessage(
       "تم إرسال بيانات الحساب البنكي للمراجعة بنجاح",
     ),
+    "bankTransfer": MessageLookupByLibrary.simpleMessage("تحويل بنكي"),
     "books": MessageLookupByLibrary.simpleMessage("كتب"),
-    "bothShipping": MessageLookupByLibrary.simpleMessage("توصيل داخلي ودولي"),
+    "bothShipping": MessageLookupByLibrary.simpleMessage("توصيل داخلي و دولي"),
     "branch": MessageLookupByLibrary.simpleMessage("عنوان الفرع"),
     "branchesCount": MessageLookupByLibrary.simpleMessage("عدد الفروع"),
     "browseAndShopNow": MessageLookupByLibrary.simpleMessage(
@@ -263,9 +264,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "confirmActionMessage": MessageLookupByLibrary.simpleMessage(
       "هل أنت متأكد من تنفيذ هذه العملية؟",
     ),
+    "confirmDeliveryMessage": MessageLookupByLibrary.simpleMessage(
+      "هل أنت متأكد ان هذا الطلب تم تسليمه؟",
+    ),
     "confirmOrder": MessageLookupByLibrary.simpleMessage("تأكيد الطلب"),
     "confirmPassword": MessageLookupByLibrary.simpleMessage(
       "تأكيد كلمة المرور",
+    ),
+    "confirmShippingMessage": MessageLookupByLibrary.simpleMessage(
+      "هل انت متأكد من شحن هذا الطلب",
     ),
     "confirmed": MessageLookupByLibrary.simpleMessage("مؤكد"),
     "confirmedOrders": MessageLookupByLibrary.simpleMessage("المؤكدة"),
@@ -439,6 +446,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "المنتجات المفضلة",
     ),
     "february": MessageLookupByLibrary.simpleMessage("فبراير"),
+    "fees": MessageLookupByLibrary.simpleMessage("رسوم"),
     "fieldRequired": MessageLookupByLibrary.simpleMessage("هذا الحقل مطلوب"),
     "fillRequiredFields": MessageLookupByLibrary.simpleMessage(
       "يرجى ملء جميع الحقول المطلوبة.",
@@ -488,6 +496,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "inKindSupportType": MessageLookupByLibrary.simpleMessage(
       "نوع الدعم العيني",
     ),
+    "includes": MessageLookupByLibrary.simpleMessage("يشمل"),
     "incompleteData": MessageLookupByLibrary.simpleMessage("بيانات ناقصة"),
     "installment": MessageLookupByLibrary.simpleMessage("تقسيط"),
     "installmentAvailable": MessageLookupByLibrary.simpleMessage(
@@ -498,6 +507,12 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "insufficientStock": MessageLookupByLibrary.simpleMessage(
       "المخزون غير كافي",
+    ),
+    "internalShipping": MessageLookupByLibrary.simpleMessage(
+      "سعر التوصيل المحلي",
+    ),
+    "internationalShipping": MessageLookupByLibrary.simpleMessage(
+      "سعر التوصيل الدولي",
     ),
     "invalidCode": MessageLookupByLibrary.simpleMessage("رمز التحقق غير صحيح"),
     "invalidData": MessageLookupByLibrary.simpleMessage("بيانات غير صالحة"),
@@ -622,6 +637,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "no_contracts_found": MessageLookupByLibrary.simpleMessage("لا توجد عقود"),
     "none": MessageLookupByLibrary.simpleMessage("لا يوجد"),
+    "notSupportedLink": MessageLookupByLibrary.simpleMessage(
+      "الرابط غير مدعوم",
+    ),
     "notificationsTitle": MessageLookupByLibrary.simpleMessage("الإشعارات"),
     "november": MessageLookupByLibrary.simpleMessage("نوفمبر"),
     "october": MessageLookupByLibrary.simpleMessage("أكتوبر"),
@@ -698,6 +716,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "paymentMethod": MessageLookupByLibrary.simpleMessage("وسيلة الدفع"),
     "paymentSuccess": MessageLookupByLibrary.simpleMessage("تم الدفع بنجاح"),
+    "paymentType": MessageLookupByLibrary.simpleMessage("طريقة الدفع"),
     "pending": MessageLookupByLibrary.simpleMessage("قيد الانتظار"),
     "pendingTab": MessageLookupByLibrary.simpleMessage("طلبات جديدة"),
     "phoneAlreadyUsed": MessageLookupByLibrary.simpleMessage(
@@ -729,6 +748,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "priceRange": MessageLookupByLibrary.simpleMessage("نطاق السعر"),
     "priceRequired": MessageLookupByLibrary.simpleMessage("السعر مطلوب"),
     "processing": MessageLookupByLibrary.simpleMessage("جاري المعالجة..."),
+    "processingStatus": MessageLookupByLibrary.simpleMessage("جاري المعالجة"),
     "productDescription": MessageLookupByLibrary.simpleMessage("وصف المنتج"),
     "productDetails": MessageLookupByLibrary.simpleMessage("تفاصيل المنتج"),
     "productName": MessageLookupByLibrary.simpleMessage("اسم المنتج"),
@@ -924,6 +944,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "unsupportedPlatform": MessageLookupByLibrary.simpleMessage(
       "يوجد خطأ أو المنصة غير مدعومة",
     ),
+    "updateFailed": MessageLookupByLibrary.simpleMessage(
+      "فشل تحديث حالة الطلب",
+    ),
     "uploadDocs": MessageLookupByLibrary.simpleMessage(
       "تحميل السجل التجاري والوثائق",
     ),
@@ -943,6 +966,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "verify": MessageLookupByLibrary.simpleMessage("تحقق"),
     "verifying": MessageLookupByLibrary.simpleMessage("جارٍ التحقق..."),
     "visa": MessageLookupByLibrary.simpleMessage("فيزا"),
+    "wallet": MessageLookupByLibrary.simpleMessage("المحفظة"),
     "withdrawEarnings": MessageLookupByLibrary.simpleMessage("سحب الأرباح"),
     "withdrawnAmount": MessageLookupByLibrary.simpleMessage("تم سحب"),
     "writeDescription": MessageLookupByLibrary.simpleMessage(

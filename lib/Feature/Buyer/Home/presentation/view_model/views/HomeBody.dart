@@ -38,6 +38,8 @@ class _HomePageState extends State<HomePage> {
     Icons.sports_volleyball_outlined,
     Icons.kitchen_outlined,
     Icons.health_and_safety_outlined,
+    Icons.book_outlined,
+
   ];
 
   late final BannerCubit _bannerCubit;
@@ -111,6 +113,7 @@ class _HomePageState extends State<HomePage> {
       S.of(context).toys,
       S.of(context).kitchen,
       S.of(context).health,
+      S.of(context).books,
     ];
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;

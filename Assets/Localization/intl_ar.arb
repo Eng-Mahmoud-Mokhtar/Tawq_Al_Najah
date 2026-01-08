@@ -216,7 +216,7 @@
   "overall_rating": "التقييم العام",
   "noShipping": "لا يوجد توصيل",
   "localShipping": "توصيل داخلي",
-  "bothShipping": "توصيل داخلي ودولي",
+  "bothShipping": "توصيل داخلي و دولي",
   "installmentNotAvailable": "التقسيط غير متاح",
   "installment": "تقسيط",
   "cancelOrder": "إلغاء الطلب",
@@ -551,6 +551,24 @@
   "discountLabel": "خصم",
   "cancellingOrder": "جاري إلغاء الطلب...",
   "orderCancelledSuccess": "تم حذف هذا الطلب بنجاح",
-  "passwordMismatch": "كلمات المرور غير متطابقة"
+  "passwordMismatch": "كلمات المرور غير متطابقة",
+  "internationalShipping": "سعر التوصيل الدولي",
+  "internalShipping": "سعر التوصيل المحلي",
+  "notSupportedLink": "الرابط غير مدعوم",
+  "paymentType": "طريقة الدفع",
+  "wallet": "المحفظة",
+  "includes": "يشمل",
+  "bankTransfer": "تحويل بنكي",
+  "fees": "رسوم",
+  "processingStatus": "جاري المعالجة",
+  "confirmShippingMessage": "هل انت متأكد من شحن هذا الطلب",
+  "confirmDeliveryMessage": "هل أنت متأكد ان هذا الطلب تم تسليمه؟",
+  "updateFailed": "فشل تحديث حالة الطلب"
+
+
+
+
+
+
 
 }

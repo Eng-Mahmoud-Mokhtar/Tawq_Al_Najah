@@ -2,7 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tawqalnajah/Feature/Buyer/SignUpBuyer/presentation/view_model/views/widgets/phone_field.dart';
-
 import '../../../../../../Core/Widgets/alreadyHaveAccount.dart';
 import '../../../../../../Core/utiles/Colors.dart';
 import '../../../../../../Core/utiles/Images.dart';
@@ -72,8 +71,6 @@ class _SignUpBuyerState extends State<SignUpBuyer> {
                               ),
                             ),
                             SizedBox(height: screenHeight * 0.05),
-
-                            // Name Field
                             Text(
                               S.of(context).FullName,
                               style: TextStyle(
@@ -500,7 +497,7 @@ class _SignUpBuyerState extends State<SignUpBuyer> {
                                     'name': _nameController.text.trim(),
                                     'email': _emailController.text.trim(),
                                     'password': _passwordController.text,
-                                    'password_confirmation': _passwordController.text, // إضافة
+                                    'password_confirmation': _passwordController.text,
                                     'code_phone': _selectedCountryCode,
                                     'phone': _phoneController.text.trim(),
                                     'country': _countryController.text.trim(),

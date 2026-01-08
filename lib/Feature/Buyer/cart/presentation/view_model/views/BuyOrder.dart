@@ -752,7 +752,7 @@ class _BuyOrderState extends State<BuyOrder> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       padding: EdgeInsets.symmetric(
-                        vertical: screenHeight * 0.025,
+                        vertical: screenHeight * 0.015,
                       ),
                       elevation: 3,
                     ),

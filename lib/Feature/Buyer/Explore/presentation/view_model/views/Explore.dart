@@ -64,15 +64,38 @@ class _ExploreState extends State<Explore> {
 
   void _initializeCategories() {
     _categories = [
-      {'apiName': 'السوق', 'displayName': S.of(context).marketplace},
-      {'apiName': 'الكترونيات', 'displayName': S.of(context).electronics},
-      {'apiName': 'ملابس', 'displayName': S.of(context).fashion},
-      {'apiName': 'اثاث', 'displayName': S.of(context).furniture},
-      {'apiName': 'العاب', 'displayName': S.of(context).toys},
-      {'apiName': 'مطبخ', 'displayName': S.of(context).kitchen},
-      {'apiName': 'صحة', 'displayName': S.of(context).health},
+      {
+        'apiName': 'other',
+        'displayName': S.of(context).marketplace,
+      },
+      {
+        'apiName': 'electronics',
+        'displayName': S.of(context).electronics,
+      },
+      {
+        'apiName': 'fashion',
+        'displayName': S.of(context).fashion,
+      },
+      {
+        'apiName': 'furniture',
+        'displayName': S.of(context).furniture,
+      },
+      {'apiName': 'toys', 'displayName': S.of(context).toys},
+      {
+        'apiName': 'kitchen',
+        'displayName': S.of(context).kitchen,
+      },
+      {
+        'apiName': 'health',
+        'displayName': S.of(context).health,
+      },
+      {
+        'apiName': 'books',
+        'displayName': S.of(context).books,
+      },
     ];
   }
+
 
   @override
   void dispose() {

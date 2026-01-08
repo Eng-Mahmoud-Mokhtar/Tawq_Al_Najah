@@ -114,14 +114,33 @@ class _AdsDetailsState extends State<AdsDetails> {
     } catch (_) {}
   }
 
-  String _normalizeLink(String? rawLink) {
-    if (rawLink == null || rawLink.trim().isEmpty) return '';
-    final link = rawLink.trim();
+  // يعتبر أي قيمة "null" نصياً أو فارغة كأنها غير موجودة
+  bool _hasLink(dynamic value) {
+    if (value == null) return false;
+    final s = value.toString().trim();
+    return s.isNotEmpty && s.toLowerCase() != 'null';
+  }
 
-    // معالجة روابط الواتساب بشكل خاص
-    if (link.startsWith('+') || RegExp(r'^[\d\s\-]+$').hasMatch(link)) {
-      // إذا كان الرقم يبدأ بـ + أو أرقام فقط
-      final cleanedNumber = link.replaceAll(RegExp(r'[^\d+]'), '');
+  // ترجيع رابط اجتماعي مضبوط (يبحث أولاً في بيانات المنتج ثم البائع)
+  String? _getSocialLink(String key) {
+    final candidateProduct = _productData[key];
+    if (_hasLink(candidateProduct)) return _normalizeLink(candidateProduct.toString());
+
+    final candidateSeller = _sellerData[key];
+    if (_hasLink(candidateSeller)) return _normalizeLink(candidateSeller.toString());
+
+    return null;
+  }
+
+  String _normalizeLink(String? rawLink) {
+    if (rawLink == null) return '';
+    final link0 = rawLink.trim();
+    if (link0.isEmpty) return '';
+    if (link0.toLowerCase() == 'null') return '';
+
+    // معالجة روابط الواتساب بشكل خاص (أرقام فقط)
+    if (link0.startsWith('+') || RegExp(r'^[\d\s\-]+$').hasMatch(link0)) {
+      final cleanedNumber = link0.replaceAll(RegExp(r'[^\d+]'), '');
       if (cleanedNumber.startsWith('+')) {
         return 'https://wa.me/$cleanedNumber';
       } else {
@@ -129,22 +148,34 @@ class _AdsDetailsState extends State<AdsDetails> {
       }
     }
 
-    if (link.startsWith('http://') || link.startsWith('https://')) return link;
-    return 'https://$link';
+    var link = link0;
+
+    // تحويل الروابط التابعة
+    if (link.startsWith('www.')) {
+      link = 'https://$link';
+    }
+
+    // إضافة البروتوكول إذا مفقود
+    if (!link.startsWith('http://') && !link.startsWith('https://')) {
+      link = 'https://$link';
+    }
+
+    return link;
   }
 
   Future<void> _launchSocialLink(String? rawLink) async {
-    if (rawLink == null || rawLink.trim().isEmpty) return;
+    if (rawLink == null) return;
+    final trimmed = rawLink.trim();
+    if (trimmed.isEmpty || trimmed.toLowerCase() == 'null') return;
 
     try {
-      String link = rawLink.trim();
+      String link = trimmed;
 
-      // تحويل الروابط التابعة
       if (link.startsWith('www.')) {
         link = 'https://$link';
       }
 
-      // معالجة روابط الواتساب بشكل خاص
+      // إجبار https لواتساب/أرقام
       if (link.contains('whatsapp') || link.contains('wa.me') ||
           RegExp(r'^\+?[\d\s\-]+$').hasMatch(link)) {
         if (!link.startsWith('https://')) {
@@ -153,15 +184,12 @@ class _AdsDetailsState extends State<AdsDetails> {
       }
 
       final uri = Uri.parse(link);
-
-      // محاولة فتح الرابط بطرق متعددة
       bool canLaunch = false;
 
-      // التحقق من إمكانية فتح الرابط
       try {
         canLaunch = await canLaunchUrl(uri);
       } catch (e) {
-        print('Error checking launch capability: $e');
+        // تجاهل
       }
 
       if (canLaunch) {
@@ -175,12 +203,9 @@ class _AdsDetailsState extends State<AdsDetails> {
           webOnlyWindowName: '_blank',
         );
       } else {
-        // طريقة بديلة إذا فشلت الطريقة الأولى
         await _launchUrlFallback(link);
       }
     } catch (e) {
-      print('Error launching social link: $e');
-      // عرض رسالة للمستخدم
       _showLaunchError(context);
     }
   }
@@ -188,7 +213,6 @@ class _AdsDetailsState extends State<AdsDetails> {
   // طريقة بديلة لفتح الروابط
   Future<void> _launchUrlFallback(String url) async {
     try {
-      // محاولة باستخدام launch مباشرة
       if (await canLaunch(url)) {
         await launch(
           url,
@@ -197,7 +221,6 @@ class _AdsDetailsState extends State<AdsDetails> {
           enableJavaScript: true,
         );
       } else {
-        // فتح في متصفح النظام
         if (url.startsWith('http')) {
           await launch(
             url,
@@ -207,7 +230,7 @@ class _AdsDetailsState extends State<AdsDetails> {
         }
       }
     } catch (e) {
-      print('Fallback launch failed: $e');
+      // تجاهل
     }
   }
 
@@ -454,21 +477,14 @@ class _AdsDetailsState extends State<AdsDetails> {
     List<Map<String, dynamic>> socialLinks = [];
 
     void addLinksFromSource(Map<String, dynamic> source) {
-      if (source['linkInsta'] != null && source['linkInsta'].toString().isNotEmpty) {
-        String instaUrl = _normalizeLink(source['linkInsta'].toString());
-        if (instaUrl.isNotEmpty) socialLinks.add({'url': instaUrl});
-      }
-      if (source['linkWhatsapp'] != null && source['linkWhatsapp'].toString().isNotEmpty) {
-        String whatsappUrl = _normalizeLink(source['linkWhatsapp'].toString());
-        if (whatsappUrl.isNotEmpty) socialLinks.add({'url': whatsappUrl});
-      }
-      if (source['linkSnab'] != null && source['linkSnab'].toString().isNotEmpty) {
-        String snapUrl = _normalizeLink(source['linkSnab'].toString());
-        if (snapUrl.isNotEmpty) socialLinks.add({'url': snapUrl});
-      }
-      if (source['linkFacebook'] != null && source['linkFacebook'].toString().isNotEmpty) {
-        String fbUrl = _normalizeLink(source['linkFacebook'].toString());
-        if (fbUrl.isNotEmpty) socialLinks.add({'url': fbUrl});
+      final keys = ['linkInsta', 'linkWhatsapp', 'linkSnab', 'linkFacebook'];
+      for (final key in keys) {
+        if (_hasLink(source[key])) {
+          final url = _normalizeLink(source[key].toString());
+          if (url.isNotEmpty) {
+            socialLinks.add({'url': url});
+          }
+        }
       }
     }
 
@@ -571,6 +587,12 @@ class _AdsDetailsState extends State<AdsDetails> {
   Widget _buildSellerInfo(double screenWidth, double screenHeight) {
     final bool hasSeller = _sellerData.isNotEmpty;
 
+    // الروابط الاجتماعية (يتم أخذها من المنتج أولاً ثم البائع)
+    final whatsappLink = _getSocialLink('linkWhatsapp');
+    final facebookLink = _getSocialLink('linkFacebook');
+    final instaLink = _getSocialLink('linkInsta');
+    final snapLink = _getSocialLink('linkSnab');
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -610,6 +632,37 @@ class _AdsDetailsState extends State<AdsDetails> {
                 );
               }),
             ),
+            SizedBox(height: screenHeight * 0.02),
+            // عرض أيقونات الروابط حتى لو لم توجد بيانات بائع (من بيانات المنتج)
+            Row(
+              children: [
+                if (whatsappLink != null)
+                  _buildCircleIcon(
+                    'Assets/whatsapp.png',
+                    screenWidth,
+                    onTap: () => _launchSocialLink(whatsappLink),
+                  ),
+                if (facebookLink != null)
+                  _buildCircleIcon(
+                    'Assets/Facebook.png',
+                    screenWidth,
+                    onTap: () => _launchSocialLink(facebookLink),
+                  ),
+                if (instaLink != null)
+                  _buildCircleIcon(
+                    'Assets/instagram.png',
+                    screenWidth,
+                    onTap: () => _launchSocialLink(instaLink),
+                  ),
+                if (snapLink != null)
+                  _buildCircleIcon(
+                    'Assets/logo.png',
+                    screenWidth,
+                    backgroundColor: Colors.yellow,
+                    onTap: () => _launchSocialLink(snapLink),
+                  ),
+              ],
+            ),
           ] else ...[
             Row(
               children: [
@@ -617,7 +670,8 @@ class _AdsDetailsState extends State<AdsDetails> {
                   radius: screenWidth * 0.07,
                   backgroundColor: Colors.grey.shade300,
                   backgroundImage: (_sellerData['image'] != null &&
-                      _sellerData['image'].toString().isNotEmpty)
+                      _sellerData['image'].toString().isNotEmpty &&
+                      _sellerData['image'].toString().toLowerCase() != 'null')
                       ? NetworkImage(_sellerData['image'])
                       : const AssetImage('Assets/fallback_image.png') as ImageProvider,
                 ),
@@ -631,7 +685,8 @@ class _AdsDetailsState extends State<AdsDetails> {
                         style: TextStyle(fontSize: screenWidth * 0.035, fontWeight: FontWeight.bold),
                       ),
                       if (_sellerData['address'] != null &&
-                          _sellerData['address'].toString().isNotEmpty)
+                          _sellerData['address'].toString().isNotEmpty &&
+                          _sellerData['address'].toString().toLowerCase() != 'null')
                         Text(
                           _sellerData['address'],
                           style: TextStyle(fontSize: screenWidth * 0.03, color: Colors.grey[600]),
@@ -641,34 +696,30 @@ class _AdsDetailsState extends State<AdsDetails> {
                 ),
                 Row(
                   children: [
-                    if (_sellerData['linkWhatsapp'] != null &&
-                        _sellerData['linkWhatsapp'].toString().isNotEmpty)
+                    if (whatsappLink != null)
                       _buildCircleIcon(
                         'Assets/whatsapp.png',
                         screenWidth,
-                        onTap: () => _launchSocialLink(_sellerData['linkWhatsapp']),
+                        onTap: () => _launchSocialLink(whatsappLink),
                       ),
-                    if (_sellerData['linkFacebook'] != null &&
-                        _sellerData['linkFacebook'].toString().isNotEmpty)
+                    if (facebookLink != null)
                       _buildCircleIcon(
                         'Assets/Facebook.png',
                         screenWidth,
-                        onTap: () => _launchSocialLink(_sellerData['linkFacebook']),
+                        onTap: () => _launchSocialLink(facebookLink),
                       ),
-                    if (_sellerData['linkInsta'] != null &&
-                        _sellerData['linkInsta'].toString().isNotEmpty)
+                    if (instaLink != null)
                       _buildCircleIcon(
                         'Assets/instagram.png',
                         screenWidth,
-                        onTap: () => _launchSocialLink(_sellerData['linkInsta']),
+                        onTap: () => _launchSocialLink(instaLink),
                       ),
-                    if (_sellerData['linkSnab'] != null &&
-                        _sellerData['linkSnab'].toString().isNotEmpty)
+                    if (snapLink != null)
                       _buildCircleIcon(
                         'Assets/logo.png',
                         screenWidth,
                         backgroundColor: Colors.yellow,
-                        onTap: () => _launchSocialLink(_sellerData['linkSnab']),
+                        onTap: () => _launchSocialLink(snapLink),
                       ),
                   ],
                 ),
@@ -716,7 +767,8 @@ class _AdsDetailsState extends State<AdsDetails> {
     final hasInstallment = _productData['is_installment'] == 1;
 
     String shippingText = isDeliverable ? S.of(context).localShipping : S.of(context).noShipping;
-    String installmentText = hasInstallment ? S.of(context).installment : S.of(context).installmentNotAvailable;
+    String installmentText =
+    hasInstallment ? S.of(context).installment : S.of(context).installmentNotAvailable;
 
     return Container(
       margin: EdgeInsets.symmetric(vertical: screenWidth * 0.015),
@@ -899,7 +951,9 @@ class _AdsDetailsState extends State<AdsDetails> {
     final priceAfter = _productData['priceAfterDiscount'] ?? price;
     final discount = _productData['discount'] ?? 0;
     final currency = _productData['currency_type'] ?? S.of(context).SYP;
-    final avgRate = _productData['avg_rate']?.toStringAsFixed(1) ?? '0.0';
+    final avgRate = (_productData['avg_rate'] is num)
+        ? (_productData['avg_rate'] as num).toStringAsFixed(1)
+        : '0.0';
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -965,7 +1019,7 @@ class _AdsDetailsState extends State<AdsDetails> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                "${discount.toStringAsFixed(0)}%",
+                                "${(discount is num) ? (discount as num).toStringAsFixed(0) : discount.toString()}%",
                                 style: TextStyle(
                                   fontSize: screenWidth * 0.035,
                                   color: KprimaryColor,

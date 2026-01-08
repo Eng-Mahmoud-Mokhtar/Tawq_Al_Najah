@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:bloc/bloc.dart';
 import 'package:dio/dio.dart';
-import 'package:equatable/equatable.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../Data/Model/CategoryModel.dart';
 import 'package:tawqalnajah/Feature/Buyer/Home/presentation/view_model/views/widgets/ImageHome.dart';

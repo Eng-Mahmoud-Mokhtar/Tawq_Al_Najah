@@ -717,7 +717,7 @@ class __CartPageContentState extends State<_CartPageContent> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             padding: EdgeInsets.symmetric(
-                              vertical: screenHeight * 0.025,
+                              vertical: screenHeight * 0.015,
                             ),
                           ),
                           child: Text(
@@ -731,7 +731,7 @@ class __CartPageContentState extends State<_CartPageContent> {
                         ),
                       ),
                  ),
-                  SizedBox(height: screenWidth * 0.05),
+                  SizedBox(height: screenWidth * 0.1),
                 ],
               ),
             );

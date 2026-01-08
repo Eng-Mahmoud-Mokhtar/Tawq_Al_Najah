@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:tawqalnajah/Feature/Seller/SignUpSeller/presentation/view_model/views/widgets/NameSeller.dart';
 import '../../../../../../../Core/Widgets/AppBar.dart';
 import '../../../../../../../Core/utiles/Colors.dart';
 import '../../../../../../../Core/Widgets/Country&city.dart';
@@ -122,8 +121,6 @@ class _EditProfileSellerState extends State<EditProfileSeller> {
                     ),
                   ),
 
-                  SizedBox(height: screenHeight * 0.02),
-                  const NameSeller(),
                   SizedBox(height: screenHeight * 0.02),
                   const PhoneNumber(),
                   SizedBox(height: screenHeight * 0.02),

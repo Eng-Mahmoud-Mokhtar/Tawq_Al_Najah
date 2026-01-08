@@ -25,7 +25,6 @@ class CreatePost extends StatefulWidget {
     this.adId,
     this.isEditing = false,
   });
-
   @override
   State<CreatePost> createState() => _CreatePostState();
 }
@@ -753,6 +752,16 @@ class _CreatePostState extends State<CreatePost> {
       }) {
     final w = MediaQuery.of(context).size.width;
     final h = MediaQuery.of(context).size.height;
+    final s = S.of(context);
+
+    // تحديد نوع لوحة المفاتيح بناءً على نوع الحقل
+    TextInputType keyboardType;
+    if (isDiscount || label == s.price) {
+      keyboardType = const TextInputType.numberWithOptions(decimal: true);
+    } else {
+      keyboardType = TextInputType.text; // لحقل الاسم وغيره
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -782,6 +791,7 @@ class _CreatePostState extends State<CreatePost> {
             padding: EdgeInsets.symmetric(horizontal: w * 0.04),
             child: TextField(
               controller: controller,
+              keyboardType: keyboardType, // استخدام نوع لوحة المفاتيح المحدد
               style: TextStyle(
                 fontSize: w * 0.03,
                 color: KprimaryText,
@@ -798,7 +808,6 @@ class _CreatePostState extends State<CreatePost> {
                 suffix: suffix,
                 contentPadding: EdgeInsets.symmetric(vertical: w * 0.035, horizontal: 0),
               ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
               onChanged: (value) {
                 if (isDiscount) {
                   final cleaned = _cleanNumberInput(value);
@@ -807,11 +816,11 @@ class _CreatePostState extends State<CreatePost> {
                     controller.selection = TextSelection.collapsed(offset: cleaned.length);
                   }
                 }
-                if (label == S.of(context).productName) {
+                if (label == s.productName) {
                   setState(() => _nameError = null);
-                } else if (label == S.of(context).price) {
+                } else if (label == s.price) {
                   setState(() => _priceError = null);
-                } else if (label == S.of(context).discount) {
+                } else if (label == s.discount) {
                   setState(() => _discountError = null);
                   if (value.isNotEmpty) {
                     final discountValue = double.tryParse(value);
@@ -819,7 +828,7 @@ class _CreatePostState extends State<CreatePost> {
                       const newValue = '100';
                       controller.text = newValue;
                       controller.selection = TextSelection.collapsed(offset: newValue.length);
-                      setState(() => _discountError = S.of(context).enterValidDiscount);
+                      setState(() => _discountError = s.enterValidDiscount);
                     }
                   }
                 }
@@ -871,6 +880,7 @@ class _CreatePostState extends State<CreatePost> {
             child: TextField(
               controller: controller,
               maxLines: 5,
+              keyboardType: TextInputType.text, // نص عادي مثل حقل الاسم
               style: TextStyle(
                 fontSize: w * 0.03,
                 color: KprimaryText,
@@ -1005,6 +1015,7 @@ class _CreatePostState extends State<CreatePost> {
                       ),
                       child: TextField(
                         controller: socialLinkController,
+                        keyboardType: TextInputType.text, // نص للروابط
                         onSubmitted: (value) {
                           final trimmedValue = normalizeLink(value);
 
@@ -1180,15 +1191,13 @@ class _CreatePostState extends State<CreatePost> {
                   ? Text(_imagesError!, style: TextStyle(color: const Color(0xffDD0C0C), fontSize: w * 0.03))
                   : const SizedBox.shrink(),
             ),
-
-            SizedBox(height: h * 0.03),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _isSubmitting ? null : _submitAd,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _isSubmitting ? Colors.grey : KprimaryColor,
-                  padding: EdgeInsets.symmetric(vertical: h * 0.024),
+                  padding: EdgeInsets.symmetric(vertical: h * 0.012),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(w * 0.02)),
                 ),
                 child: _isSubmitting
@@ -1203,6 +1212,8 @@ class _CreatePostState extends State<CreatePost> {
                 ),
               ),
             ),
+            SizedBox(height: h * 0.03),
+
           ],
         ),
       ),

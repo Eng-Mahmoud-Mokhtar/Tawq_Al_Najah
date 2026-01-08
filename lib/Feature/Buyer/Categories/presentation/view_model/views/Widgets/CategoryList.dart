@@ -28,36 +28,48 @@ class CategoryList extends StatelessWidget {
         itemCount: icons.length,
         itemBuilder: (_, index) {
           const apiNames = [
-            'السوق',
-            'الكترونيات',
-            'ملابس',
-            'اثاث',
-            'العاب',
-            'مطبخ',
-            'صحة',
+            'other',
+            'electronics',
+            'fashion',
+            'furniture',
+            'toys',
+            'kitchen',
+            'health',
+            'books',
           ];
 
           final apiName = index < apiNames.length ? apiNames[index] : (index + 1).toString();
           final displayLabelLocal = index < labels.length ? labels[index] : apiName;
           final icon = index < icons.length ? icons[index] : Icons.category;
 
-          final category = (index < categories.length)
+          // الفئة الأصلية (لو موجودة)
+          final originalCategory = (index < categories.length)
               ? categories[index]
               : CategoryModel(
-                  id: index + 1,
-                  name: apiName,
-                  description: apiName,
-                  icon: null,
-                  createdAt: DateTime.now(),
-                  updatedAt: DateTime.now(),
-                );
+            id: index + 1,
+            name: apiName,
+            description: apiName,
+            icon: null,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+
+          // كائن للاستخدام في الـ API: name = slug الثابت (apiName)
+          final categoryForApi = CategoryModel(
+            id: originalCategory.id,
+            name: apiName, // هذا ما سيتم إرساله للـ API
+            description: originalCategory.description,
+            icon: originalCategory.icon,
+            createdAt: originalCategory.createdAt,
+            updatedAt: originalCategory.updatedAt,
+          );
 
           return CategoryItem(
-            category: category,
+            category: originalCategory, // للعرض فقط
             icon: icon,
             displayLabel: displayLabelLocal,
             width: width,
-            onTap: () => onCategoryTap(category, displayLabelLocal),
+            onTap: () => onCategoryTap(categoryForApi, displayLabelLocal), // نمرر الـ slug للـ API
           );
         },
         separatorBuilder: (_, __) => SizedBox(width: width * 0.02),
@@ -65,4 +77,3 @@ class CategoryList extends StatelessWidget {
     );
   }
 }
-

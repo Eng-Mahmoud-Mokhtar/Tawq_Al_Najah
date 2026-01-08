@@ -12,11 +12,9 @@ import 'package:tawqalnajah/Feature/Seller/Orders/presentation/view_model/views/
 import '../../../../../../Core/utiles/Colors.dart';
 import '../../../../../../generated/l10n.dart';
 import '../../../../../Buyer/MyShipment/presentation/view_model/views/widgets/OrderThumb.dart';
-import 'SellerNewOrdersPage.dart';
 
-// ==================== API ==========================
-class ActiveOrdersApi {
-  ActiveOrdersApi({
+class NewOrdersApi {
+  NewOrdersApi({
     Dio? dio,
     FlutterSecureStorage? storage,
   })  : _dio = dio ?? Dio(),
@@ -26,110 +24,78 @@ class ActiveOrdersApi {
   final FlutterSecureStorage _storage;
 
   static const String baseUrl = 'https://toknagah.viking-iceland.online/api';
-  static const String allOrdersEndpoint = '$baseUrl/saller/all-my-orders';
+  static const String newOrdersEndpoint = '$baseUrl/saller/new-orders';
   static const String orderDetailsEndpoint = '$baseUrl/saller/order-details';
-  static const String orderShippedEndpoint = '$baseUrl/saller/order-shipped';
-  static const String orderDeliveredEndpoint = '$baseUrl/saller/order-compeleted'; // التعديل هنا
+  static const String orderAcceptedEndpoint = '$baseUrl/saller/order-accepted';
 
-  Future<String?> _getToken() async => _storage.read(key: 'user_token');
+  Future<String?> _getToken() async {
+    return await _storage.read(key: 'user_token');
+  }
 
-  Options _buildOptions(String token) => Options(
-    headers: {
+  Options _buildOptions(String token) {
+    return Options(headers: {
       'Authorization': 'Bearer $token',
       'Accept': 'application/json',
-    },
-  );
+    });
+  }
 
-  Future<List<ActiveOrderModel>> getOrdersByType({
-    required String type,
-    CancelToken? cancelToken,
-  }) async {
+  Future<List<NewOrderModel>> getNewOrders({CancelToken? cancelToken}) async {
     final token = await _getToken();
     if (token == null || token.isEmpty) {
-      throw Exception('Token is missing. Please login.');
+      throw Exception(S.current.pleaseLoginFirst);
     }
-
     final res = await _dio.get(
-      allOrdersEndpoint,
-      queryParameters: {'type': type},
+      newOrdersEndpoint,
       options: _buildOptions(token),
       cancelToken: cancelToken,
     );
-
     if ((res.statusCode ?? 500) >= 200 && (res.statusCode ?? 500) < 300 && res.data != null) {
       final responseData = res.data as Map<String, dynamic>;
       final data = responseData['data'];
-
       if (data is List) {
-        return data.map((e) => ActiveOrderModel.fromJson(e)).toList();
+        return data.map((e) => NewOrderModel.fromJson(e)).toList();
       }
     }
     return [];
   }
 
-  Future<OrderDetailsModel?> getOrderDetails(String orderId) async {
+  Future<OrderDetailsModel> getOrderDetails({required String orderId, CancelToken? cancelToken}) async {
     final token = await _getToken();
     if (token == null || token.isEmpty) {
-      throw Exception('Token is missing. Please login.');
+      throw Exception(S.current.pleaseLoginFirst);
     }
-
-    try {
-      final res = await _dio.get(
-        '$orderDetailsEndpoint/$orderId',
-        options: _buildOptions(token),
-      );
-
-      if ((res.statusCode ?? 500) >= 200 && (res.statusCode ?? 500) < 300 && res.data != null) {
-        final responseData = res.data as Map<String, dynamic>;
-        return OrderDetailsModel.fromJson(responseData['data']);
-      }
-    } catch (e) {
-      print('Error fetching order details: $e');
+    final res = await _dio.get(
+      '$orderDetailsEndpoint/$orderId',
+      options: _buildOptions(token),
+      cancelToken: cancelToken,
+    );
+    if ((res.statusCode ?? 500) >= 200 && (res.statusCode ?? 500) < 300 && res.data != null) {
+      final responseData = res.data as Map<String, dynamic>;
+      return OrderDetailsModel.fromJson(responseData['data']);
     }
-    return null;
+    throw Exception(S.current.failedToLoadData);
   }
 
-  // كل التغييرات SET تكون عبر GET (وليست POST)
-  Future<bool> markOrderShipped(String orderId) async {
+  // === المهم: كل التحديثات تتم عبر GET وليست POST نهائياً===
+  Future<bool> confirmOrder({required String orderId}) async {
     final token = await _getToken();
     if (token == null || token.isEmpty) {
-      throw Exception('Token is missing. Please login.');
+      throw Exception(S.current.pleaseLoginFirst);
     }
-
     try {
+      final String endpoint = '$orderAcceptedEndpoint/$orderId';
       final res = await _dio.get(
-        '$orderShippedEndpoint/$orderId',
+        endpoint,
         options: _buildOptions(token),
       );
       return (res.statusCode ?? 500) >= 200 && (res.statusCode ?? 500) < 300;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  Future<bool> markOrderDelivered(String orderId) async {
-    final token = await _getToken();
-    if (token == null || token.isEmpty) {
-      throw Exception('Token is missing. Please login.');
-    }
-
-    try {
-      final res = await _dio.get(
-        '$orderDeliveredEndpoint/$orderId',
-        options: _buildOptions(token),
-      );
-      print('Delivered response status: ${res.statusCode}');
-      print('Delivered response data: ${res.data}');
-      return (res.statusCode ?? 500) >= 200 && (res.statusCode ?? 500) < 300;
     } catch (e) {
-      print('Error delivered: $e');
       return false;
     }
   }
 }
 
-// ==================== Models ==========================
-class ActiveOrderModel {
+class NewOrderModel {
   final int orderId;
   final String orderNumber;
   final String status;
@@ -140,7 +106,7 @@ class ActiveOrderModel {
   final int countItems;
   final String createdAt;
 
-  ActiveOrderModel({
+  NewOrderModel({
     required this.orderId,
     required this.orderNumber,
     required this.status,
@@ -152,11 +118,11 @@ class ActiveOrderModel {
     required this.createdAt,
   });
 
-  factory ActiveOrderModel.fromJson(Map<String, dynamic> json) {
-    return ActiveOrderModel(
+  factory NewOrderModel.fromJson(Map<String, dynamic> json) {
+    return NewOrderModel(
       orderId: json['order_id'] ?? 0,
       orderNumber: json['order_number']?.toString() ?? '#0',
-      status: json['status']?.toString() ?? 'pending',
+      status: json['status']?.toString() ?? S.current.pending,
       isPaid: json['is_paid'] ?? 0,
       total: (json['total'] as num?)?.toDouble() ?? 0.0,
       fees: (json['fees'] as num?)?.toDouble() ?? 0.0,
@@ -185,7 +151,6 @@ class OrderDetailsModel {
     final orderData = json['order'] as Map<String, dynamic>? ?? {};
     final itemsData = json['items'] as List<dynamic>? ?? [];
     final trackData = json['trackOrder'] as Map<String, dynamic>? ?? {};
-
     return OrderDetailsModel(
       user: UserInfo.fromJson(userData),
       order: OrderInfo.fromJson(orderData),
@@ -201,7 +166,6 @@ class UserInfo {
   final String country;
   final String phone;
   final String? image;
-
   UserInfo({
     required this.name,
     required this.email,
@@ -212,7 +176,7 @@ class UserInfo {
 
   factory UserInfo.fromJson(Map<String, dynamic> json) {
     return UserInfo(
-      name: json['name']?.toString() ?? 'Unknown',
+      name: json['name']?.toString() ?? S.current.unknown,
       email: json['email']?.toString() ?? '',
       country: json['country']?.toString() ?? '',
       phone: json['phone']?.toString() ?? '',
@@ -250,7 +214,7 @@ class OrderInfo {
     return OrderInfo(
       orderId: json['order_id'] ?? 0,
       orderNumber: json['order_number']?.toString() ?? '#0',
-      status: json['status']?.toString() ?? 'pending',
+      status: json['status']?.toString() ?? S.current.pending,
       isPaid: json['is_paid'] ?? 0,
       total: (json['total'] as num?)?.toDouble() ?? 0.0,
       fees: (json['fees'] as num?)?.toDouble() ?? 0.0,
@@ -288,7 +252,7 @@ class OrderItem {
   factory OrderItem.fromJson(Map<String, dynamic> json) {
     return OrderItem(
       itemId: json['item_id'] ?? 0,
-      itemName: json['item_name']?.toString() ?? 'Unknown Product',
+      itemName: json['item_name']?.toString() ?? S.current.unnamedProduct,
       quantity: json['quantity'] ?? 1,
       description: json['description']?.toString() ?? '',
       price: json['price']?.toString() ?? '0.00',
@@ -341,100 +305,57 @@ class TrackOrder {
   }
 }
 
-// ==================== Bloc ==========================
-abstract class ActiveOrdersState extends Equatable {
+abstract class NewOrdersState extends Equatable {
   @override
   List<Object?> get props => [];
 }
-
-class ActiveOrdersLoading extends ActiveOrdersState {}
-class ActiveOrdersLoaded extends ActiveOrdersState {
-  final List<ActiveOrderModel> accepted;
-  final List<ActiveOrderModel> shipping;
-  final List<ActiveOrderModel> completed;
-
-  ActiveOrdersLoaded({
-    required this.accepted,
-    required this.shipping,
-    required this.completed,
-  });
+class NewOrdersLoading extends NewOrdersState {}
+class NewOrdersLoaded extends NewOrdersState {
+  final List<NewOrderModel> orders;
+  NewOrdersLoaded({required this.orders});
   @override
-  List<Object?> get props => [accepted, shipping, completed];
-
-  ActiveOrdersLoaded copyWith({
-    List<ActiveOrderModel>? accepted,
-    List<ActiveOrderModel>? shipping,
-    List<ActiveOrderModel>? completed,
-  }) {
-    return ActiveOrdersLoaded(
-      accepted: accepted ?? this.accepted,
-      shipping: shipping ?? this.shipping,
-      completed: completed ?? this.completed,
-    );
-  }
+  List<Object?> get props => [orders];
 }
-class ActiveOrdersError extends ActiveOrdersState {
+class NewOrdersError extends NewOrdersState {
   final String message;
-  ActiveOrdersError(this.message);
+  NewOrdersError(this.message);
   @override
   List<Object?> get props => [message];
 }
 
-class ActiveOrdersCubit extends Cubit<ActiveOrdersState> {
-  ActiveOrdersCubit(this._api) : super(ActiveOrdersLoading()) {
-    fetchAll();
+class NewOrdersCubit extends Cubit<NewOrdersState> {
+  NewOrdersCubit(this._api) : super(NewOrdersLoading()) {
+    fetchNewOrders();
   }
-
-  final ActiveOrdersApi _api;
+  final NewOrdersApi _api;
   CancelToken? _cancelToken;
 
-  Future<void> fetchAll() async {
-    emit(ActiveOrdersLoading());
+  Future<void> fetchNewOrders() async {
+    emit(NewOrdersLoading());
     _cancelToken?.cancel();
     _cancelToken = CancelToken();
     try {
-      final results = await Future.wait<List<ActiveOrderModel>>([
-        _api.getOrdersByType(type: 'accepted', cancelToken: _cancelToken),
-        _api.getOrdersByType(type: 'shipping', cancelToken: _cancelToken),
-        _api.getOrdersByType(type: 'completed', cancelToken: _cancelToken),
-      ]);
-      emit(ActiveOrdersLoaded(accepted: results[0], shipping: results[1], completed: results[2]));
+      final list = await _api.getNewOrders(cancelToken: _cancelToken);
+      emit(NewOrdersLoaded(orders: list));
     } catch (e) {
-      emit(ActiveOrdersError(e.toString()));
+      emit(NewOrdersError(e.toString()));
     }
   }
-  Future<void> fetchByType(String type) async {
-    final current = state;
+  Future<OrderDetailsModel> getOrderDetails(String orderId) async {
+    return await _api.getOrderDetails(orderId: orderId);
+  }
+  Future<bool> confirmOrder(String orderId) async {
     try {
-      final list = await _api.getOrdersByType(type: type);
-      if (current is ActiveOrdersLoaded) {
-        switch (type) {
-          case 'accepted':
-            emit(current.copyWith(accepted: list));
-            break;
-          case 'shipping':
-            emit(current.copyWith(shipping: list));
-            break;
-          case 'completed':
-            emit(current.copyWith(completed: list));
-            break;
-        }
-      } else {
-        await fetchAll();
+      final ok = await _api.confirmOrder(orderId: orderId);
+      if (ok) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        await fetchNewOrders();
       }
-    } catch (e) {
-      emit(ActiveOrdersError(e.toString()));
+      return ok;
+    } catch (_) {
+      return false;
     }
   }
-  Future<void> markShipped(String orderId) async {
-    final ok = await _api.markOrderShipped(orderId);
-    if (ok) await fetchAll();
-  }
-  Future<void> markDelivered(String orderId) async {
-    final ok = await _api.markOrderDelivered(orderId);
-    if (ok) await fetchAll();
-  }
-  Future<OrderDetailsModel?> loadDetails(String orderId) => _api.getOrderDetails(orderId);
   @override
   Future<void> close() {
     _cancelToken?.cancel();
@@ -442,13 +363,219 @@ class ActiveOrdersCubit extends Cubit<ActiveOrdersState> {
   }
 }
 
-// ==================== UIs ==========================
+class ShipmentCardSeller extends StatelessWidget {
+  final int orderId;
+  final String orderNumber;
+  final String status;
+  final int countItems;
+  final double finalTotal;
+  final String? orderImage;
+  final String createdAt;
+  final VoidCallback? onTap;
 
-class ActiveShipmentCardSeller extends StatelessWidget {
-  final ActiveOrderModel order;
-  final Function(ActiveOrderModel, String)? onStatusChange;
+  const ShipmentCardSeller({
+    super.key,
+    required this.orderId,
+    required this.orderNumber,
+    required this.status,
+    required this.countItems,
+    required this.finalTotal,
+    this.orderImage,
+    required this.createdAt,
+    this.onTap,
+  });
 
-  const ActiveShipmentCardSeller({
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final textDirection = Localizations.localeOf(context).languageCode == 'ar'
+        ? TextDirection.rtl
+        : TextDirection.ltr;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Directionality(
+        textDirection: textDirection,
+        child: Container(
+          margin: EdgeInsets.only(
+            left: screenWidth * 0.04,
+            right: screenWidth * 0.04,
+            bottom: screenWidth * 0.04,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: Colors.grey.shade300, width: 1),
+            borderRadius: BorderRadius.circular(screenWidth * 0.03),
+          ),
+          child: Stack(
+            children: [
+              Padding(
+                padding: EdgeInsets.all(screenWidth * 0.04),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    OrderThumb(
+                      size: screenWidth * 0.18,
+                      radius: screenWidth * 0.02,
+                      imageUrl: orderImage,
+                    ),
+                    SizedBox(width: screenWidth * 0.02),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  orderNumber,
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.035,
+                                    fontWeight: FontWeight.bold,
+                                    color: KprimaryColor,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              SizedBox(width: screenWidth * 0.02),
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: screenWidth * 0.03,
+                                  vertical: screenWidth * 0.01,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _getStatusColor(status).withAlpha(51),
+                                  borderRadius: BorderRadius.circular(screenWidth * 0.015),
+                                ),
+                                child: Text(
+                                  _getStatusText(status, context).toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.025,
+                                    fontWeight: FontWeight.w600,
+                                    color: _getStatusColor(status),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: screenWidth * 0.02),
+                          Divider(color: Colors.grey.shade300),
+                          SizedBox(height: screenWidth * 0.02),
+                          Row(
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    S.of(context).quantityLabel,
+                                    style: TextStyle(
+                                      fontSize: screenWidth * 0.03,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                  SizedBox(height: screenWidth * 0.005),
+                                  Text(
+                                    '$countItems',
+                                    style: TextStyle(
+                                      fontSize: screenWidth * 0.035,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(width: screenWidth * 0.1),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    S.of(context).date,
+                                    style: TextStyle(
+                                      fontSize: screenWidth * 0.03,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                  SizedBox(height: screenWidth * 0.005),
+                                  Text(
+                                    _formatDate(createdAt),
+                                    style: TextStyle(
+                                      fontSize: screenWidth * 0.03,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Spacer(),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    S.of(context).total,
+                                    style: TextStyle(
+                                      fontSize: screenWidth * 0.03,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                  SizedBox(height: screenWidth * 0.005),
+                                  Text(
+                                    '${finalTotal.toStringAsFixed(2)} ${S.of(context).SYP}',
+                                    style: TextStyle(
+                                      fontSize: screenWidth * 0.035,
+                                      fontWeight: FontWeight.bold,
+                                      color: const Color(0xffFF580E),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    final st = status.toLowerCase();
+    if (st.contains('pending') || st.contains('معلق')) {
+      return Colors.orange;
+    } else if (st.contains('confirmed') || st.contains('تم التأكيد') || st.contains('تمت الموافقة')) {
+      return Colors.blue;
+    }
+    return Colors.grey;
+  }
+
+  String _getStatusText(String status, BuildContext context) {
+    final st = status.toLowerCase();
+    if (st.contains('pending') || st.contains('معلق')) {
+      return S.of(context).pending;
+    } else if (st.contains('confirmed') || st.contains('تم التأكيد') || st.contains('تمت الموافقة')) {
+      return S.of(context).confirmed;
+    }
+    return status;
+  }
+
+  String _formatDate(String date) {
+    if (date.isEmpty) return '--';
+    final parts = date.split(' ');
+    return parts.isNotEmpty ? parts[0] : date;
+  }
+}
+
+class NewShipmentCardSeller extends StatelessWidget {
+  final NewOrderModel order;
+  final Function(NewOrderModel, String)? onStatusChange;
+  const NewShipmentCardSeller({
     super.key,
     required this.order,
     this.onStatusChange,
@@ -468,8 +595,8 @@ class ActiveShipmentCardSeller extends StatelessWidget {
           context,
           MaterialPageRoute(
             builder: (_) => BlocProvider.value(
-              value: context.read<ActiveOrdersCubit>(),
-              child: SellerActiveOrderDetailsPage(
+              value: context.read<NewOrdersCubit>(),
+              child: NewOrderDetailsPage(
                 order: order,
                 onStatusChange: onStatusChange,
               ),
@@ -481,13 +608,12 @@ class ActiveShipmentCardSeller extends StatelessWidget {
   }
 }
 
-// صفحة تفاصيل الطلب الحالي (تشمل زر الشحن أو التوصيل حسب الحالة)
-class SellerActiveOrderDetailsPage extends StatefulWidget {
-  final ActiveOrderModel order;
+class NewOrderDetailsPage extends StatefulWidget {
+  final NewOrderModel order;
   final OrderDetailsModel? details;
-  final Function(ActiveOrderModel, String)? onStatusChange;
+  final Function(NewOrderModel, String)? onStatusChange;
 
-  const SellerActiveOrderDetailsPage({
+  const NewOrderDetailsPage({
     super.key,
     required this.order,
     this.details,
@@ -495,14 +621,14 @@ class SellerActiveOrderDetailsPage extends StatefulWidget {
   });
 
   @override
-  State<SellerActiveOrderDetailsPage> createState() => _SellerActiveOrderDetailsPageState();
+  State<NewOrderDetailsPage> createState() => _NewOrderDetailsPageState();
 }
 
-class _SellerActiveOrderDetailsPageState extends State<SellerActiveOrderDetailsPage> {
+class _NewOrderDetailsPageState extends State<NewOrderDetailsPage> {
   OrderDetailsModel? _details;
   bool _loadingDetails = false;
-  bool _isLoading = false;
-  String? _error;
+  bool _isUpdatingStatus = false;
+  String? _updateError;
 
   @override
   void initState() {
@@ -520,8 +646,8 @@ class _SellerActiveOrderDetailsPageState extends State<SellerActiveOrderDetailsP
       _loadingDetails = true;
     });
     try {
-      final cubit = context.read<ActiveOrdersCubit>();
-      final details = await cubit.loadDetails(widget.order.orderId.toString());
+      final cubit = context.read<NewOrdersCubit>();
+      final details = await cubit.getOrderDetails(widget.order.orderId.toString());
       setState(() {
         _details = details;
         _loadingDetails = false;
@@ -531,115 +657,143 @@ class _SellerActiveOrderDetailsPageState extends State<SellerActiveOrderDetailsP
     }
   }
 
-  Future<void> _handleAction(String status, BuildContext dialogContext) async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-    try {
-      final cubit = context.read<ActiveOrdersCubit>();
-      if (status == "shipping" || status == "shipped") {
-        await cubit.markShipped(widget.order.orderId.toString());
-      } else if (status == "completed" || status == "delivered") {
-        await cubit.markDelivered(widget.order.orderId.toString());
-      }
-      Navigator.of(dialogContext).pop(); // أغلق الديالوج أولاً
-      Navigator.of(context).pop();       // أغلق صفحة التفاصيل بعد العملية
-    } catch (e) {
+  Future<void> _confirmOrder() async {
+    if (_isUpdatingStatus) return;
+    setState(() { _isUpdatingStatus = true; _updateError = null; });
+
+    final cubit = context.read<NewOrdersCubit>();
+    final result = await cubit.confirmOrder(widget.order.orderId.toString());
+
+    if (result) {
+      _showResultDialog(
+        isSuccess: true,
+        message: S.of(context).successTitle,
+        onClose: () {
+          cubit.fetchNewOrders();
+          Navigator.pop(context);
+        },
+      );
+    } else {
       setState(() {
-        _error = S.of(context).updateFailed;
+        _isUpdatingStatus = false;
+        _updateError = S.of(context).updateFailed;
       });
-      Navigator.of(dialogContext).pop(); // أغلق الديالوج حتى لو خطأ
-      Navigator.of(context).pop();       // أغلق صفحة التفاصيل
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      _showResultDialog(
+        isSuccess: false,
+        message: S.of(context).updateFailed,
+        onClose: () {},
+      );
     }
   }
 
-  void _showActionDialog(String action, String newStatus) {
+  void _showConfirmDialog() {
     final screenWidth = MediaQuery.of(context).size.width;
     showDialog(
       context: context,
-      barrierDismissible: false, // الديالوج لا يقفل إلا من الأزرار
-      builder: (ctx) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) {
-          return AlertDialog(
-            backgroundColor: const Color(0xfffafafa),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(screenWidth * 0.03),
-              side: BorderSide(color: Colors.grey.shade300),
-            ),
-            title: Text(
-              S.of(context).confirmAction(action),
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: screenWidth * 0.035, fontWeight: FontWeight.bold),
-            ),
-            content: Text(
-              S.of(context).confirmActionMessage,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: screenWidth * 0.03, color: Colors.grey[700]),
-            ),
-            actions: [
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: KprimaryColor,
-                        minimumSize: Size(0, screenWidth * 0.1),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      onPressed: _isLoading
-                          ? null
-                          : () async {
-                        setDialogState(() {}); // إعادة بناء الديالوج
-                        setState(() { _isLoading = true; });
-                        await _handleAction(newStatus, dialogContext);
-                      },
-                      child: _isLoading
-                          ? SizedBox(
-                        width: screenWidth * 0.04,
-                        height: screenWidth * 0.04,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                          : Text(
-                        S.of(context).yes,
-                        style: TextStyle(color: Colors.white, fontSize: screenWidth * 0.035),
-                      ),
-                    ),
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xfffafafa),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(screenWidth * 0.03),
+          side: BorderSide(color: Colors.grey.shade300),
+        ),
+        title: Text(
+          S.of(context).confirmOrder,
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: screenWidth * 0.035, fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          S.of(context).confirmActionMessage,
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: screenWidth * 0.03, color: Colors.grey[700]),
+        ),
+        actions: [
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: KprimaryColor,
+                    minimumSize: Size(0, screenWidth * 0.1),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
-                  SizedBox(width: screenWidth * 0.04),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey.shade300,
-                        minimumSize: Size(0, screenWidth * 0.1),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      onPressed: _isLoading ? null : () => Navigator.pop(dialogContext),
-                      child: Text(S.of(context).no, style: TextStyle(color: Colors.black87, fontSize: screenWidth * 0.035)),
-                    ),
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await _confirmOrder();
+                  },
+                  child: Text(
+                    S.of(context).yes,
+                    style: TextStyle(color: Colors.white, fontSize: screenWidth * 0.035),
                   ),
-                ],
+                ),
+              ),
+              SizedBox(width: screenWidth * 0.04),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.grey.shade300,
+                    minimumSize: Size(0, screenWidth * 0.1),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(
+                    S.of(context).no,
+                    style: TextStyle(color: Colors.black87, fontSize: screenWidth * 0.035),
+                  ),
+                ),
               ),
             ],
-          );
-        },
+          ),
+        ],
       ),
     );
   }
 
-  bool _shouldShowShipButton(String status) {
-    final st = status.toLowerCase();
-    return st == 'accepted' ||
-        st == 'confirmed' ||
-        st == 'processing' ||
-        st.contains('accepted') ||
-        st.contains('confirmed') ||
-        st.contains('processing');
+  void _showResultDialog({
+    required bool isSuccess,
+    required String message,
+    required VoidCallback onClose,
+  }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xfffafafa),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(screenWidth * 0.03),
+          side: BorderSide(color: Colors.grey.shade300),
+        ),
+        title: Icon(
+          isSuccess ? Icons.check_circle : Icons.error,
+          color: isSuccess ? KprimaryColor :  Color(0xffDD0C0C),
+          size: screenWidth * 0.1,
+        ),
+        content: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: screenWidth * 0.035, color: Colors.grey[700]),
+        ),
+        actions: [
+          Center(
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isSuccess ? KprimaryColor :  Color(0xffDD0C0C),
+                minimumSize: Size(screenWidth * 0.4, screenWidth * 0.1),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () {
+                Navigator.pop(ctx);
+                onClose();
+              },
+              child: Text(
+                S.of(context).ok,
+                style: TextStyle(color: Colors.white, fontSize: screenWidth * 0.035),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -686,61 +840,69 @@ class _SellerActiveOrderDetailsPageState extends State<SellerActiveOrderDetailsP
                     ],
                   ),
                 ),
+                if (_updateError != null)
+                  Container(
+                    padding: EdgeInsets.all(screenWidth * 0.03),
+                    margin: EdgeInsets.only(top: screenWidth * 0.02),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.error, color:  Color(0xffDD0C0C), size: screenWidth * 0.05),
+                        SizedBox(width: screenWidth * 0.02),
+                        Expanded(
+                          child: Text(
+                            _updateError!,
+                            style: TextStyle(
+                              fontSize: screenWidth * 0.03,
+                              color:  Color(0xffDD0C0C),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 SizedBox(height: screenWidth * 0.04),
-
-                if (_shouldShowShipButton(widget.order.status))
+                if (widget.order.status.toLowerCase() == "pending")
                   Center(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: KprimaryColor,
-                        minimumSize: Size(screenWidth, screenWidth * 0.12),
+                        minimumSize: Size(screenWidth * 0.9, screenWidth * 0.12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
-                      onPressed: _isLoading ? null : () {
-                        _showActionDialog(S.of(context).ship, "shipping");
-                      },
+                      onPressed: _isUpdatingStatus ? null : _showConfirmDialog,
                       child: Text(
-                        S.of(context).shippedStatus,
+                        S.of(context).confirmOrder,
                         style: TextStyle(color: Colors.white, fontSize: screenWidth * 0.035),
                       ),
                     ),
                   ),
-
-                if (widget.order.status.toLowerCase() == 'shipping')
-                  Center(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: KprimaryColor,
-                        minimumSize: Size(screenWidth, screenWidth * 0.12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      onPressed: _isLoading ? null : () {
-                        _showActionDialog(S.of(context).delivered, "completed");
-                      },
-                      child: Text(
-                        S.of(context).markAsDelivered,
-                        style: TextStyle(color: Colors.white, fontSize: screenWidth * 0.035),
-                      ),
-                    ),
-                  ),
-
-                if (_error != null)
-                  Padding(
-                    padding: EdgeInsets.all(screenWidth * 0.02),
-                    child: Text(
-                      _error!,
-                      style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-                    ),
-                  )
               ],
             ),
           ),
-          if (_isLoading)
+          if (_isUpdatingStatus)
             Positioned.fill(
               child: Container(
-                color: Colors.black.withOpacity(0.07),
+                color: Colors.black.withOpacity(0.12),
                 child: Center(
-                  child: CircularProgressIndicator(color: KprimaryColor),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(color: KprimaryColor, strokeWidth: 3),
+                      SizedBox(height: screenWidth * 0.02),
+                      Text(
+                        S.of(context).processing,
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.03,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -804,11 +966,13 @@ class _SellerActiveOrderDetailsPageState extends State<SellerActiveOrderDetailsP
       ),
     );
   }
+
   bool _isValidUrl(String url) {
     final uri = Uri.tryParse(url);
     if (uri == null) return false;
     return uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https');
   }
+
   Widget _buildShimmerCustomerInfo(double screenWidth) {
     return Container(
       padding: EdgeInsets.all(screenWidth * 0.04),
@@ -869,6 +1033,7 @@ class _SellerActiveOrderDetailsPageState extends State<SellerActiveOrderDetailsP
       ),
     );
   }
+
   Widget _buildOrderProducts(double screenWidth) {
     if (_loadingDetails) return _buildShimmerProducts(screenWidth);
     final items = _details?.items ?? [];
@@ -897,14 +1062,17 @@ class _SellerActiveOrderDetailsPageState extends State<SellerActiveOrderDetailsP
       ),
     );
   }
+
   String _getPaymentTypeText(String paymentType) {
     final type = paymentType.toLowerCase();
-    if (type == 'visa' || type == 'credit_card') return S.of(context).visa;
-    else if (type == 'cash') return S.of(context).cashOnDelivery;
+    if (type == 'visa' || type == 'credit_card') {
+      return S.of(context).visa;
+    } else if (type == 'cash') return S.of(context).cashOnDelivery;
     else if (type == 'wallet') return S.of(context).wallet;
     else if (type == 'bank_transfer') return S.of(context).bankTransfer;
     else return paymentType;
   }
+
   Widget _buildProductItem(OrderItem item, double screenWidth) {
     return Container(
       margin: EdgeInsets.only(bottom: screenWidth * 0.02),
@@ -984,6 +1152,7 @@ class _SellerActiveOrderDetailsPageState extends State<SellerActiveOrderDetailsP
       ),
     );
   }
+
   Widget _buildShimmerProducts(double screenWidth) {
     return Container(
         padding: EdgeInsets.all(screenWidth * 0.04),
@@ -1009,6 +1178,7 @@ class _SellerActiveOrderDetailsPageState extends State<SellerActiveOrderDetailsP
         )
     );
   }
+
   Widget _buildShimmerProductItem(double screenWidth) {
     return Container(
       margin: EdgeInsets.only(bottom: screenWidth * 0.02),
@@ -1091,158 +1261,98 @@ class _SellerActiveOrderDetailsPageState extends State<SellerActiveOrderDetailsP
       ),
     );
   }
+
   Widget _buildRow(String label, String value, double width, {bool isTotal = false}) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: width * 0.01),
-      child: Row(
-        children: [
-          SizedBox(
-            width: width * 0.3,
-            child: Text(label, style: TextStyle(fontSize: width * 0.03, color: Colors.black54)),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: width * 0.03,
-                color: isTotal ? const Color(0xffFF580E) : Colors.black,
-                fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+        padding: EdgeInsets.symmetric(vertical: width * 0.01),
+        child: Row(
+          children: [
+            SizedBox(
+              width: width * 0.3,
+              child: Text(label, style: TextStyle(fontSize: width * 0.03, color: Colors.black54)),
+            ),
+            Expanded(
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: width * 0.03,
+                  color: isTotal ? const Color(0xffFF580E) : Colors.black,
+                  fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+                ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        )
     );
   }
+
   Color _getStatusColor(String status) {
     final st = status.toLowerCase();
     if (st.contains('pending') || st.contains('معلق')) {
       return Color(0xffFF580E);
-    } else if (st.contains('confirmed') || st.contains('تم التأكيد') || st.contains('تمت الم��افقة') || st.contains('accepted')) {
+    } else if (st.contains('confirmed') || st.contains('تم التأكيد') || st.contains('تمت الموافقة')) {
       return Colors.blue;
-    } else if (st.contains('shipped') || st.contains('تم الشحن') || st.contains('shipping')) {
-      return Colors.green;
-    } else if (st.contains('delivered') || st.contains('تم التسليم') || st.contains('تم الاستلام') || st.contains('completed')) {
-      return KprimaryColor;
-    } else if (st.contains('cancelled') || st.contains('ملغي')) {
-      return const Color(0xffDD0C0C);
     }
     return Colors.grey;
   }
+
   String _getStatusText(String status, BuildContext context) {
     final st = status.toLowerCase();
     if (st.contains('pending') || st.contains('معلق')) {
       return S.of(context).pending;
-    } else if (st.contains('confirmed') || st.contains('تم التأكيد') || st.contains('تمت الموافقة') || st.contains('accepted')) {
-      return S.of(context).orderConfirmed;
-    } else if (st.contains('shipped') || st.contains('تم الشحن') || st.contains('shipping')) {
-      return S.of(context).shippedStatus;
-    } else if (st.contains('delivered') || st.contains('تم التسليم') || st.contains('تم الاستلام') || st.contains('completed')) {
-      return S.of(context).receivedStatus;
-    } else if (st.contains('cancelled') || st.contains('ملغي')) {
-      return S.of(context).cancelledTab;
-    } else if (st.contains('processing') || st.contains('جاري المعالحه')) {
-      return S.of(context).processingStatus;
+    } else if (st.contains('confirmed') || st.contains('تم التأكيد') || st.contains('تمت الموافقة')) {
+      return S.of(context).confirmed;
     }
     return status;
   }
 }
 
-// ==================== صفحة الطلبات ==========================
-class SellerActiveOrdersPage extends StatefulWidget {
-  final bool fromBottomNav;
-  const SellerActiveOrdersPage({super.key, this.fromBottomNav = false});
-  @override
-  State<SellerActiveOrdersPage> createState() => _SellerActiveOrdersPageState();
-}
-
-class _SellerActiveOrdersPageState extends State<SellerActiveOrdersPage> {
-  int selectedTabIndex = 0;
+class SellerNewOrdersPage extends StatelessWidget {
+  const SellerNewOrdersPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => ActiveOrdersCubit(ActiveOrdersApi()),
+      create: (context) => NewOrdersCubit(NewOrdersApi()),
       child: Scaffold(
         backgroundColor: const Color(0xfffafafa),
-        appBar: CustomAppBar(title: S.of(context).manageOrders),
-        body: BlocBuilder<ActiveOrdersCubit, ActiveOrdersState>(
+        appBar: CustomAppBar(title: S.of(context).pendingTab),
+        body: BlocBuilder<NewOrdersCubit, NewOrdersState>(
           builder: (context, state) {
-            if (state is ActiveOrdersError) {
+            if (state is NewOrdersError) {
               return Center(child: Text(state.message));
             }
-            if (state is! ActiveOrdersLoaded) {
-              return _buildActiveOrdersShimmerList(context);
+            if (state is NewOrdersLoaded) {
+              final orders = state.orders;
+              if (orders.isEmpty) {
+                return emptyState(context, S.of(context).noOrdersYet);
+              }
+              return RefreshIndicator(
+                onRefresh: () async {
+                  await context.read<NewOrdersCubit>().fetchNewOrders();
+                },
+                child: ListView.builder(
+                  padding: EdgeInsets.zero,
+                  itemCount: orders.length,
+                  itemBuilder: (context, index) {
+                    final order = orders[index];
+                    return NewShipmentCardSeller(
+                      order: order,
+                      onStatusChange: (o, status) =>
+                          context.read<NewOrdersCubit>().confirmOrder(o.orderId.toString()),
+                    );
+                  },
+                ),
+              );
             }
-            final lists = [state.accepted, state.shipping, state.completed];
-            final tabs = [
-              S.of(context).confirmedOrders,
-              S.of(context).shippedOrders,
-              S.of(context).deliveredOrders,
-            ];
-            final screenWidth = MediaQuery.of(context).size.width;
-            return Column(
-              children: [
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.all(screenWidth * 0.04),
-                  child: Row(
-                    children: List.generate(tabs.length, (i) {
-                      final isSelected = selectedTabIndex == i;
-                      return Expanded(
-                        child: GestureDetector(
-                          onTap: () => setState(() => selectedTabIndex = i),
-                          child: Container(
-                            margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.01),
-                            padding: EdgeInsets.symmetric(vertical: screenWidth * 0.03),
-                            decoration: BoxDecoration(
-                              color: isSelected ? KprimaryColor : Colors.grey.shade200,
-                              border: Border.all(color: isSelected ? KprimaryColor : Colors.grey.shade400),
-                              borderRadius: BorderRadius.circular(screenWidth * 0.05),
-                            ),
-                            child: Text(
-                              "${tabs[i]} (${lists[i].length})",
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: screenWidth * 0.03,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                color: isSelected ? Colors.white : Colors.black,
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-                ),
-                Expanded(
-                  child: lists[selectedTabIndex].isEmpty
-                      ? emptyState(context, S.of(context).noOrdersYet)
-                      : ListView.builder(
-                    padding: EdgeInsets.zero,
-                    itemCount: lists[selectedTabIndex].length,
-                    itemBuilder: (context, index) {
-                      final order = lists[selectedTabIndex][index];
-                      return ActiveShipmentCardSeller(
-                        order: order,
-                        onStatusChange: selectedTabIndex == 0
-                            ? (o, status) => context.read<ActiveOrdersCubit>().markShipped(o.orderId.toString())
-                            : selectedTabIndex == 1
-                            ? (o, status) => context.read<ActiveOrdersCubit>().markDelivered(o.orderId.toString())
-                            : null,
-                      );
-                    },
-                  ),
-                ),
-              ],
-            );
+            return _buildNewOrdersShimmerList(context);
           },
         ),
       ),
     );
   }
 
-  Widget _buildActiveOrdersShimmerList(BuildContext context) {
+  Widget _buildNewOrdersShimmerList(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final itemCount = 6;
 
@@ -1330,3 +1440,4 @@ class _SellerActiveOrdersPageState extends State<SellerActiveOrdersPage> {
     );
   }
 }
+

@@ -11,8 +11,8 @@ import 'Feature/Buyer/Home/presentation/view_model/views/HomeStructure.dart';
 import 'Feature/Buyer/MyPosts/presentation/view_model/MyPosts_Cubit.dart';
 import 'Feature/Buyer/Product/presentation/view_model/favorite_cubit.dart';
 import 'Feature/Seller/Home/presentation/view_model/views/HomeStructure.dart';
-import 'Feature/Seller/MyStore/presentation/view_model/my_store_cubit.dart';
-import 'Feature/Seller/Orders/presentation/view_model/OrdersCubit.dart';
+import 'Feature/Seller/Orders/presentation/view_model/views/SellerActiveOrdersPage.dart';
+import 'Feature/Seller/Orders/presentation/view_model/views/SellerNewOrdersPage.dart';
 import 'Feature/Seller/RelatedProuducts/presentation/view_model/FilterRelated_cubit.dart';
 import 'Feature/Splash/presentation/view_model/views/SplashScreen.dart';
 import 'generated/l10n.dart';
@@ -26,7 +26,7 @@ void main() async {
 
   runApp(
     DevicePreview(
-      enabled: false,
+      enabled: true,
       builder: (context) => ScreenUtilInit(
         designSize: const Size(360, 690),
         minTextAdapt: true,
@@ -38,12 +38,12 @@ void main() async {
               BlocProvider(create: (_) =>  FilterRelatedCubit()),
               BlocProvider(create: (_) => LocaleCubit()),
               BlocProvider(create: (_) => CountryCubit()),
-              BlocProvider(create: (_) => OrdersCubit()),
-              BlocProvider(create: (_) => MyStoreCubit()),
               BlocProvider(create: (_) => MyPostsCubit()),
               BlocProvider(create: (context) => FavoriteCubit()),
               BlocProvider(create: (context) => CartCubit()),
-
+              BlocProvider(create: (context) => NewOrdersCubit(NewOrdersApi())),
+              BlocProvider(create: (context) => ActiveOrdersCubit(ActiveOrdersApi()),
+              ),
 
             ],
             child: const MyApp(),

@@ -1,236 +1,251 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:tawqalnajah/Core/utiles/Colors.dart';
+import 'package:tawqalnajah/Feature/Seller/Home/presentation/view_model/views/widgets/RelatedSeaction.dart';
 import 'package:tawqalnajah/generated/l10n.dart';
+import 'package:tawqalnajah/Feature/Buyer/Home/presentation/view_model/views/widgets/HomeHeader.dart';
+import 'package:tawqalnajah/Feature/Buyer/Home/presentation/view_model/home_cubit.dart';
+import 'package:tawqalnajah/Feature/Buyer/Home/presentation/view_model/home_state.dart';
 import 'package:tawqalnajah/Feature/Seller/Notification/presentation/view_model/views/Notification.dart';
-import 'package:tawqalnajah/Feature/Seller/RelatedProuducts/presentation/view_model/views/widgets/RelatedSection.dart';
+import '../../../../../Buyer/Home/Data/repo/BannerRepository.dart';
+import '../../../../../Buyer/Home/presentation/view_model/bannar_cubit.dart';
+import '../../../../../Buyer/Home/presentation/view_model/views/widgets/BannerSection.dart';
+import '../../../../../Buyer/Product/Data/Models/ProductModel.dart';
+import '../../../../Orders/presentation/view_model/views/SellerNewOrdersPage.dart';
 import '../../../../Orders/presentation/view_model/views/FinancialAccountsPage.dart';
 import '../../../../Orders/presentation/view_model/views/SellerActiveOrdersPage.dart';
 import '../../../../Orders/presentation/view_model/views/SellerCancelledOrdersPage.dart';
-import '../../../../Orders/presentation/view_model/views/SellerPendingOrdersPage.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
-
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  String? userImage;
-  int currentPage = 0;
-  Timer? _timer;
+  String userImage = '';
+  String userName = '';
 
-  final List<String> offers = [
-    'Assets/black-friday-sales-arrangement-with-tags.jpg',
-    'Assets/discount-jacket-podium.jpg',
-    'Assets/front-view-screaming-male-chef-holding-up-sale-sign-burger-kitchen.jpg',
-    'Assets/hands-holding-modern-smartphone.jpg',
-    'Assets/man-giving-some-keys-woman.jpg',
-  ];
+  late final BannerCubit _bannerCubit;
+  late final HomeCubit _homeCubit;
+
+  List<String> _banners = [];
+  List<ProductModel> _suggestedProducts = [];
+  bool _isLoadingBanners = false;
+  bool _bannerHasError = false;
 
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      setState(() {
-        currentPage = (currentPage + 1) % offers.length;
-      });
-    });
+    _bannerCubit = BannerCubit(repo: BannerRepository());
+    _homeCubit = HomeCubit();
+    _loadTokenAndBanners();
+    _homeCubit.loadProfile();
+  }
+
+  Future<void> _loadTokenAndBanners() async {
+    const storage = FlutterSecureStorage();
+    try {
+      final token = await storage.read(key: 'user_token');
+      if (token != null) {
+        _bannerCubit.repo.token = token;
+      }
+      _bannerCubit.loadBanners();
+    } catch (e) {
+      _bannerCubit.loadBanners();
+    }
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _bannerCubit.close();
+    _homeCubit.close();
     super.dispose();
+  }
+
+  Future<void> _onRefresh() async {
+    _bannerCubit.loadBanners();
+    await _homeCubit.loadProfile();
+    await Future.delayed(const Duration(seconds: 1));
   }
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+    final cardHeight = screenHeight * 0.35;
+    final cardWidth = cardHeight * 0.65;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.white,
-        statusBarIconBrightness: Brightness.dark,
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.grey[100],
-        body: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: EdgeInsets.symmetric(
-            horizontal: screenWidth * 0.04,
-            vertical: screenHeight * 0.02,
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<BannerCubit>.value(value: _bannerCubit),
+        BlocProvider<HomeCubit>.value(value: _homeCubit),
+      ],
+      child: BlocListener<BannerCubit, BannerState>(
+        listener: (context, state) {
+          if (state is BannerLoading) {
+            setState(() {
+              _isLoadingBanners = true;
+              _bannerHasError = false;
+            });
+          } else if (state is BannerLoaded) {
+            setState(() {
+              _isLoadingBanners = false;
+              _bannerHasError = false;
+              _banners = state.banners;
+              _suggestedProducts = state.suggestedProducts;
+            });
+          } else if (state is BannerError) {
+            setState(() {
+              _isLoadingBanners = false;
+              _bannerHasError = true;
+            });
+          }
+        },
+        child: AnnotatedRegion<SystemUiOverlayStyle>(
+          value: const SystemUiOverlayStyle(
+            statusBarColor: Colors.white,
+            statusBarIconBrightness: Brightness.dark,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(height: screenWidth * 0.06),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: screenWidth * 0.065,
-                        backgroundColor: Colors.white,
-                        backgroundImage: userImage != null
-                            ? NetworkImage(userImage!)
-                            : null,
-                        child: userImage == null
-                            ? Icon(
-                          Icons.person,
-                          color: KprimaryText,
-                          size: screenWidth * 0.06,
-                        )
-                            : null,
+          child: Scaffold(
+            backgroundColor: Colors.grey[100],
+            body: RefreshIndicator(
+              color: KprimaryColor,
+              onRefresh: _onRefresh,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                primary: true,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(height: screenHeight * 0.04),
+                    BlocBuilder<HomeCubit, HomeState>(
+                      builder: (context, homeState) {
+                        return HomeHeader(
+                          isLoading: homeState.isProfileLoading,
+                          userName: homeState.userName.isEmpty ? userName : homeState.userName,
+                          userImage: homeState.userImage.isEmpty ? userImage : homeState.userImage,
+                          screenWidth: screenWidth,
+                          onNotificationPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const NotificationsPage(),
+                              ),
+                            );
+                          },
+                          onProfileTap: null,
+                        );
+                      },
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: screenWidth * 0.04,
+                        vertical: screenHeight * 0.02,
                       ),
-                      SizedBox(width: screenWidth * 0.03),
-                      Column(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          BannerSection(
+                            screenWidth: screenWidth,
+                            screenHeight: screenHeight,
+                            banners: _banners,
+                            isLoading: _isLoadingBanners,
+                            hasError: _bannerHasError,
+                          ),
+                          SizedBox(height: screenHeight * 0.02),
                           Text(
-                            S.of(context).HelloMahmoud,
+                            S.of(context).ourServices,
                             style: TextStyle(
-                              fontSize: screenWidth * 0.04,
+                              fontSize: screenWidth * 0.035,
                               fontWeight: FontWeight.bold,
+                              color: KprimaryText,
                             ),
                           ),
-                          Text(
-                            S.of(context).happyShopping,
-                            style: TextStyle(
-                              fontSize: screenWidth * 0.03,
-                              color: Colors.grey[700],
-                            ),
+
+                          SizedBox(height: screenHeight * 0.015),
+
+                          // خدمات التاجر
+                          Wrap(
+                            spacing: screenWidth * 0.04,
+                            runSpacing: screenWidth * 0.04,
+                            alignment: WrapAlignment.center,
+                            children: [
+                              buildServiceItem(
+                                icon: Icons.shopping_cart_outlined,
+                                title: S.of(context).newOrders,
+                                screenWidth: screenWidth,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const SellerNewOrdersPage(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              buildServiceItem(
+                                icon: Icons.inventory_2_outlined,
+                                title: S.of(context).manageOrders,
+                                screenWidth: screenWidth,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const SellerActiveOrdersPage(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              buildServiceItem(
+                                icon: Icons.cancel_outlined,
+                                title: S.of(context).cancelledOrders,
+                                screenWidth: screenWidth,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const SellerCancelledOrdersPage(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              buildServiceItem(
+                                icon: Icons.receipt_long_outlined,
+                                title: S.of(context).FinancialAccounts,
+                                screenWidth: screenWidth,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const FinancialAccountsPage(),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: screenHeight * 0.01),
+                          RelatedSection(
+                            screenWidth: screenWidth,
+                            screenHeight: screenHeight,
+                            cardWidth: cardWidth,
+                            cardHeight: cardHeight,
+                            isLoading: _isLoadingBanners,
+                            suggestedProducts: _suggestedProducts,
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.notifications_none,
-                      color: KprimaryColor,
-                      size: screenWidth * 0.07,
                     ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const NotificationsPage(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-              SizedBox(height: screenHeight * 0.02),
-              SizedBox(
-                height: screenWidth * 0.4,
-                child: Stack(
-                  alignment: Alignment.bottomCenter,
-                  children: offers.asMap().entries.map((entry) {
-                    int idx = entry.key;
-                    String img = entry.value;
-                    return AnimatedOpacity(
-                      opacity: idx == currentPage ? 1.0 : 0.0,
-                      duration: const Duration(seconds: 1),
-                      curve: Curves.easeInOut,
-                      child: Container(
-                        margin: EdgeInsets.symmetric(
-                          horizontal: screenWidth * 0.01,
-                        ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(
-                            screenWidth * 0.03,
-                          ),
-                          image: DecorationImage(
-                            image: AssetImage(img),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
+                  ],
                 ),
               ),
-              SizedBox(height: screenHeight * 0.02),
-              Text(
-                S.of(context).ourServices,
-                style: TextStyle(
-                  fontSize: screenWidth * 0.035,
-                  fontWeight: FontWeight.bold,
-                  color: KprimaryText,
-                ),
-              ),
-              SizedBox(height: screenHeight * 0.015),
-              Wrap(
-                spacing: screenWidth * 0.04,
-                runSpacing: screenWidth * 0.04,
-                alignment: WrapAlignment.center,
-                children: [
-                  buildServiceItem(
-                    icon: Icons.shopping_cart_outlined,
-                    title: S.of(context).newOrders,
-                    screenWidth: screenWidth,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const SellerPendingOrdersPage(),
-                        ),
-                      );
-                    },
-                  ),
-                  buildServiceItem(
-                    icon: Icons.inventory_2_outlined,
-                    title: S.of(context).manageOrders,
-                    screenWidth: screenWidth,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const SellerActiveOrdersPage(),
-                        ),
-                      );
-                    },
-                  ),
-                  buildServiceItem(
-                    icon: Icons.cancel_outlined,
-                    title: S.of(context).cancelledOrders,
-                    screenWidth: screenWidth,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const SellerCancelledOrdersPage(),
-                        ),
-                      );
-                    },
-                  ),
-                  buildServiceItem(
-                    icon: Icons.receipt_long_outlined,
-                    title: S.of(context).FinancialAccounts,
-                    screenWidth: screenWidth,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const FinancialAccountsPage(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-              SizedBox(height: screenHeight * 0.01),
-              RelatedSection(
-                screenWidth: screenWidth,
-                screenHeight: screenHeight,
-              ),
-            ],
+            ),
           ),
         ),
       ),

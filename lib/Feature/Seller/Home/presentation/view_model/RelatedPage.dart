@@ -4,29 +4,26 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:tawqalnajah/Core/utiles/Colors.dart';
-import 'package:tawqalnajah/Feature/Buyer/Product/presentation/view_model/views/ProductDetailsPage.dart';
 import 'package:tawqalnajah/generated/l10n.dart';
 import '../../../../../../Core/Widgets/AppBar.dart';
-import '../../../../Categories/presentation/view_model/filter_products_cubit.dart';
-import '../../../../Categories/presentation/view_model/views/Widgets/FilterBottomSheet.dart';
-import '../../../../Home/presentation/view_model/views/widgets/ImageHome.dart';
-import '../../../Data/Models/ProductModel.dart';
-import '../cart_cubit.dart';
-import '../favorite_cubit.dart';
+import '../../../../Buyer/Categories/presentation/view_model/filter_products_cubit.dart';
+import '../../../../Buyer/Categories/presentation/view_model/views/Widgets/FilterBottomSheet.dart';
+import '../../../../Buyer/Home/presentation/view_model/views/widgets/ImageHome.dart';
+import '../../../../Buyer/Product/Data/Models/ProductModel.dart';
+import '../RelatedDetails.dart';
 
-class SuggestionsPage extends StatefulWidget {
+class RelatedPage extends StatefulWidget {
   final List<ProductModel> products;
 
-  const SuggestionsPage({super.key, required this.products});
+  const RelatedPage({super.key, required this.products});
 
   @override
-  State<SuggestionsPage> createState() => _SuggestionsPageState();
+  State<RelatedPage> createState() => _RelatedPageState();
 }
 
-class _SuggestionsPageState extends State<SuggestionsPage> {
+class _RelatedPageState extends State<RelatedPage> {
   final Dio _dio = Dio();
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   late List<ProductModel> _displayedProducts;
@@ -52,16 +49,14 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
   void initState() {
     super.initState();
     _displayedProducts = widget.products;
-    context.read<FavoriteCubit>().loadFavorites();
-    context.read<CartCubit>().loadCart();
     _searchController.addListener(_onSearchChanged);
 
-    // استدعاء الجلب من السيرفر فور الدخول لعرض كل النتائج وليس فقط الممرّرة عبر widget.products
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchProducts(
-        minPrice: _currentMinPrice,
-        maxPrice: _currentMaxPrice,
-      );
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     });
   }
 
@@ -103,38 +98,13 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
       _isSearchLoading = false;
     });
 
-    _fetchProducts(
-      minPrice: _currentMinPrice,
-      maxPrice: _currentMaxPrice,
-    );
+    _fetchProducts(minPrice: _currentMinPrice, maxPrice: _currentMaxPrice);
   }
 
   int _safeInt(double v) {
     if (v.isNaN || v.isInfinite) return 0;
     if (v < 0) return 0;
     return v.round();
-  }
-
-  // تطبيع مفاتيح الـ JSON لتجنب إسقاط عناصر بسبب اختلاف أسماء الحقول
-  Map<String, dynamic> _normalizeProductJson(Map<String, dynamic> e) {
-    final m = Map<String, dynamic>.from(e);
-
-    // بعض الـ APIs تستخدم "image" بدل "images"
-    if (m['images'] == null && m['image'] != null) {
-      m['images'] = m['image'];
-    }
-
-    // توحيد اسم العملة إن كان النموذج يتوقع "currencyType"
-    if (m['currencyType'] == null && m['currency_type'] != null) {
-      m['currencyType'] = m['currency_type'];
-    }
-
-    // توحيد الخصم إن وُجد باسم مختلف
-    if (m['priceAfterDiscount'] == null && m['price_after_discount'] != null) {
-      m['priceAfterDiscount'] = m['price_after_discount'];
-    }
-
-    return m;
   }
 
   Future<void> _fetchProducts({
@@ -148,8 +118,6 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
       if (searchQuery != null && searchQuery.isNotEmpty) {
         setState(() {
           _isSearchLoading = true;
-          _hasError = false;
-          _errorMessage = '';
         });
       } else {
         setState(() {
@@ -169,11 +137,11 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
       if (token != null) headers['Authorization'] = 'Bearer $token';
 
       try {
-        if (!_cancelToken.isCancelled) _cancelToken.cancel('cancelling previous');
+        if (!_cancelToken.isCancelled)
+          _cancelToken.cancel('cancelling previous');
       } catch (_) {}
       _cancelToken = CancelToken();
 
-      // مطابق Postman: type=ads&min_price=0&max_price=250 (حتى لو 0)
       final double effectiveMin = minPrice ?? _currentMinPrice;
       final double effectiveMax = maxPrice ?? _currentMaxPrice;
 
@@ -190,10 +158,7 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
       final response = await _dio.get(
         'https://toknagah.viking-iceland.online/api/user/products',
         queryParameters: queryParams,
-        options: Options(
-          headers: headers,
-          validateStatus: (_) => true,
-        ),
+        options: Options(headers: headers, validateStatus: (_) => true),
         cancelToken: _cancelToken,
       );
 
@@ -201,7 +166,6 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
 
       if (response.statusCode == 200) {
         try {
-          // أحياناً response.data يأتي كنص
           dynamic raw = response.data;
           if (raw is String) raw = jsonDecode(raw);
 
@@ -229,16 +193,13 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
 
           final products = productsJson
               .map((e) {
-            try {
-              final normalized = _normalizeProductJson(e as Map<String, dynamic>);
-              return ProductModel.fromJson(normalized);
-            } catch (err) {
-              // نسجل فقط في الـ log ولا نسقط الصفحة
-              debugPrint('Product parse failed: $err');
-              return null;
-            }
-          })
-              .where((p) => p != null)
+                try {
+                  return ProductModel.fromJson(e as Map<String, dynamic>);
+                } catch (_) {
+                  return null;
+                }
+              })
+              .where((product) => product != null)
               .cast<ProductModel>()
               .toList();
 
@@ -250,13 +211,13 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
             _isSearchLoading = false;
             _hasError = false;
 
-            _isFilterActive = (searchQuery != null && searchQuery.isNotEmpty) ||
+            _isFilterActive =
+                (searchQuery != null && searchQuery.isNotEmpty) ||
                 (_currentMinPrice > 0) ||
                 (_currentMaxPrice != kFilterMaxPrice);
 
-            // تحديث القيم الفعلية
-            _currentMinPrice = effectiveMin;
-            _currentMaxPrice = effectiveMax;
+            if (minPrice != null) _currentMinPrice = minPrice;
+            if (maxPrice != null) _currentMaxPrice = maxPrice;
 
             _filterCubit.updateFilters(
               minPrice: _currentMinPrice,
@@ -264,42 +225,42 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
             );
           });
         } catch (parseError) {
-          debugPrint('Parsing error: $parseError');
           if (!mounted) return;
           setState(() {
             _displayedProducts = [];
             _isLoading = false;
             _isSearchLoading = false;
             _hasError = true;
-            _errorMessage = ''; // لا نعرض تفاصيل الاستثناءات
+            _errorMessage = 'Parsing error: $parseError';
           });
         }
       } else {
-        debugPrint('Server error: ${response.statusCode} | ${response.data}');
         if (!mounted) return;
         setState(() {
           _isLoading = false;
           _isSearchLoading = false;
           _hasError = true;
-          _errorMessage = ''; // رسالة موحدة فقط للمستخدم
+          _errorMessage =
+              'Server error: ${response.statusCode}\n${response.data ?? ''}';
         });
       }
     } catch (e) {
       if (e is DioException && e.type == DioExceptionType.cancel) return;
-      debugPrint('Request error: $e');
       if (!mounted) return;
       setState(() {
         _isLoading = false;
         _isSearchLoading = false;
         _hasError = true;
-        _errorMessage = ''; // بدون طباعة نص الاستثناء
+        _errorMessage = e.toString();
       });
     }
   }
 
   Future<void> _onRefresh() async {
     await _fetchProducts(
-      searchQuery: _searchController.text.isNotEmpty ? _searchController.text : null,
+      searchQuery: _searchController.text.isNotEmpty
+          ? _searchController.text
+          : null,
       minPrice: _currentMinPrice,
       maxPrice: _currentMaxPrice,
     );
@@ -336,10 +297,13 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
 
     setState(() {
       _currentMinPrice = (filters['minPrice'] as num?)?.toDouble() ?? 0;
-      _currentMaxPrice = (filters['maxPrice'] as num?)?.toDouble() ?? kFilterMaxPrice;
+      _currentMaxPrice =
+          (filters['maxPrice'] as num?)?.toDouble() ?? kFilterMaxPrice;
     });
 
-    final searchQuery = _searchController.text.isNotEmpty ? _searchController.text : null;
+    final searchQuery = _searchController.text.isNotEmpty
+        ? _searchController.text
+        : null;
 
     _fetchProducts(
       searchQuery: searchQuery,
@@ -358,11 +322,15 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
     _fetchProducts(minPrice: 0, maxPrice: kFilterMaxPrice);
   }
 
-  void _navigateToProductDetails(BuildContext context, int productId, Map<String, dynamic> productData) {
+  void _navigateToProductDetails(
+    BuildContext context,
+    int productId,
+    Map<String, dynamic> productData,
+  ) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ProductDetails(
+        builder: (_) => RelatedDetails(
           productId: productId,
           initialProductData: productData,
         ),
@@ -372,9 +340,7 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
 
   Widget _buildSearchFilterBar(double screenWidth) {
     return Padding(
-      padding: EdgeInsetsDirectional.symmetric(
-        horizontal: screenWidth * 0.04,
-      ),
+      padding: EdgeInsetsDirectional.symmetric(horizontal: screenWidth * 0.04),
       child: Row(
         children: [
           Expanded(
@@ -409,7 +375,8 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
                       children: [
                         TextField(
                           controller: _searchController,
-                          textDirection: Directionality.of(context) == TextDirection.rtl
+                          textDirection:
+                              Directionality.of(context) == TextDirection.rtl
                               ? TextDirection.rtl
                               : TextDirection.ltr,
                           textAlign: TextAlign.start,
@@ -420,7 +387,8 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
                           ),
                           decoration: InputDecoration(
                             hintText: S.of(context).search,
-                            hintTextDirection: Directionality.of(context) == TextDirection.rtl
+                            hintTextDirection:
+                                Directionality.of(context) == TextDirection.rtl
                                 ? TextDirection.rtl
                                 : TextDirection.ltr,
                             hintStyle: TextStyle(
@@ -500,18 +468,20 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
   }
 
   Widget _buildProductCard(
-      ProductModel product,
-      Map<String, dynamic> productMap,
-      int productId,
-      bool isFav,
-      bool isAdded,
-      double screenWidth,
-      ) {
+    ProductModel product,
+    Map<String, dynamic> productMap,
+    int productId,
+    double screenWidth,
+  ) {
     final cardWidth = (screenWidth - 48) / 2;
     final cardHeight = cardWidth * 1.4;
 
-    final price = product.priceAfterDiscount > 0 ? product.priceAfterDiscount : product.price;
-    final currency = product.currencyType?.isNotEmpty == true ? product.currencyType! : S.of(context).SYP;
+    final price = product.priceAfterDiscount > 0
+        ? product.priceAfterDiscount
+        : product.price;
+    final currency = product.currencyType?.isNotEmpty == true
+        ? product.currencyType!
+        : S.of(context).SYP;
 
     return GestureDetector(
       onTap: () => _navigateToProductDetails(context, productId, productMap),
@@ -538,22 +508,23 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
                 borderRadius: BorderRadius.vertical(
                   top: Radius.circular(cardWidth * 0.05),
                 ),
-                child: _buildImageSection(productMap, productId, isFav, cardWidth, cardHeight),
+                child: _buildImageSection(productMap, cardWidth, cardHeight),
               ),
             ),
             Expanded(
               flex: 3,
               child: Padding(
-                padding: EdgeInsets.all(cardWidth * 0.04),
+                padding: EdgeInsets.all(cardWidth * 0.06),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const Spacer(),
                     Align(
                       alignment: Alignment.centerRight,
                       child: Text(
                         product.name,
                         style: TextStyle(
-                          fontSize: cardHeight * 0.05,
+                          fontSize: cardHeight * 0.06,
                           fontWeight: FontWeight.bold,
                         ),
                         maxLines: 1,
@@ -566,7 +537,7 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
                       child: Text(
                         product.description,
                         style: TextStyle(
-                          fontSize: cardHeight * 0.045,
+                          fontSize: cardHeight * 0.055,
                           color: Colors.grey[700],
                         ),
                         maxLines: 1,
@@ -574,39 +545,20 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
                       ),
                     ),
                     SizedBox(height: cardHeight * 0.01),
+
                     Align(
                       alignment: Alignment.centerRight,
                       child: Text(
                         "$price $currency",
                         style: TextStyle(
-                          fontSize: cardHeight * 0.05,
+                          fontSize: cardHeight * 0.06,
                           fontWeight: FontWeight.bold,
                           color: const Color(0xffFF580E),
                         ),
                       ),
                     ),
                     const Spacer(),
-                    ElevatedButton(
-                      onPressed: () => context.read<CartCubit>().toggleCartWithApi(productId, productMap),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isAdded
-                            ? Colors.grey.withAlpha((0.3 * 255).round())
-                            : const Color(0xffFF580E),
-                        minimumSize: Size(double.infinity, cardHeight * 0.14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(cardWidth * 0.15),
-                        ),
-                      ),
-                      child: Text(
-                        isAdded ? S.of(context).addedToCart : S.of(context).AddtoCart,
-                        style: TextStyle(
-                          fontSize: cardHeight * 0.045,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
+                    // تمت إزالة زر الإضافة للعربة
                   ],
                 ),
               ),
@@ -618,13 +570,12 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
   }
 
   Widget _buildImageSection(
-      Map<String, dynamic> productMap,
-      int productId,
-      bool isFav,
-      double cardWidth,
-      double cardHeight,
-      ) {
-    final imageUrl = (productMap['images'] is List && productMap['images'].isNotEmpty)
+    Map<String, dynamic> productMap,
+    double cardWidth,
+    double cardHeight,
+  ) {
+    final imageUrl =
+        (productMap['images'] is List && productMap['images'].isNotEmpty)
         ? productMap['images'][0]
         : null;
 
@@ -632,44 +583,22 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
       return _buildImageErrorPlaceholder(cardWidth, cardHeight);
     }
 
-    return Stack(
-      children: [
-        CachedNetworkImage(
-          imageUrl: ImageHome.getValidImageUrl(imageUrl),
-          fit: BoxFit.cover,
-          width: double.infinity,
-          height: double.infinity,
-          placeholder: (context, url) => Container(
-            color: Colors.grey[100],
-            child: Center(
-              child: CircularProgressIndicator(
-                color: const Color(0xffFF580E),
-                strokeWidth: 2,
-              ),
-            ),
-          ),
-          errorWidget: (context, url, error) => _buildImageErrorPlaceholder(cardWidth, cardHeight),
-        ),
-        Positioned(
-          top: cardWidth * 0.05,
-          left: cardWidth * 0.05,
-          child: GestureDetector(
-            onTap: () => context.read<FavoriteCubit>().toggleFavoriteWithApi(productId),
-            child: Container(
-              padding: EdgeInsets.all(cardWidth * 0.03),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.black.withAlpha((0.5 * 255).round()),
-              ),
-              child: Icon(
-                isFav ? Icons.favorite : Icons.favorite_border,
-                color: isFav ? const Color(0xffFF580E) : Colors.white,
-                size: cardWidth * 0.1,
-              ),
-            ),
+    return CachedNetworkImage(
+      imageUrl: ImageHome.getValidImageUrl(imageUrl),
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+      placeholder: (context, url) => Container(
+        color: Colors.grey[100],
+        child: Center(
+          child: CircularProgressIndicator(
+            color: const Color(0xffFF580E),
+            strokeWidth: 2,
           ),
         ),
-      ],
+      ),
+      errorWidget: (context, url, error) =>
+          _buildImageErrorPlaceholder(cardWidth, cardHeight),
     );
   }
 
@@ -760,11 +689,8 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
           ),
           SizedBox(height: screenHeight * 0.01),
           Text(
-            S.of(context).noSuggestionsAvailable,
-            style: TextStyle(
-              fontSize: screenWidth * 0.035,
-              color: Colors.grey,
-            ),
+            'لا توجد عناصر ذات صلة',
+            style: TextStyle(fontSize: screenWidth * 0.035, color: Colors.grey),
           ),
           SizedBox(height: screenHeight * 0.1),
         ],
@@ -778,7 +704,7 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      appBar: CustomAppBar(title: S.of(context).suggestions),
+      appBar: CustomAppBar(title: S.of(context).relatedItems),
       backgroundColor: Colors.grey[100],
       body: Column(
         children: [
@@ -799,7 +725,8 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
                       color: KprimaryColor,
                     ),
                   ),
-                  if ((_isFilterActive || _searchController.text.isNotEmpty) && _displayedProducts.isNotEmpty)
+                  if ((_isFilterActive || _searchController.text.isNotEmpty) &&
+                      _displayedProducts.isNotEmpty)
                     TextButton(
                       onPressed: _resetFilters,
                       child: Text(
@@ -824,87 +751,85 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
                     ? _buildShimmerLoading(screenWidth, screenHeight)
                     : _hasError
                     ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.network_check,
-                        color: Colors.grey,
-                        size: screenWidth * 0.15,
-                      ),
-                      SizedBox(height: screenHeight * 0.02),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
-                        child: Text(
-                          // رسالة موحّدة فقط بدون تفاصيل الاستثناءات
-                          S.of(context).connectionTimeout,
-                          style: TextStyle(
-                            fontSize: screenWidth * 0.035,
-                            color: Colors.grey[700],
-                          ),
-                          textAlign: TextAlign.center,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.network_check,
+                              color: Colors.grey,
+                              size: screenWidth * 0.15,
+                            ),
+                            SizedBox(height: screenHeight * 0.02),
+                            Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: screenWidth * 0.03,
+                              ),
+                              child: Text(
+                                _errorMessage.isNotEmpty
+                                    ? _errorMessage
+                                    : S.of(context).connectionTimeout,
+                                style: TextStyle(
+                                  fontSize: screenWidth * 0.035,
+                                  color: Colors.grey[700],
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            SizedBox(height: screenHeight * 0.02),
+                            ElevatedButton(
+                              onPressed: () => _fetchProducts(
+                                searchQuery: _searchController.text.isNotEmpty
+                                    ? _searchController.text
+                                    : null,
+                                minPrice: _currentMinPrice,
+                                maxPrice: _currentMaxPrice,
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xffFF580E),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: Text(
+                                S.of(context).tryAgain,
+                                style: TextStyle(
+                                  fontSize: screenWidth * 0.035,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: screenHeight * 0.1),
+                          ],
                         ),
-                      ),
-                      SizedBox(height: screenHeight * 0.02),
-                      ElevatedButton(
-                        onPressed: () => _fetchProducts(
-                          searchQuery: _searchController.text.isNotEmpty ? _searchController.text : null,
-                          minPrice: _currentMinPrice,
-                          maxPrice: _currentMaxPrice,
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xffFF580E),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: Text(
-                          S.of(context).tryAgain,
-                          style: TextStyle(
-                            fontSize: screenWidth * 0.035,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: screenHeight * 0.1),
-                    ],
-                  ),
-                )
+                      )
                     : _displayedProducts.isEmpty
                     ? _buildEmptyState(screenWidth, screenHeight)
-                    : BlocBuilder<FavoriteCubit, Set<int>>(
-                  builder: (context, favoriteIds) {
-                    return BlocBuilder<CartCubit, CartState>(
-                      builder: (context, cartState) {
-                        return GridView.builder(
-                          controller: _gridViewController,
-                          padding: EdgeInsets.zero,
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 16,
-                            mainAxisSpacing: 16,
-                            childAspectRatio: 0.65,
-                          ),
-                          itemCount: _displayedProducts.length,
-                          itemBuilder: (context, index) {
-                            final product = _displayedProducts[index];
-                            final productMap = product.toMap()
-                              ..['images'] = ImageHome.processImageList(product.images);
-
-                            return _buildProductCard(
-                              product,
-                              productMap,
-                              product.id,
-                              favoriteIds.contains(product.id),
-                              cartState.cartIds.contains(product.id),
-                              screenWidth,
+                    : GridView.builder(
+                        controller: _gridViewController,
+                        padding: EdgeInsets.zero,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
+                              childAspectRatio: 0.65,
+                            ),
+                        itemCount: _displayedProducts.length,
+                        itemBuilder: (context, index) {
+                          final product = _displayedProducts[index];
+                          final productMap = product.toMap()
+                            ..['images'] = ImageHome.processImageList(
+                              product.images,
                             );
-                          },
-                        );
-                      },
-                    );
-                  },
-                ),
+
+                          return _buildProductCard(
+                            product,
+                            productMap,
+                            product.id,
+                            screenWidth,
+                          );
+                        },
+                      ),
               ),
             ),
           ),

@@ -506,6 +506,10 @@ class _EditProfileState extends State<EditProfile> {
             });
           }
 
+          // ارجع بنتيجة نجاح علشان MorePage تعيد التحميل فورًا
+          if (mounted) {
+            Navigator.pop(context, true);
+          }
         } else {
           String errorMsg = data['message'] ?? S.of(context).failedToUpdateProfile;
           _handleApiError(errorMsg);
@@ -1434,7 +1438,7 @@ class _EditProfileState extends State<EditProfile> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
-              padding: EdgeInsets.symmetric(vertical: screenHeight * 0.025),
+              padding: EdgeInsets.symmetric(vertical: screenHeight * 0.015),
             ),
             child: _isUpdating
                 ? SizedBox(
@@ -1502,7 +1506,7 @@ class _EditProfileState extends State<EditProfile> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
-              padding: EdgeInsets.symmetric(vertical: screenHeight * 0.025),
+              padding: EdgeInsets.symmetric(vertical: screenHeight * 0.015),
             ),
             child: Text(
               S.of(context).cancel,

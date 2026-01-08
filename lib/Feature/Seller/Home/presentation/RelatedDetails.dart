@@ -1,0 +1,1032 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../../../../Core/Widgets/AppBar.dart';
+import '../../../../../../Core/utiles/Colors.dart';
+import '../../../../../../generated/l10n.dart';
+import '../../../Buyer/Product/Data/repository/ProductDetailsRepository.dart';
+import '../../../Buyer/Product/Data/repository/RatingRepository.dart';
+import '../../../Buyer/Product/presentation/view_model/views/widgets/FullScreenGallery.dart';
+
+class _SocialLinkMeta {
+  final String url;
+  final String assetPath;
+  final Color? bg;
+  const _SocialLinkMeta(this.url, this.assetPath, {this.bg});
+}
+
+class RelatedDetails extends StatefulWidget {
+  final int productId;
+  final Map<String, dynamic> initialProductData;
+  const RelatedDetails({
+    super.key,
+    required this.productId,
+    required this.initialProductData,
+  });
+
+  @override
+  State<RelatedDetails> createState() => _RelatedDetailsState();
+}
+
+class _RelatedDetailsState extends State<RelatedDetails> {
+  late Map<String, dynamic> _productData;
+  Map<String, dynamic> _sellerData = {};
+  bool _isLoading = true;
+  int _currentPage = 0;
+  int _selectedRating = 0;
+  bool _ratingSubmitted = false;
+  List<dynamic> _relatedProducts = [];
+  final ProductDetailsRepository _repository = ProductDetailsRepository();
+  final RatingRepository _ratingRepository = RatingRepository();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+
+  @override
+  void initState() {
+    super.initState();
+    _productData = Map<String, dynamic>.from(widget.initialProductData);
+    _loadSavedRating();
+    _loadProductDetails();
+  }
+
+  Future<void> _loadSavedRating() async {
+    try {
+      final savedRating = await _storage.read(
+        key: 'rating_${widget.productId}',
+      );
+      if (savedRating != null) {
+        setState(() {
+          _selectedRating = int.parse(savedRating);
+          _ratingSubmitted = true;
+        });
+      }
+    } catch (e) {
+      print('Error loading saved rating: $e');
+    }
+  }
+
+  Future<void> _saveRating(int rating) async {
+    await _storage.write(
+      key: 'rating_${widget.productId}',
+      value: rating.toString(),
+    );
+  }
+
+  Future<void> _loadProductDetails() async {
+    try {
+      final token = await _storage.read(key: 'user_token');
+      _repository.token = token;
+      final data = await _repository.fetchProductDetails(widget.productId);
+      setState(() {
+        _productData = data['productDetails'] ?? {};
+        _sellerData = (data['sallerDetails'] is Map)
+            ? Map<String, dynamic>.from(data['sallerDetails'])
+            : {};
+        _relatedProducts = data['products'] ?? [];
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading product details: $e');
+      setState(() {
+        _isLoading = false;
+        _sellerData = {};
+        _relatedProducts = [];
+      });
+    }
+  }
+
+  List<String> _getProductImages() {
+    final raw = _productData['images'] ?? _productData['image'] ?? [];
+    if (raw is List) {
+      return raw
+          .map((e) => e.toString())
+          .where((e) => e.trim().isNotEmpty)
+          .toList();
+    }
+    if (raw is String && raw.trim().isNotEmpty) {
+      return [raw.trim()];
+    }
+    return <String>[];
+  }
+
+  Future<void> _submitRating(int rating) async {
+    if (_ratingSubmitted) return;
+
+    try {
+      final token = await _storage.read(key: 'user_token');
+      if (token != null) {
+        await _ratingRepository.submitRating(
+          productId: widget.productId,
+          rating: rating,
+          token: token,
+        );
+      }
+
+      await _saveRating(rating);
+
+      setState(() {
+        _selectedRating = rating;
+        _ratingSubmitted = true;
+      });
+
+      _loadProductDetails();
+    } catch (e) {
+      print('Error submitting rating: $e');
+    }
+  }
+
+  // === فتح الروابط مع معالجة أبسط للأنواع الأربعة فقط ===
+  Future<void> _launchSocialLink(String? rawLink) async {
+    if (rawLink == null || rawLink.trim().isEmpty) return;
+
+    try {
+      String link = rawLink.trim();
+
+      // www -> https
+      if (link.startsWith('www.')) {
+        link = 'https://$link';
+      }
+
+      // واتساب
+      if (link.contains('whatsapp') || link.contains('wa.me')) {
+        if (!link.startsWith('https://')) {
+          link = 'https://$link';
+        }
+      }
+
+      // هاتف
+      if (RegExp(r'^\+?[\d\s\-]+$').hasMatch(link)) {
+        if (!link.startsWith('tel:')) {
+          link = 'tel:$link';
+        }
+      }
+
+      final uri = Uri.parse(link);
+
+      bool canLaunch = false;
+      try {
+        canLaunch = await canLaunchUrl(uri);
+      } catch (e) {
+        print('Error checking launch capability: $e');
+      }
+
+      if (canLaunch) {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+          webViewConfiguration: const WebViewConfiguration(
+            enableJavaScript: true,
+            enableDomStorage: true,
+          ),
+          webOnlyWindowName: '_blank',
+        );
+      } else {
+        await _launchUrlFallback(link);
+      }
+    } catch (e) {
+      print('Error launching social link: $e');
+      _showLaunchError(context);
+    }
+  }
+
+  Future<void> _launchUrlFallback(String url) async {
+    try {
+      if (await canLaunch(url)) {
+        await launch(
+          url,
+          forceSafariVC: false,
+          forceWebView: false,
+          enableJavaScript: true,
+        );
+      } else {
+        if (url.startsWith('http')) {
+          await launch(
+            url,
+            forceSafariVC: false,
+            forceWebView: false,
+          );
+        }
+      }
+    } catch (e) {
+      print('Fallback launch failed: $e');
+    }
+  }
+
+  void _showLaunchError(BuildContext context) {
+    final snackBar = SnackBar(
+      content: Text(S.of(context).error),
+      backgroundColor: Colors.red,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  }
+
+  Widget _buildCircleIcon(
+      String path,
+      double screenWidth, {
+        VoidCallback? onTap,
+        Color backgroundColor = Colors.white,
+      }) {
+    return Padding(
+      padding: EdgeInsets.only(left: screenWidth * 0.015),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: screenWidth * 0.08,
+          height: screenWidth * 0.08,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: backgroundColor,
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 3,
+                offset: Offset(0, 1),
+              ),
+            ],
+          ),
+          padding: EdgeInsets.all(screenWidth * 0.012),
+          child: Image.asset(path, fit: BoxFit.contain),
+        ),
+      ),
+    );
+  }
+
+  // ===== دعم الأنواع الأربعة فقط مع تجميع مرن من الداتا =====
+
+  String _normalizeLink(String link) {
+    String l = link.trim();
+    if (l.startsWith('www.')) l = 'https://$l';
+    if (l.startsWith('http://')) l = l.replaceFirst('http://', 'https://');
+    if (RegExp(r'^\+?[\d\s\-]+$').hasMatch(l) && !l.startsWith('tel:')) {
+      l = 'tel:$l';
+    }
+    return l;
+  }
+
+  _SocialLinkMeta? _toMetaIfWhatsApp(String link) {
+    final l = link.toLowerCase();
+    if (l.contains('whatsapp') || l.contains('wa.me')) {
+      final fixed = l.startsWith('https://') ? link : 'https://$link';
+      return _SocialLinkMeta(fixed, 'Assets/whatsapp.png');
+    }
+    return null;
+  }
+
+  _SocialLinkMeta? _toMetaIfFacebook(String link) {
+    final l = link.toLowerCase();
+    if (l.contains('facebook.com') || l.contains('fb.com')) {
+      return _SocialLinkMeta(_normalizeLink(link), 'Assets/Facebook.png');
+    }
+    return null;
+  }
+
+  _SocialLinkMeta? _toMetaIfInstagram(String link) {
+    final l = link.toLowerCase();
+    if (l.contains('instagram.com')) {
+      return _SocialLinkMeta(_normalizeLink(link), 'Assets/instagram.png');
+    }
+    return null;
+  }
+
+  _SocialLinkMeta? _toMetaIfSnapchat(String link) {
+    final l = link.toLowerCase();
+    if (l.contains('snapchat.com') || l.contains('snap.com') || l.contains('snap')) {
+      return _SocialLinkMeta(_normalizeLink(link), 'Assets/logo.png', bg: Colors.yellow);
+    }
+    return null;
+  }
+
+  List<_SocialLinkMeta> _collectOnlyFourSocialLinks() {
+    final List<_SocialLinkMeta> result = [];
+    final seen = <String>{};
+
+    void addMeta(_SocialLinkMeta? meta) {
+      if (meta == null) return;
+      final norm = _normalizeLink(meta.url);
+      if (norm.isEmpty || seen.contains(norm)) return;
+      seen.add(norm);
+      result.add(_SocialLinkMeta(norm, meta.assetPath, bg: meta.bg));
+    }
+
+    // مفاتيح صريحة
+    final w = _sellerData['linkWhatsapp'];
+    if (w != null && w.toString().trim().isNotEmpty) {
+      final phone = w.toString().trim();
+      addMeta(_SocialLinkMeta('https://wa.me/$phone', 'Assets/whatsapp.png'));
+    }
+
+    final f = _sellerData['linkFacebook'];
+    if (f != null && f.toString().trim().isNotEmpty) {
+      addMeta(_toMetaIfFacebook(f.toString()));
+    }
+
+    final i = _sellerData['linkInsta'];
+    if (i != null && i.toString().trim().isNotEmpty) {
+      addMeta(_toMetaIfInstagram(i.toString()));
+    }
+
+    final s = _sellerData['linkSnab'];
+    if (s != null && s.toString().trim().isNotEmpty) {
+      addMeta(_toMetaIfSnapchat(s.toString()));
+    }
+
+    // في حال جاءتنا لستة عامة (لن نأخذ إلا الأنواع الأربعة)
+    final dynamic linksList =
+        _sellerData['links'] ?? _sellerData['social'] ?? _sellerData['social_links'];
+    if (linksList is List) {
+      for (final v in linksList) {
+        final str = v?.toString().trim();
+        if (str == null || str.isEmpty) continue;
+        addMeta(_toMetaIfWhatsApp(str));
+        addMeta(_toMetaIfFacebook(str));
+        addMeta(_toMetaIfInstagram(str));
+        addMeta(_toMetaIfSnapchat(str));
+      }
+    } else if (linksList is Map) {
+      for (final entry in linksList.entries) {
+        final str = entry.value?.toString().trim();
+        if (str == null || str.isEmpty) continue;
+        addMeta(_toMetaIfWhatsApp(str));
+        addMeta(_toMetaIfFacebook(str));
+        addMeta(_toMetaIfInstagram(str));
+        addMeta(_toMetaIfSnapchat(str));
+      }
+    }
+
+    return result;
+  }
+
+  Widget _buildSellerInfo(double screenWidth, double screenHeight) {
+    final bool hasSeller = _sellerData.isNotEmpty;
+
+    // سنعرض فقط (واتساب - فيسبوك - إنستجرام - سناب)
+    final socialLinks = hasSeller ? _collectOnlyFourSocialLinks() : const <_SocialLinkMeta>[];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.shade300, width: 2),
+      ),
+      margin: EdgeInsets.symmetric(vertical: screenHeight * 0.01),
+      padding: EdgeInsets.all(screenWidth * 0.02),
+      child: Column(
+        crossAxisAlignment: Localizations.localeOf(context).languageCode == 'ar'
+            ? CrossAxisAlignment.start
+            : CrossAxisAlignment.end,
+        children: [
+          if (!hasSeller) ...[
+            Text(
+              S.of(context).yourProductRating,
+              style: TextStyle(
+                fontSize: screenWidth * 0.035,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: Localizations.localeOf(context).languageCode == 'ar'
+                  ? TextAlign.right
+                  : TextAlign.left,
+            ),
+            SizedBox(height: screenHeight * 0.01),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(5, (i) {
+                return GestureDetector(
+                  onTap: _ratingSubmitted ? null : () => _submitRating(i + 1),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.015,
+                    ),
+                    child: Icon(
+                      Icons.star,
+                      color: i < _selectedRating
+                          ? const Color(0xffFFD900)
+                          : Colors.grey.shade400,
+                      size: screenWidth * 0.07,
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ] else ...[
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: screenWidth * 0.07,
+                  backgroundColor: Colors.grey.shade300,
+                  backgroundImage: (_sellerData['image'] != null &&
+                      _sellerData['image'].toString().isNotEmpty)
+                      ? NetworkImage(_sellerData['image'])
+                      : const AssetImage('Assets/fallback_image.png') as ImageProvider,
+                ),
+                SizedBox(width: screenWidth * 0.03),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _sellerData['name'] ?? S.of(context).unknown,
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.035,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      if (_sellerData['address'] != null &&
+                          _sellerData['address'].toString().isNotEmpty)
+                        Text(
+                          _sellerData['address'],
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.03,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                Row(
+                  children: [
+                    for (final meta in socialLinks)
+                      _buildCircleIcon(
+                        meta.assetPath,
+                        screenWidth,
+                        backgroundColor: meta.bg ?? Colors.white,
+                        onTap: () => _launchSocialLink(meta.url),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+            SizedBox(height: screenHeight * 0.02),
+            Divider(color: Colors.grey.shade200, thickness: 2),
+            SizedBox(height: screenHeight * 0.01),
+            Column(
+              crossAxisAlignment:
+              Directionality.of(context) == TextDirection.rtl
+                  ? CrossAxisAlignment.start
+                  : CrossAxisAlignment.end,
+              children: [
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: screenHeight * 0.01,
+                  ),
+                  child: Text(
+                    S.of(context).yourProductRating,
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.035,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: Directionality.of(context) == TextDirection.rtl
+                        ? TextAlign.right
+                        : TextAlign.left,
+                  ),
+                ),
+                SizedBox(height: screenHeight * 0.01),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(5, (i) {
+                    return GestureDetector(
+                      onTap: _ratingSubmitted ? null : () => _submitRating(i + 1),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.015,
+                        ),
+                        child: Icon(
+                          Icons.star,
+                          color: i < _selectedRating
+                              ? const Color(0xffFFD900)
+                              : Colors.grey.shade400,
+                          size: screenWidth * 0.07,
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ],
+            ),
+          ],
+          SizedBox(height: screenHeight * 0.02),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRelatedProducts(double screenWidth, double screenHeight) {
+    if (_relatedProducts.isEmpty) return const SizedBox();
+    return Column(
+      crossAxisAlignment: Localizations.localeOf(context).languageCode == 'ar'
+          ? CrossAxisAlignment.start
+          : CrossAxisAlignment.end,
+      children: [
+        SizedBox(height: screenHeight * 0.01),
+        Text(
+          S.of(context).relatedItems,
+          style: TextStyle(
+            fontSize: screenWidth * 0.035,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        SizedBox(height: screenHeight * 0.01),
+        SizedBox(
+          height: screenHeight * 0.3,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.symmetric(
+              horizontal: screenWidth * 0.02,
+            ),
+            itemCount: _relatedProducts.length,
+            itemBuilder: (context, index) {
+              final product = _relatedProducts[index];
+              final productId = product['id'];
+              final images = (() {
+                final raw = product['images'] ?? product['image'] ?? [];
+                if (raw is List) {
+                  return raw
+                      .map((e) => e.toString())
+                      .where((e) => e.trim().isNotEmpty)
+                      .toList();
+                }
+                if (raw is String && raw.trim().isNotEmpty) {
+                  return [raw.trim()];
+                }
+                return <String>[];
+              })();
+              final price =
+                  product['priceAfterDiscount'] ?? product['price'] ?? 0;
+              final currency = product['currency_type'] ?? 'ريال';
+              final cardHeight = screenHeight * 0.35;
+              final cardWidth = cardHeight * 0.65;
+
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => RelatedDetails(
+                        productId: productId,
+                        initialProductData: product,
+                      ),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: cardWidth,
+                  margin: EdgeInsets.only(left: screenWidth * 0.03),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(
+                      cardWidth * 0.05,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(cardWidth * 0.05),
+                          ),
+                          child: images.isNotEmpty
+                              ? Image.network(
+                            images.first,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: double.infinity,
+                            errorBuilder:
+                                (context, error, stackTrace) {
+                              return _buildImageErrorPlaceholder(
+                                cardWidth,
+                                cardHeight,
+                              );
+                            },
+                          )
+                              : _buildImageErrorPlaceholder(
+                            cardWidth,
+                            cardHeight,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 2,
+                        child: Padding(
+                          padding: EdgeInsets.all(cardWidth * 0.06),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisAlignment:
+                            MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                  CrossAxisAlignment.end,
+                                  mainAxisAlignment:
+                                  MainAxisAlignment.start,
+                                  children: [
+                                    const Spacer(),
+                                    Container(
+                                      width: double.infinity,
+                                      alignment: Alignment.centerRight,
+                                      child: Text(
+                                        product['name'] ??
+                                            S.of(context).none,
+                                        style: TextStyle(
+                                          fontSize: cardHeight * 0.045,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        textDirection: TextDirection.rtl,
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      height: cardHeight * 0.012,
+                                    ),
+                                    Container(
+                                      width: double.infinity,
+                                      alignment: Alignment.centerRight,
+                                      child: Text(
+                                        product['description']
+                                            ?.toString() ??
+                                            S.of(context).noData,
+                                        style: TextStyle(
+                                          fontSize: cardHeight * 0.045,
+                                          color: Colors.grey[700],
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        textDirection: TextDirection.rtl,
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      height: cardHeight * 0.012,
+                                    ),
+                                    Container(
+                                      width: double.infinity,
+                                      alignment: Alignment.centerRight,
+                                      child: Text(
+                                        "$price $currency",
+                                        style: TextStyle(
+                                          fontSize: cardHeight * 0.05,
+                                          fontWeight: FontWeight.bold,
+                                          color: const Color(0xffFF580E),
+                                        ),
+                                        textDirection: TextDirection.rtl,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildImageErrorPlaceholder(double cardWidth, double cardHeight) {
+    return SizedBox(
+      width: double.infinity,
+      height: double.infinity,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.image_not_supported_outlined,
+            color: Colors.grey.shade400,
+            size: cardWidth * 0.15,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildShippingCard(double screenWidth, double screenHeight) {
+    final isDeliverable = _productData['is_deliverd'] == 1;
+    final hasInstallment = _productData['is_installment'] == 1;
+
+    String shippingText = isDeliverable ? "توصيل محلي" : "لا يوجد توصيل";
+    String installmentText = hasInstallment ? "تقسيط متاح" : "لا يوجد تقسيط";
+
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: screenWidth * 0.015),
+      height: screenWidth * 0.12,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(50),
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 3)),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDeliverable
+                    ? const Color(0xffFF580E)
+                    : Colors.grey.shade400,
+                borderRadius: const BorderRadius.only(
+                  topRight: Radius.circular(50),
+                  bottomRight: Radius.circular(50),
+                ),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset(
+                      'Assets/material-symbols_delivery-truck-speed-rounded.png',
+                      width: screenWidth * 0.05,
+                      height: screenWidth * 0.05,
+                      color: Colors.white,
+                      fit: BoxFit.contain,
+                    ),
+                    Text(
+                      shippingText,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: screenWidth * 0.03,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: hasInstallment
+                    ? const Color(0xff1D3A77)
+                    : Colors.grey.shade400,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(50),
+                  bottomLeft: Radius.circular(50),
+                ),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset(
+                      'Assets/iconoir_cash-solid.png',
+                      color: Colors.white,
+                      width: screenWidth * 0.05,
+                      height: screenWidth * 0.05,
+                      fit: BoxFit.contain,
+                    ),
+                    Text(
+                      installmentText,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: screenWidth * 0.03,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImageSection(double screenWidth, double screenHeight) {
+    final images = _getProductImages();
+
+    return SizedBox(
+      height: screenHeight * 0.25,
+      width: double.infinity,
+      child: Stack(
+        children: [
+          SizedBox(
+            height: screenHeight * 0.25,
+            width: double.infinity,
+            child: images.isNotEmpty
+                ? PageView.builder(
+              itemCount: images.length,
+              onPageChanged: (i) => setState(() => _currentPage = i),
+              itemBuilder: (_, i) => GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => FullScreenGallery(
+                        images: images,
+                        initialIndex: i,
+                      ),
+                    ),
+                  );
+                },
+                child: Image.network(
+                  images[i],
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return _buildMainImageErrorPlaceholder(
+                      screenWidth,
+                      screenHeight,
+                    );
+                  },
+                ),
+              ),
+            )
+                : _buildMainImageErrorPlaceholder(
+              screenWidth,
+              screenHeight,
+            ),
+          ),
+          if (images.length > 1)
+            Positioned(
+              bottom: screenHeight * 0.02,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(images.length, (dotIndex) {
+                  bool isActive = _currentPage == dotIndex;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    margin: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.01,
+                    ),
+                    width: isActive ? screenWidth * 0.02 : screenWidth * 0.015,
+                    height: screenWidth * 0.015,
+                    decoration: BoxDecoration(
+                      color: isActive ? const Color(0xffFF580E) : Colors.grey,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  );
+                }),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMainImageErrorPlaceholder(
+      double screenWidth,
+      double screenHeight,
+      ) {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: Colors.grey.shade100,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.image_not_supported_outlined,
+            color: Colors.grey.shade400,
+            size: screenWidth * 0.1,
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatAvgRate() {
+    final v = _productData['avg_rate'];
+    if (v is num) return v.toStringAsFixed(1);
+    final d = double.tryParse(v?.toString() ?? '');
+    return d?.toStringAsFixed(1) ?? '0.0';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: const Color(0xfffafafa),
+        body: Center(
+          child: CircularProgressIndicator(color: const Color(0xffFF580E)),
+        ),
+      );
+    }
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final price = _productData['price'] ?? 0;
+    final priceAfter = _productData['priceAfterDiscount'] ?? price;
+    final discount = _productData['discount'] ?? 0;
+    final currency = _productData['currency_type'] ?? 'ريال';
+    final avgRate = _formatAvgRate();
+
+    return Scaffold(
+      backgroundColor: Colors.grey[100],
+      appBar: CustomAppBar(
+        title: _productData['name'] ?? S.of(context).unknown,
+      ),
+      body: Directionality(
+        textDirection: TextDirection.rtl,
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildImageSection(screenWidth, screenHeight),
+                  Padding(
+                    padding: EdgeInsets.all(screenWidth * 0.04),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                _productData['name'] ?? '',
+                                style: TextStyle(
+                                  fontSize: screenWidth * 0.04,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Text(
+                              avgRate,
+                              style: TextStyle(
+                                fontSize: screenWidth * 0.035,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(width: screenWidth * 0.01),
+                            Icon(
+                              Icons.star,
+                              color: const Color(0xffFFD900),
+                              size: screenWidth * 0.07,
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: screenHeight * 0.01),
+                        Text(
+                          _productData['description'] ??
+                              S.of(context).noDescription,
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.035,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                        SizedBox(height: screenHeight * 0.01),
+                        Row(
+                          children: [
+                            Text(
+                              "$priceAfter $currency",
+                              style: TextStyle(
+                                fontSize: screenWidth * 0.04,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xffFF580E),
+                              ),
+                            ),
+                            if (discount > 0) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                "$price $currency",
+                                style: TextStyle(
+                                  fontSize: screenWidth * 0.035,
+                                  color: Colors.grey[600],
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                "${(discount is num ? discount.toStringAsFixed(0) : discount.toString())}%",
+                                style: TextStyle(
+                                  fontSize: screenWidth * 0.035,
+                                  color: KprimaryColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        SizedBox(height: screenHeight * 0.02),
+                        buildShippingCard(screenWidth, screenHeight),
+                        SizedBox(height: screenHeight * 0.02),
+                        _buildSellerInfo(screenWidth, screenHeight),
+                        _buildRelatedProducts(screenWidth, screenHeight),
+                        SizedBox(height: screenHeight * 0.1),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

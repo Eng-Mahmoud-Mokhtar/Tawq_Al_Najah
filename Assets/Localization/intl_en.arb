@@ -218,7 +218,7 @@
   "overall_rating": "Overall Rating",
   "noShipping": "No Shipping",
   "localShipping": "Local Shipping",
-  "bothShipping": "Local & International Shipping",
+  "bothShipping": "Local  & International Shipping",
   "installmentNotAvailable": "Installment not available",
   "installment":"installment",
   "cancelOrder": "Cancel Order",
@@ -552,5 +552,18 @@
   "discountLabel": "Discount",
   "cancellingOrder": "Cancelling order...",
   "orderCancelledSuccess": "Order cancelled successfully",
-  "passwordMismatch": "Passwords do not match"
+  "passwordMismatch": "Passwords do not match",
+  "internationalShipping": "International shipping price",
+  "internalShipping": "Internal shipping price",
+  "notSupportedLink": "Not Supported Link",
+  "paymentType": "Payment Type",
+  "wallet": "Wallet",
+  "includes": "Includes",
+  "bankTransfer": "Bank Transfer",
+  "fees": "fees",
+  "processingStatus": "Processing",
+  "confirmShippingMessage": "Are you sure you want to ship this order?",
+  "confirmDeliveryMessage": "Are you sure this order has been delivered?",
+  "updateFailed": "Failed to update order status"
+
 }

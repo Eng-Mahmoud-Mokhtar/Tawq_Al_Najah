@@ -87,7 +87,6 @@ class LoginCubit extends Cubit<LoginState> {
         final userData = responseData['data']['user'];
         final token = responseData['data']['token'];
 
-        // ✅ تخزين البيانات قبل الانتقال
         await secureStorage.write(key: 'user_token', value: token);
         await secureStorage.write(key: 'user_data', value: userData.toString());
         await secureStorage.write(key: 'is_logged_in', value: 'true');
@@ -112,13 +111,13 @@ class LoginCubit extends Cubit<LoginState> {
 
   void _handleSuccessfulLogin(Map<String, dynamic> userData) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (userData['type'] == 'seller') {
+      if (userData['type'] == 'saller') {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => HomeStructureSeller()),
               (route) => false,
         );
-      } else {
+      } else if (userData['type'] == 'customer') {
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => HomeStructure()),

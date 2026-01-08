@@ -608,7 +608,7 @@ class _OrderDetailsAndTrackerState extends State<OrderDetailsAndTracker> {
                         '${S.of(context).discountLabel} ${item.discount}%',
                         style: TextStyle(
                           fontSize: screenWidth * 0.026,
-                          color: Colors.green,
+                          color: Colors.grey,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
