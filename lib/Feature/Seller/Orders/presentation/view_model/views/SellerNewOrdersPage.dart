@@ -778,7 +778,7 @@ class _NewOrderDetailsPageState extends State<NewOrderDetailsPage> {
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: isSuccess ? KprimaryColor :  Color(0xffDD0C0C),
-                minimumSize: Size(screenWidth * 0.4, screenWidth * 0.1),
+                minimumSize: Size(screenWidth * 0.4, screenWidth * 0.06),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               onPressed: () {

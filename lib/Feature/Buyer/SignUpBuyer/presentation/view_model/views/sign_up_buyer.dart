@@ -24,7 +24,6 @@ class _SignUpBuyerState extends State<SignUpBuyer> {
   final TextEditingController _cityController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _referralCodeController = TextEditingController();
-
   bool _obscurePassword = true;
   String _selectedCountryCode = '+20';
   bool _isCountryCodeSelected = true;

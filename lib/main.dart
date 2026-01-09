@@ -1,4 +1,5 @@
 import 'package:device_preview/device_preview.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,6 +8,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:tawqalnajah/Feature/Buyer/Product/presentation/view_model/cart_cubit.dart';
 import 'Core/Widgets/CountryCubit.dart';
 import 'Core/utiles/LocaleCubit.dart';
+import 'Feature/Auth/presentation/SocialPartnership.dart';
 import 'Feature/Buyer/Home/presentation/view_model/views/HomeStructure.dart';
 import 'Feature/Buyer/MyPosts/presentation/view_model/MyPosts_Cubit.dart';
 import 'Feature/Buyer/Product/presentation/view_model/favorite_cubit.dart';
@@ -26,7 +28,7 @@ void main() async {
 
   runApp(
     DevicePreview(
-      enabled: true,
+      enabled: false,
       builder: (context) => ScreenUtilInit(
         designSize: const Size(360, 690),
         minTextAdapt: true,
@@ -35,16 +37,15 @@ void main() async {
             providers: [
               BlocProvider(create: (_) => BottomNavBCubit()),
               BlocProvider(create: (_) => BottomNavSCubit()),
-              BlocProvider(create: (_) =>  FilterRelatedCubit()),
+              BlocProvider(create: (_) => FilterRelatedCubit()),
               BlocProvider(create: (_) => LocaleCubit()),
               BlocProvider(create: (_) => CountryCubit()),
               BlocProvider(create: (_) => MyPostsCubit()),
               BlocProvider(create: (context) => FavoriteCubit()),
               BlocProvider(create: (context) => CartCubit()),
               BlocProvider(create: (context) => NewOrdersCubit(NewOrdersApi())),
-              BlocProvider(create: (context) => ActiveOrdersCubit(ActiveOrdersApi()),
-              ),
-
+              BlocProvider(create: (context) => ActiveOrdersCubit(ActiveOrdersApi())),
+              BlocProvider(create: (context) => SocialPartnershipCubit(dio: Dio())),
             ],
             child: const MyApp(),
           );

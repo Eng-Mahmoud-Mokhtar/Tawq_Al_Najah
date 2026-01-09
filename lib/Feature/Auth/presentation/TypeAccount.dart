@@ -84,7 +84,7 @@ class _TypeAccountState extends State<TypeAccount> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const CommunityPartnerships(),
+                        builder: (context) => const SocialPartnership(),
                       ),
                     );
                   },

@@ -11,7 +11,7 @@ Widget emptyState(BuildContext context, String message) {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Image.asset(
-            "Assets/empty-cart 1.png",
+            "Assets/Shopping bag-amico.png",
             width: screenWidth * 0.5,
           ),
           SizedBox(height: screenWidth * 0.04),
