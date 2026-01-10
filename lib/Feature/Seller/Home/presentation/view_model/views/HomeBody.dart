@@ -37,6 +37,9 @@ class _HomePageState extends State<HomePage> {
   bool _isLoadingBanners = false;
   bool _bannerHasError = false;
 
+  // Network error handler like SuggestionsPage
+  bool _networkHasError = false;
+
   @override
   void initState() {
     super.initState();
@@ -72,6 +75,54 @@ class _HomePageState extends State<HomePage> {
     await Future.delayed(const Duration(seconds: 1));
   }
 
+  Widget _buildNetworkErrorWidget(BuildContext context, double screenWidth, double screenHeight) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.network_check,
+            color: Colors.grey,
+            size: screenWidth * 0.15,
+          ),
+          SizedBox(height: screenHeight * 0.02),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
+            child: Text(
+              S.of(context).connectionTimeout,
+              style: TextStyle(
+                fontSize: screenWidth * 0.035,
+                color: Colors.grey[700],
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          SizedBox(height: screenHeight * 0.02),
+          ElevatedButton(
+            onPressed: () async {
+              setState(() => _networkHasError = false);
+              await _onRefresh();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xffFF580E),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              S.of(context).tryAgain,
+              style: TextStyle(
+                fontSize: screenWidth * 0.035,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          SizedBox(height: screenHeight * 0.1),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -84,12 +135,13 @@ class _HomePageState extends State<HomePage> {
         BlocProvider<BannerCubit>.value(value: _bannerCubit),
         BlocProvider<HomeCubit>.value(value: _homeCubit),
       ],
-      child: BlocListener<BannerCubit, BannerState>(
+      child: BlocConsumer<BannerCubit, BannerState>(
         listener: (context, state) {
           if (state is BannerLoading) {
             setState(() {
               _isLoadingBanners = true;
               _bannerHasError = false;
+              _networkHasError = false;
             });
           } else if (state is BannerLoaded) {
             setState(() {
@@ -97,157 +149,165 @@ class _HomePageState extends State<HomePage> {
               _bannerHasError = false;
               _banners = state.banners;
               _suggestedProducts = state.suggestedProducts;
+              _networkHasError = false;
             });
           } else if (state is BannerError) {
             setState(() {
               _isLoadingBanners = false;
               _bannerHasError = true;
+              _networkHasError = true;
             });
           }
         },
-        child: AnnotatedRegion<SystemUiOverlayStyle>(
-          value: const SystemUiOverlayStyle(
-            statusBarColor: Colors.white,
-            statusBarIconBrightness: Brightness.dark,
-          ),
-          child: Scaffold(
-            backgroundColor: Colors.grey[100],
-            body: RefreshIndicator(
-              color: KprimaryColor,
-              onRefresh: _onRefresh,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(
-                  parent: BouncingScrollPhysics(),
-                ),
-                primary: true,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(height: screenHeight * 0.04),
-                    BlocBuilder<HomeCubit, HomeState>(
-                      builder: (context, homeState) {
-                        return HomeHeader(
-                          isLoading: homeState.isProfileLoading,
-                          userName: homeState.userName.isEmpty ? userName : homeState.userName,
-                          userImage: homeState.userImage.isEmpty ? userImage : homeState.userImage,
-                          screenWidth: screenWidth,
-                          onNotificationPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const NotificationsPage(),
-                              ),
-                            );
-                          },
-                          onProfileTap: null,
-                        );
-                      },
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: screenWidth * 0.04,
-                        vertical: screenHeight * 0.02,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          BannerSection(
+        builder: (context, bannerState) {
+          if (_bannerHasError || _networkHasError) {
+            return Scaffold(
+              backgroundColor: Colors.grey[100],
+              body: _buildNetworkErrorWidget(context, screenWidth, screenHeight),
+            );
+          }
+
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: const SystemUiOverlayStyle(
+              statusBarColor: Colors.white,
+              statusBarIconBrightness: Brightness.dark,
+            ),
+            child: Scaffold(
+              backgroundColor: Colors.grey[100],
+              body: RefreshIndicator(
+                color: KprimaryColor,
+                onRefresh: _onRefresh,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
+                  primary: true,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(height: screenHeight * 0.04),
+                      BlocBuilder<HomeCubit, HomeState>(
+                        builder: (context, homeState) {
+                          return HomeHeader(
+                            isLoading: homeState.isProfileLoading,
+                            userName: homeState.userName.isEmpty ? userName : homeState.userName,
+                            userImage: homeState.userImage.isEmpty ? userImage : homeState.userImage,
                             screenWidth: screenWidth,
-                            screenHeight: screenHeight,
-                            banners: _banners,
-                            isLoading: _isLoadingBanners,
-                            hasError: _bannerHasError,
-                          ),
-                          SizedBox(height: screenHeight * 0.02),
-                          Text(
-                            S.of(context).ourServices,
-                            style: TextStyle(
-                              fontSize: screenWidth * 0.035,
-                              fontWeight: FontWeight.bold,
-                              color: KprimaryText,
+                            onNotificationPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const NotificationsPage(),
+                                ),
+                              );
+                            },
+                            onProfileTap: null,
+                          );
+                        },
+                      ),
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.04,
+                          vertical: screenHeight * 0.02,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            BannerSection(
+                              screenWidth: screenWidth,
+                              screenHeight: screenHeight,
+                              banners: _banners,
+                              isLoading: _isLoadingBanners,
+                              hasError: _bannerHasError,
                             ),
-                          ),
-
-                          SizedBox(height: screenHeight * 0.015),
-
-                          // خدمات التاجر
-                          Wrap(
-                            spacing: screenWidth * 0.04,
-                            runSpacing: screenWidth * 0.04,
-                            alignment: WrapAlignment.center,
-                            children: [
-                              buildServiceItem(
-                                icon: Icons.shopping_cart_outlined,
-                                title: S.of(context).newOrders,
-                                screenWidth: screenWidth,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const SellerNewOrdersPage(),
-                                    ),
-                                  );
-                                },
+                            SizedBox(height: screenHeight * 0.02),
+                            Text(
+                              S.of(context).ourServices,
+                              style: TextStyle(
+                                fontSize: screenWidth * 0.035,
+                                fontWeight: FontWeight.bold,
+                                color: KprimaryText,
                               ),
-                              buildServiceItem(
-                                icon: Icons.inventory_2_outlined,
-                                title: S.of(context).manageOrders,
-                                screenWidth: screenWidth,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const SellerActiveOrdersPage(),
-                                    ),
-                                  );
-                                },
-                              ),
-                              buildServiceItem(
-                                icon: Icons.cancel_outlined,
-                                title: S.of(context).cancelledOrders,
-                                screenWidth: screenWidth,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const SellerCancelledOrdersPage(),
-                                    ),
-                                  );
-                                },
-                              ),
-                              buildServiceItem(
-                                icon: Icons.receipt_long_outlined,
-                                title: S.of(context).FinancialAccounts,
-                                screenWidth: screenWidth,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const FinancialAccountsPage(),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: screenHeight * 0.01),
-                          RelatedSection(
-                            screenWidth: screenWidth,
-                            screenHeight: screenHeight,
-                            cardWidth: cardWidth,
-                            cardHeight: cardHeight,
-                            isLoading: _isLoadingBanners,
-                            suggestedProducts: _suggestedProducts,
-                          ),
-                        ],
+                            ),
+                            SizedBox(height: screenHeight * 0.015),
+                            Wrap(
+                              spacing: screenWidth * 0.04,
+                              runSpacing: screenWidth * 0.04,
+                              alignment: WrapAlignment.center,
+                              children: [
+                                buildServiceItem(
+                                  icon: Icons.shopping_cart_outlined,
+                                  title: S.of(context).newOrders,
+                                  screenWidth: screenWidth,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const SellerNewOrdersPage(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                buildServiceItem(
+                                  icon: Icons.inventory_2_outlined,
+                                  title: S.of(context).manageOrders,
+                                  screenWidth: screenWidth,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const SellerActiveOrdersPage(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                buildServiceItem(
+                                  icon: Icons.cancel_outlined,
+                                  title: S.of(context).cancelledOrders,
+                                  screenWidth: screenWidth,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const SellerCancelledOrdersPage(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                buildServiceItem(
+                                  icon: Icons.receipt_long_outlined,
+                                  title: S.of(context).FinancialAccounts,
+                                  screenWidth: screenWidth,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const FinancialAccountsPage(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: screenHeight * 0.01),
+                            RelatedSection(
+                              screenWidth: screenWidth,
+                              screenHeight: screenHeight,
+                              cardWidth: cardWidth,
+                              cardHeight: cardHeight,
+                              isLoading: _isLoadingBanners,
+                              suggestedProducts: _suggestedProducts,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

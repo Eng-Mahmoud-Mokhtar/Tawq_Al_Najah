@@ -27,15 +27,18 @@ class _AccountInfoSellerState extends State<AccountInfoSeller>
   // Plan details state
   bool _loadingPlan = true;
   String? _planError;
-  String? _planStartDate; // formatted for display
-  String? _planEndDate; // formatted for display
+  String? _planStartDate;
+  String? _planEndDate;
 
   // Ratings state
   bool _loadingRates = true;
   String? _ratesError;
-  double _overallRating = 0.0; // 0..5
-  // distribution for 5..1 stars as percent 0..1 (order: 5..1)
+  double _overallRating = 0.0;
   List<double> _ratesDistribution = [0, 0, 0, 0, 0];
+
+  // Error state
+  bool _hasConnectionError = false;
+  String? _globalErrorMessage;
 
   @override
   void initState() {
@@ -61,6 +64,8 @@ class _AccountInfoSellerState extends State<AccountInfoSeller>
       _planError = null;
       _loadingRates = true;
       _ratesError = null;
+      _hasConnectionError = false;
+      _globalErrorMessage = null;
     });
 
     try {
@@ -78,6 +83,8 @@ class _AccountInfoSellerState extends State<AccountInfoSeller>
       setState(() {
         _planError = e.toString();
         _loadingPlan = false;
+        _hasConnectionError = _hasConnectionError || _isNetworkError(e);
+        _globalErrorMessage = _getUserFriendlyErrorMessage(e.toString());
       });
     }
 
@@ -97,8 +104,40 @@ class _AccountInfoSellerState extends State<AccountInfoSeller>
       setState(() {
         _ratesError = e.toString();
         _loadingRates = false;
+        _hasConnectionError = _hasConnectionError || _isNetworkError(e);
+        if (_globalErrorMessage == null) {
+          _globalErrorMessage = _getUserFriendlyErrorMessage(e.toString());
+        }
       });
     }
+  }
+
+  bool _isNetworkError(dynamic error) {
+    final errorString = error.toString().toLowerCase();
+    return errorString.contains('timeout') ||
+        errorString.contains('network') ||
+        errorString.contains('socket') ||
+        errorString.contains('connection') ||
+        errorString.contains('dio') ||
+        (error is DioException && error.type != DioExceptionType.cancel);
+  }
+
+  String _getUserFriendlyErrorMessage(String technicalMessage) {
+    final lowerMessage = technicalMessage.toLowerCase();
+
+    if (lowerMessage.contains('timeout') || lowerMessage.contains('timed out')) {
+      return S.current.connectionTimeout;
+    } else if (lowerMessage.contains('no internet') || lowerMessage.contains('network')) {
+      return S.current.connectionError;
+    } else if (lowerMessage.contains('server') || lowerMessage.contains('500') || lowerMessage.contains('502')) {
+      return S.current.serverError;
+    } else if (lowerMessage.contains('unauthorized') || lowerMessage.contains('401')) {
+      return S.current.sessionExpired;
+    } else if (lowerMessage.contains('token') || lowerMessage.contains('login')) {
+      return S.current.pleaseLoginFirst;
+    }
+
+    return S.current.failedToLoadData;
   }
 
   @override
@@ -108,34 +147,25 @@ class _AccountInfoSellerState extends State<AccountInfoSeller>
   }
 
   // Utilities
-
-  // Normalize list to 5 entries for stars [5,4,3,2,1] as percent 0..1
   List<double> _normalizeDistribution(List<double> raw) {
     if (raw.isEmpty) return [0, 0, 0, 0, 0];
 
-    // If raw has counts, convert to percent
     final sum = raw.fold<double>(0, (p, c) => p + c);
     if (sum <= 0) {
-      // if these are already percents (0..1 or 0..100), try to coerce
       return raw.length == 5
           ? raw.map((e) => e > 1 ? (e / 100).clamp(0.0, 1.0) : e.clamp(0.0, 1.0)).toList()
           : [0, 0, 0, 0, 0];
     }
-    // Convert counts to percent
     final percents = raw.map((c) => (c / sum)).toList();
-    // Ensure 5 entries
     if (percents.length == 5) return percents;
     if (percents.length > 5) return percents.take(5).toList();
-    // pad with zeros
     return [...percents, ...List<double>.filled(5 - percents.length, 0)];
   }
 
-  // Formats various date strings into d/M/yyyy
   String _formatDisplayDate(String? raw) {
     if (raw == null || raw.trim().isEmpty) return '--/--/----';
     final s = raw.trim();
 
-    // Try ISO yyyy-MM-dd
     final iso = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(s);
     if (iso != null) {
       final y = int.tryParse(iso.group(1)!);
@@ -144,7 +174,6 @@ class _AccountInfoSellerState extends State<AccountInfoSeller>
       if (y != null && m != null && d != null) return '$d/$m/$y';
     }
 
-    // Try dd/MM/yyyy or dd-MM-yyyy
     final dmy = RegExp(r'^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$').firstMatch(s);
     if (dmy != null) {
       final d = dmy.group(1)!;
@@ -153,7 +182,6 @@ class _AccountInfoSellerState extends State<AccountInfoSeller>
       return '$d/$m/$y';
     }
 
-    // Extract ISO from longer strings
     final pickIso = RegExp(r'(\d{4})-(\d{2})-(\d{2})').firstMatch(s);
     if (pickIso != null) {
       final y = int.tryParse(pickIso.group(1)!);
@@ -162,7 +190,7 @@ class _AccountInfoSellerState extends State<AccountInfoSeller>
       if (y != null && m != null && d != null) return '$d/$m/$y';
     }
 
-    return s; // fallback
+    return s;
   }
 
   void _showRenewDialog(BuildContext context) {
@@ -273,6 +301,63 @@ class _AccountInfoSellerState extends State<AccountInfoSeller>
     );
   }
 
+  // ==================== تصميم فشل الاتصال الموحد ====================
+  Widget _buildErrorState(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: SizedBox(
+        height: screenHeight * 0.8,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(height: screenHeight * 0.04),
+                  Icon(
+                    Icons.network_check,
+                    color: Colors.grey,
+                    size: screenWidth * 0.15,
+                  ),
+                  SizedBox(height: screenHeight * 0.02),
+                  Text(
+                    S.of(context).connectionTimeout,
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.035,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+            SizedBox(height: screenHeight * 0.04),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.1),
+              child: ElevatedButton(
+                onPressed: _loadAll,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xffFF580E),
+                  minimumSize: Size(screenWidth * 0.04, screenHeight * 0.04),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  S.of(context).tryAgain,
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.035,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: screenHeight * 0.02),
+          ],
+        ),
+      ),
+    );
+  }
+
   // Shimmer helpers
   Widget _shimmerWrapper({required Widget child}) {
     return Shimmer.fromColors(
@@ -309,6 +394,15 @@ class _AccountInfoSellerState extends State<AccountInfoSeller>
     final s = S.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+
+    // إذا كان هناك خطأ اتصال، نعرض شاشة الخطأ
+    if (_hasConnectionError && (_loadingPlan || _loadingRates)) {
+      return Scaffold(
+        backgroundColor: SecoundColor,
+        appBar: CustomAppBar(title: s.AccountInfo),
+        body: _buildErrorState(context),
+      );
+    }
 
     return Scaffold(
       backgroundColor: SecoundColor,
@@ -355,18 +449,19 @@ class _AccountInfoSellerState extends State<AccountInfoSeller>
     );
   }
 
-  // Contract tab with detailed shimmer
   Widget _buildContractTab(
       BuildContext context,
       double screenWidth,
       double screenHeight,
       S s,
       ) {
+    // إذا كان هناك خطأ اتصال في هذا التبويب فقط
+    if (_planError != null && _isNetworkError(_planError)) {
+      return _buildErrorState(context);
+    }
+
     return RefreshIndicator(
-      onRefresh: () {
-        debugPrint('[AccountInfoSeller] Pull-to-refresh Contract tab triggered');
-        return _loadAll();
-      },
+      onRefresh: _loadAll,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: Padding(
@@ -465,7 +560,7 @@ class _AccountInfoSellerState extends State<AccountInfoSeller>
 
               SizedBox(height: screenHeight * 0.03),
 
-              // Renew button (shimmer when plan loading to keep consistent layout)
+              // Renew button
               _loadingPlan
                   ? _shimmerWrapper(
                 child: Container(
@@ -480,10 +575,7 @@ class _AccountInfoSellerState extends State<AccountInfoSeller>
                   : SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () {
-                    debugPrint('[AccountInfoSeller] Renew button pressed');
-                    _showRenewDialog(context);
-                  },
+                  onPressed: () => _showRenewDialog(context),
                   icon: const Icon(Icons.refresh, color: Colors.white),
                   label: Padding(
                     padding: EdgeInsets.symmetric(vertical: screenHeight * 0.015),
@@ -512,20 +604,20 @@ class _AccountInfoSellerState extends State<AccountInfoSeller>
     );
   }
 
-  // Ratings tab with detailed shimmer
   Widget _buildRatingsTab(
       BuildContext context,
       double screenWidth,
       double screenHeight,
       S s,
       ) {
+    if (_ratesError != null && _isNetworkError(_ratesError)) {
+      return _buildErrorState(context);
+    }
+
     final starPercents = _ratesDistribution.length == 5 ? _ratesDistribution : [0, 0, 0, 0, 0];
 
     return RefreshIndicator(
-      onRefresh: () {
-        debugPrint('[AccountInfoSeller] Pull-to-refresh Ratings tab triggered');
-        return _loadAll();
-      },
+      onRefresh: _loadAll,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: Padding(

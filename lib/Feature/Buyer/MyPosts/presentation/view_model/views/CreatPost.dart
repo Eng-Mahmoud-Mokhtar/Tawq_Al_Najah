@@ -168,7 +168,6 @@ class _CreatePostState extends State<CreatePost> {
             final normalized = normalizeLink(url);
             final platform = detectPlatform(normalized);
             if (platform != null) {
-              // replace any old link for same platform in UI
               final platformName = (platform['name']?.toString().toLowerCase() ?? '');
               socialLinks.removeWhere((old) {
                 final oldUrl = old['url']?.toString() ?? '';
@@ -537,7 +536,7 @@ class _CreatePostState extends State<CreatePost> {
           try {
             context.read<MyPostsCubit>().addAd(newAd);
           } catch (_) {}
-
+          // تم بنجاح
           _showResultDialog(
             title: s.postedSuccessfully,
             content: s.adPosted,
@@ -547,38 +546,30 @@ class _CreatePostState extends State<CreatePost> {
             onConfirm: () => Navigator.pop(context, true),
           );
         } else {
-          final errorMsg = responseData['message'] ?? responseData['error'] ?? s.somethingWentWrong;
+          // هندلة عامة: رسالة من السيرفر أو رسالة عامة فقط
           _showResultDialog(
             title: s.error,
-            content: errorMsg,
+            content: s.somethingWentWrong,
             icon: Icons.error_outline,
             iconColor: const Color(0xffDD0C0C),
             confirmText: s.ok,
           );
         }
       } else {
-        throw DioException(
-          requestOptions: response.requestOptions,
-          response: response,
-          type: DioExceptionType.badResponse,
+        // رسالة موحدة من النت فقط بدون تفاصيل
+        _showResultDialog(
+          title: s.error,
+          content: s.connectionTimeout,
+          icon: Icons.error_outline,
+          iconColor: const Color(0xffDD0C0C),
+          confirmText: s.ok,
         );
       }
-    } on DioException catch (e) {
-      final errorData = e.response?.data;
-      final errorMsg = errorData is Map
-          ? (errorData['message'] ?? errorData['error'] ?? e.message)
-          : e.message;
+    } catch (e) {
+      // هندلة كل الأخطاء: رسالة موحدة
       _showResultDialog(
         title: s.error,
-        content: errorMsg ?? s.somethingWentWrong,
-        icon: Icons.error_outline,
-        iconColor: const Color(0xffDD0C0C),
-        confirmText: s.ok,
-      );
-    } catch (_) {
-      _showResultDialog(
-        title: s.error,
-        content: s.somethingWentWrong,
+        content: s.connectionTimeout,
         icon: Icons.error_outline,
         iconColor: const Color(0xffDD0C0C),
         confirmText: s.ok,
@@ -657,7 +648,7 @@ class _CreatePostState extends State<CreatePost> {
           try {
             context.read<MyPostsCubit>().updateAd(widget.adId!, updatedAd);
           } catch (_) {}
-
+          // تم بنجاح
           _showResultDialog(
             title: s.editedSuccessfully,
             content: s.adUpdated,
@@ -667,38 +658,30 @@ class _CreatePostState extends State<CreatePost> {
             onConfirm: () => Navigator.pop(context, true),
           );
         } else {
-          final errorMsg = responseData['message'] ?? responseData['error'] ?? s.somethingWentWrong;
+          // هندلة عامة: رسالة من السيرفر أو رسالة عامة فقط
           _showResultDialog(
             title: s.error,
-            content: errorMsg,
+            content: s.somethingWentWrong,
             icon: Icons.error_outline,
             iconColor: const Color(0xffDD0C0C),
             confirmText: s.ok,
           );
         }
       } else {
-        throw DioException(
-          requestOptions: response.requestOptions,
-          response: response,
-          type: DioExceptionType.badResponse,
+        // رسالة موحدة من النت فقط بدون تفاصيل
+        _showResultDialog(
+          title: s.error,
+          content: s.connectionTimeout,
+          icon: Icons.error_outline,
+          iconColor: const Color(0xffDD0C0C),
+          confirmText: s.ok,
         );
       }
-    } on DioException catch (e) {
-      final errorData = e.response?.data;
-      final errorMsg = errorData is Map
-          ? (errorData['message'] ?? errorData['error'] ?? e.message)
-          : e.message;
+    } catch (e) {
+      // هندلة كل الأخطاء: رسالة موحدة
       _showResultDialog(
         title: s.error,
-        content: errorMsg ?? s.somethingWentWrong,
-        icon: Icons.error_outline,
-        iconColor: const Color(0xffDD0C0C),
-        confirmText: s.ok,
-      );
-    } catch (_) {
-      _showResultDialog(
-        title: s.error,
-        content: s.somethingWentWrong,
+        content: s.connectionTimeout,
         icon: Icons.error_outline,
         iconColor: const Color(0xffDD0C0C),
         confirmText: s.ok,
@@ -711,7 +694,7 @@ class _CreatePostState extends State<CreatePost> {
       final s = S.of(context);
       _showResultDialog(
         title: s.error,
-        content:S.of(context).errorLoadingCategories,
+        content: S.of(context).errorLoadingCategories,
         icon: Icons.error_outline,
         iconColor: const Color(0xffDD0C0C),
         confirmText: s.ok,
@@ -754,12 +737,11 @@ class _CreatePostState extends State<CreatePost> {
     final h = MediaQuery.of(context).size.height;
     final s = S.of(context);
 
-    // تحديد نوع لوحة المفاتيح بناءً على نوع الحقل
     TextInputType keyboardType;
     if (isDiscount || label == s.price) {
       keyboardType = const TextInputType.numberWithOptions(decimal: true);
     } else {
-      keyboardType = TextInputType.text; // لحقل الاسم وغيره
+      keyboardType = TextInputType.text;
     }
 
     return Column(
@@ -791,7 +773,7 @@ class _CreatePostState extends State<CreatePost> {
             padding: EdgeInsets.symmetric(horizontal: w * 0.04),
             child: TextField(
               controller: controller,
-              keyboardType: keyboardType, // استخدام نوع لوحة المفاتيح المحدد
+              keyboardType: keyboardType,
               style: TextStyle(
                 fontSize: w * 0.03,
                 color: KprimaryText,
@@ -880,7 +862,7 @@ class _CreatePostState extends State<CreatePost> {
             child: TextField(
               controller: controller,
               maxLines: 5,
-              keyboardType: TextInputType.text, // نص عادي مثل حقل الاسم
+              keyboardType: TextInputType.text,
               style: TextStyle(
                 fontSize: w * 0.03,
                 color: KprimaryText,
@@ -950,13 +932,11 @@ class _CreatePostState extends State<CreatePost> {
             SizedBox(height: h * 0.02),
             descriptionField(s.productDescription, descriptionController),
             SizedBox(height: h * 0.02),
-
             Text(
               s.socialLinks,
               style: TextStyle(color: KprimaryText, fontSize: w * 0.035, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: h * 0.01),
-
             Column(
               children: socialLinks
                   .map(
@@ -997,7 +977,6 @@ class _CreatePostState extends State<CreatePost> {
               )
                   .toList(),
             ),
-
             if (socialLinks.length < 4)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1015,7 +994,7 @@ class _CreatePostState extends State<CreatePost> {
                       ),
                       child: TextField(
                         controller: socialLinkController,
-                        keyboardType: TextInputType.text, // نص للروابط
+                        keyboardType: TextInputType.text,
                         onSubmitted: (value) {
                           final trimmedValue = normalizeLink(value);
 
@@ -1040,7 +1019,6 @@ class _CreatePostState extends State<CreatePost> {
                             return oldName == platformName;
                           });
 
-                          // Update local api fields
                           if (platformName.contains('instagram')) {
                             _linkInsta = trimmedValue;
                           } else if (platformName.contains('whatsapp')) {
@@ -1087,7 +1065,6 @@ class _CreatePostState extends State<CreatePost> {
                   ),
                 ],
               ),
-
             SizedBox(height: h * 0.02),
             SizedBox(
               height: w * 0.04,
@@ -1097,7 +1074,6 @@ class _CreatePostState extends State<CreatePost> {
               ),
             ),
             SizedBox(height: h * 0.01),
-
             Container(
               width: double.infinity,
               height: w * 0.36,
@@ -1183,7 +1159,6 @@ class _CreatePostState extends State<CreatePost> {
                 ],
               ),
             ),
-
             Container(
               height: h * 0.02,
               margin: EdgeInsets.only(top: h * 0.005),
@@ -1213,7 +1188,6 @@ class _CreatePostState extends State<CreatePost> {
               ),
             ),
             SizedBox(height: h * 0.03),
-
           ],
         ),
       ),

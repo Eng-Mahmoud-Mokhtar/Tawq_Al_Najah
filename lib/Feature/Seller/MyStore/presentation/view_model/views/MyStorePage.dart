@@ -81,6 +81,7 @@ class _MyStoreState extends State<MyStore> with RouteAware {
       setState(() {
         _isLoading = true;
         _hasError = false;
+        _errorMessage = '';
       });
 
       final rawToken = await _storage.read(key: 'user_token');
@@ -172,13 +173,62 @@ class _MyStoreState extends State<MyStore> with RouteAware {
     }
   }
 
-  // Ensures RefreshIndicator can be triggered even for empty/error states
-  Widget _scrollableWrapper(Widget child, double minHeight) {
-    return ListView(
+  // ==================== تصميم فشل الاتصال الموحد ====================
+  Widget _buildErrorState(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      children: [
-        SizedBox(height: minHeight, child: child),
-      ],
+      child: SizedBox(
+        height: screenHeight * 0.8,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(height: screenHeight * 0.04),
+                    Icon(
+                      Icons.network_check,
+                      color: Colors.grey,
+                      size: screenWidth * 0.15,
+                    ),
+                    SizedBox(height: screenHeight * 0.02),
+                    Text(
+                      S.of(context).connectionTimeout,
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.035,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+              SizedBox(height: screenHeight * 0.04),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.1),
+                child: ElevatedButton(
+                  onPressed: _fetchMyAds,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xffFF580E),
+                    minimumSize: Size(screenWidth * 0.4, screenHeight * 0.04),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    S.of(context).tryAgain,
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.035,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.02),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -208,38 +258,6 @@ class _MyStoreState extends State<MyStore> with RouteAware {
     );
   }
 
-  Widget _buildErrorState(double screenWidth, double screenHeight) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, color: Colors.grey, size: screenWidth * 0.15),
-          SizedBox(height: screenHeight * 0.02),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
-            child: Text(
-              _errorMessage.isNotEmpty ? _errorMessage : S.of(context).connectionTimeout,
-              style: TextStyle(fontSize: screenWidth * 0.035, color: Colors.grey[700]),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          SizedBox(height: screenHeight * 0.02),
-          ElevatedButton(
-            onPressed: _fetchMyAds,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xffFF580E),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: Text(
-              S.of(context).tryAgain,
-              style: TextStyle(fontSize: screenWidth * 0.035, color: Colors.white),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildEmptyState(double screenWidth, double screenHeight) {
     return Center(
       child: Column(
@@ -249,7 +267,21 @@ class _MyStoreState extends State<MyStore> with RouteAware {
           SizedBox(height: screenHeight * 0.04),
           Text(
             S.of(context).noAdsYet,
-            style: TextStyle(fontSize: screenWidth * 0.035, color: Colors.grey),
+            style: TextStyle(
+              fontSize: screenWidth * 0.04,
+              color: Colors.grey,
+              fontWeight: FontWeight.w600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: screenHeight * 0.01),
+          Text(
+            S.of(context).noSuggestionsAvailable,
+            style: TextStyle(
+              fontSize: screenWidth * 0.035,
+              color: Colors.grey,
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -471,6 +503,16 @@ class _MyStoreState extends State<MyStore> with RouteAware {
     );
   }
 
+  // Ensures RefreshIndicator can be triggered even for empty/error states
+  Widget _scrollableWrapper(Widget child, double minHeight) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        SizedBox(height: minHeight, child: child),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -520,7 +562,7 @@ class _MyStoreState extends State<MyStore> with RouteAware {
                 child: _isLoading
                     ? _buildShimmerLoading(screenWidth)
                     : _hasError
-                    ? _scrollableWrapper(_buildErrorState(screenWidth, screenHeight), screenHeight * 0.8)
+                    ? _scrollableWrapper(_buildErrorState(context), screenHeight * 0.8)
                     : _displayedAds.isEmpty
                     ? _scrollableWrapper(_buildEmptyState(screenWidth, screenHeight), screenHeight * 0.8)
                     : Directionality(

@@ -14,11 +14,9 @@ import '../../../../../../generated/l10n.dart';
 import '../../../../../Buyer/MyShipment/presentation/view_model/views/widgets/OrderThumb.dart';
 
 class CancelledOrdersApi {
-  CancelledOrdersApi({
-    Dio? dio,
-    FlutterSecureStorage? storage,
-  })  : _dio = dio ?? Dio(),
-        _storage = storage ?? const FlutterSecureStorage();
+  CancelledOrdersApi({Dio? dio, FlutterSecureStorage? storage})
+    : _dio = dio ?? Dio(),
+      _storage = storage ?? const FlutterSecureStorage();
 
   final Dio _dio;
   final FlutterSecureStorage _storage;
@@ -32,13 +30,14 @@ class CancelledOrdersApi {
   }
 
   Options _buildOptions(String token) {
-    return Options(headers: {
-      'Authorization': 'Bearer $token',
-      'Accept': 'application/json',
-    });
+    return Options(
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+    );
   }
 
-  Future<List<CancelledOrderModel>> getCancelledOrders({CancelToken? cancelToken}) async {
+  Future<List<CancelledOrderModel>> getCancelledOrders({
+    CancelToken? cancelToken,
+  }) async {
     final token = await _getToken();
     if (token == null || token.isEmpty) {
       throw Exception('Token is missing. Please login.');
@@ -51,7 +50,9 @@ class CancelledOrdersApi {
       cancelToken: cancelToken,
     );
 
-    if ((res.statusCode ?? 500) >= 200 && (res.statusCode ?? 500) < 300 && res.data != null) {
+    if ((res.statusCode ?? 500) >= 200 &&
+        (res.statusCode ?? 500) < 300 &&
+        res.data != null) {
       final responseData = res.data as Map<String, dynamic>;
       final data = responseData['data'];
 
@@ -62,7 +63,10 @@ class CancelledOrdersApi {
     return [];
   }
 
-  Future<CancelledOrderDetailsModel> getOrderDetails({required String orderId, CancelToken? cancelToken}) async {
+  Future<CancelledOrderDetailsModel> getOrderDetails({
+    required String orderId,
+    CancelToken? cancelToken,
+  }) async {
     final token = await _getToken();
     if (token == null || token.isEmpty) {
       throw Exception('Token is missing. Please login.');
@@ -74,7 +78,9 @@ class CancelledOrdersApi {
       cancelToken: cancelToken,
     );
 
-    if ((res.statusCode ?? 500) >= 200 && (res.statusCode ?? 500) < 300 && res.data != null) {
+    if ((res.statusCode ?? 500) >= 200 &&
+        (res.statusCode ?? 500) < 300 &&
+        res.data != null) {
       final responseData = res.data as Map<String, dynamic>;
       return CancelledOrderDetailsModel.fromJson(responseData['data']);
     }
@@ -437,7 +443,9 @@ class CancelledShipmentCardSeller extends StatelessWidget {
                                 ),
                                 decoration: BoxDecoration(
                                   color: _getStatusColor(status).withAlpha(51),
-                                  borderRadius: BorderRadius.circular(screenWidth * 0.015),
+                                  borderRadius: BorderRadius.circular(
+                                    screenWidth * 0.015,
+                                  ),
                                 ),
                                 child: Text(
                                   _getStatusText(status, context).toUpperCase(),
@@ -537,11 +545,15 @@ class CancelledShipmentCardSeller extends StatelessWidget {
     final st = status.toLowerCase();
     if (st.contains('pending') || st.contains('معلق')) {
       return Colors.orange;
-    } else if (st.contains('confirmed') || st.contains('تم التأكيد') || st.contains('تمت الموافقة')) {
+    } else if (st.contains('confirmed') ||
+        st.contains('تم التأكيد') ||
+        st.contains('تمت الموافقة')) {
       return Colors.blue;
     } else if (st.contains('shipped') || st.contains('تم الشحن')) {
       return Colors.green;
-    } else if (st.contains('delivered') || st.contains('تم التسليم') || st.contains('تم الاستلام')) {
+    } else if (st.contains('delivered') ||
+        st.contains('تم التسليم') ||
+        st.contains('تم الاستلام')) {
       return KprimaryColor;
     } else if (st.contains('cancelled') || st.contains('ملغي')) {
       return const Color(0xffDD0C0C);
@@ -553,11 +565,15 @@ class CancelledShipmentCardSeller extends StatelessWidget {
     final st = status.toLowerCase();
     if (st.contains('pending') || st.contains('معلق')) {
       return S.of(context).pending;
-    } else if (st.contains('confirmed') || st.contains('تم التأكيد') || st.contains('تمت الموافقة')) {
+    } else if (st.contains('confirmed') ||
+        st.contains('تم التأكيد') ||
+        st.contains('تمت الموافقة')) {
       return S.of(context).orderConfirmed;
     } else if (st.contains('shipped') || st.contains('تم الشحن')) {
       return S.of(context).shippedStatus;
-    } else if (st.contains('delivered') || st.contains('تم التسليم') || st.contains('تم الاستلام')) {
+    } else if (st.contains('delivered') ||
+        st.contains('تم التسليم') ||
+        st.contains('تم الاستلام')) {
       return S.of(context).receivedStatus;
     } else if (st.contains('cancelled') || st.contains('ملغي')) {
       return S.of(context).cancelledTab;
@@ -576,10 +592,7 @@ class CancelledShipmentCardSeller extends StatelessWidget {
 class CancelledOrderCardSeller extends StatelessWidget {
   final CancelledOrderModel order;
 
-  const CancelledOrderCardSeller({
-    super.key,
-    required this.order,
-  });
+  const CancelledOrderCardSeller({super.key, required this.order});
 
   @override
   Widget build(BuildContext context) {
@@ -617,7 +630,8 @@ class CancelledOrderDetailsPage extends StatefulWidget {
   });
 
   @override
-  State<CancelledOrderDetailsPage> createState() => _CancelledOrderDetailsPageState();
+  State<CancelledOrderDetailsPage> createState() =>
+      _CancelledOrderDetailsPageState();
 }
 
 class _CancelledOrderDetailsPageState extends State<CancelledOrderDetailsPage> {
@@ -642,7 +656,9 @@ class _CancelledOrderDetailsPageState extends State<CancelledOrderDetailsPage> {
 
     try {
       final cubit = context.read<CancelledOrdersCubit>();
-      final details = await cubit.getOrderDetails(widget.order.orderId.toString());
+      final details = await cubit.getOrderDetails(
+        widget.order.orderId.toString(),
+      );
       setState(() {
         _details = details;
         _loadingDetails = false;
@@ -677,42 +693,75 @@ class _CancelledOrderDetailsPageState extends State<CancelledOrderDetailsPage> {
           CircleAvatar(
             radius: screenWidth * 0.08,
             backgroundColor: Colors.grey[200],
-            child: user.image != null && user.image!.isNotEmpty && _isValidUrl(user.image!)
+            child:
+                user.image != null &&
+                    user.image!.isNotEmpty &&
+                    _isValidUrl(user.image!)
                 ? ClipRRect(
-              borderRadius: BorderRadius.circular(screenWidth * 0.08),
-              child: CachedNetworkImage(
-                imageUrl: user.image!,
-                fit: BoxFit.cover,
-                width: screenWidth * 0.16,
-                height: screenWidth * 0.16,
-                placeholder: (context, url) => Container(
-                  width: screenWidth * 0.16,
-                  height: screenWidth * 0.16,
-                  color: Colors.grey[200],
-                  child: Icon(Icons.person, size: screenWidth * 0.08, color: Colors.grey[400]),
-                ),
-                errorWidget: (_, __, ___) => Icon(Icons.person, size: screenWidth * 0.08, color: Colors.grey[600]),
-              ),
-            )
-                : Icon(Icons.person, size: screenWidth * 0.08, color: Colors.grey[600]),
+                    borderRadius: BorderRadius.circular(screenWidth * 0.08),
+                    child: CachedNetworkImage(
+                      imageUrl: user.image!,
+                      fit: BoxFit.cover,
+                      width: screenWidth * 0.16,
+                      height: screenWidth * 0.16,
+                      placeholder: (context, url) => Container(
+                        width: screenWidth * 0.16,
+                        height: screenWidth * 0.16,
+                        color: Colors.grey[200],
+                        child: Icon(
+                          Icons.person,
+                          size: screenWidth * 0.08,
+                          color: Colors.grey[400],
+                        ),
+                      ),
+                      errorWidget: (_, __, ___) => Icon(
+                        Icons.person,
+                        size: screenWidth * 0.08,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  )
+                : Icon(
+                    Icons.person,
+                    size: screenWidth * 0.08,
+                    color: Colors.grey[600],
+                  ),
           ),
           SizedBox(width: screenWidth * 0.04),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(user.name, style: TextStyle(fontSize: screenWidth * 0.04, fontWeight: FontWeight.bold)),
+                Text(
+                  user.name,
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.04,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 SizedBox(height: 4),
-                Text(user.phone, style: TextStyle(fontSize: screenWidth * 0.032, color: Colors.grey[700])),
+                Text(
+                  user.phone,
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.032,
+                    color: Colors.grey[700],
+                  ),
+                ),
                 SizedBox(height: 4),
                 Text(
                   user.email,
-                  style: TextStyle(fontSize: screenWidth * 0.032, color: Colors.grey[700]),
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.032,
+                    color: Colors.grey[700],
+                  ),
                 ),
                 SizedBox(height: 4),
                 Text(
                   user.country,
-                  style: TextStyle(fontSize: screenWidth * 0.032, color: Colors.grey[700]),
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.032,
+                    color: Colors.grey[700],
+                  ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -810,17 +859,44 @@ class _CancelledOrderDetailsPageState extends State<CancelledOrderDetailsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(S.of(context).productDetails, style: TextStyle(fontSize: screenWidth * 0.035, fontWeight: FontWeight.bold)),
+          Text(
+            S.of(context).productDetails,
+            style: TextStyle(
+              fontSize: screenWidth * 0.035,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           SizedBox(height: screenWidth * 0.02),
           ...items.map((item) => _buildProductItem(item, screenWidth)).toList(),
           SizedBox(height: screenWidth * 0.02),
           Divider(color: Colors.grey.shade300),
           SizedBox(height: screenWidth * 0.02),
-          _buildRow(S.of(context).quantity, '${widget.order.countItems}', screenWidth),
-          _buildRow(S.of(context).price, '${widget.order.total} ${S.of(context).SYP}', screenWidth),
-          _buildRow(S.of(context).shippingCost, '${widget.order.fees} ${S.of(context).SYP}', screenWidth),
-          _buildRow(S.of(context).paymentType, _getPaymentTypeText(_details?.order.paymentType ?? ''), screenWidth),
-          _buildRow(S.of(context).total, '${widget.order.finalTotal} ${S.of(context).SYP}', screenWidth, isTotal: true),
+          _buildRow(
+            S.of(context).quantity,
+            '${widget.order.countItems}',
+            screenWidth,
+          ),
+          _buildRow(
+            S.of(context).price,
+            '${widget.order.total} ${S.of(context).SYP}',
+            screenWidth,
+          ),
+          _buildRow(
+            S.of(context).shippingCost,
+            '${widget.order.fees} ${S.of(context).SYP}',
+            screenWidth,
+          ),
+          _buildRow(
+            S.of(context).paymentType,
+            _getPaymentTypeText(_details?.order.paymentType ?? ''),
+            screenWidth,
+          ),
+          _buildRow(
+            S.of(context).total,
+            '${widget.order.finalTotal} ${S.of(context).SYP}',
+            screenWidth,
+            isTotal: true,
+          ),
         ],
       ),
     );
@@ -865,13 +941,19 @@ class _CancelledOrderDetailsPageState extends State<CancelledOrderDetailsPage> {
               children: [
                 Text(
                   item.itemName,
-                  style: TextStyle(fontSize: screenWidth * 0.035, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.035,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 SizedBox(height: screenWidth * 0.01),
                 if (item.description.isNotEmpty)
                   Text(
                     item.description,
-                    style: TextStyle(fontSize: screenWidth * 0.03, color: Colors.grey[600]),
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.03,
+                      color: Colors.grey[600],
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -885,7 +967,9 @@ class _CancelledOrderDetailsPageState extends State<CancelledOrderDetailsPage> {
                       ),
                       decoration: BoxDecoration(
                         color: KprimaryColor.withAlpha(51),
-                        borderRadius: BorderRadius.circular(screenWidth * 0.015),
+                        borderRadius: BorderRadius.circular(
+                          screenWidth * 0.015,
+                        ),
                       ),
                       child: Text(
                         'x${item.quantity}',
@@ -896,7 +980,8 @@ class _CancelledOrderDetailsPageState extends State<CancelledOrderDetailsPage> {
                       ),
                     ),
                     SizedBox(width: screenWidth * 0.02),
-                    if (double.tryParse(item.discount) != null && double.parse(item.discount) > 0)
+                    if (double.tryParse(item.discount) != null &&
+                        double.parse(item.discount) > 0)
                       Text(
                         '${S.of(context).discountLabel} ${item.discount}%',
                         style: TextStyle(
@@ -926,27 +1011,27 @@ class _CancelledOrderDetailsPageState extends State<CancelledOrderDetailsPage> {
 
   Widget _buildShimmerProducts(double screenWidth) {
     return Container(
-        padding: EdgeInsets.all(screenWidth * 0.04),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300),
-          borderRadius: BorderRadius.circular(screenWidth * 0.03),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            shimmer_package.Shimmer.fromColors(
-              baseColor: Colors.grey[300]!,
-              highlightColor: Colors.grey[100]!,
-              child: Container(
-                width: screenWidth * 0.3,
-                height: screenWidth * 0.035,
-                color: Colors.grey[300],
-              ),
+      padding: EdgeInsets.all(screenWidth * 0.04),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(screenWidth * 0.03),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          shimmer_package.Shimmer.fromColors(
+            baseColor: Colors.grey[300]!,
+            highlightColor: Colors.grey[100]!,
+            child: Container(
+              width: screenWidth * 0.3,
+              height: screenWidth * 0.035,
+              color: Colors.grey[300],
             ),
-            SizedBox(height: screenWidth * 0.02),
-            ...List.generate(2, (_) => _buildShimmerProductItem(screenWidth)),
-          ],
-        )
+          ),
+          SizedBox(height: screenWidth * 0.02),
+          ...List.generate(2, (_) => _buildShimmerProductItem(screenWidth)),
+        ],
+      ),
     );
   }
 
@@ -1009,7 +1094,9 @@ class _CancelledOrderDetailsPageState extends State<CancelledOrderDetailsPage> {
                         height: screenWidth * 0.03,
                         decoration: BoxDecoration(
                           color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(screenWidth * 0.01),
+                          borderRadius: BorderRadius.circular(
+                            screenWidth * 0.01,
+                          ),
                         ),
                       ),
                     ),
@@ -1033,14 +1120,22 @@ class _CancelledOrderDetailsPageState extends State<CancelledOrderDetailsPage> {
     );
   }
 
-  Widget _buildRow(String label, String value, double width, {bool isTotal = false}) {
+  Widget _buildRow(
+    String label,
+    String value,
+    double width, {
+    bool isTotal = false,
+  }) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: width * 0.01),
       child: Row(
         children: [
           SizedBox(
             width: width * 0.3,
-            child: Text(label, style: TextStyle(fontSize: width * 0.03, color: Colors.black54)),
+            child: Text(
+              label,
+              style: TextStyle(fontSize: width * 0.03, color: Colors.black54),
+            ),
           ),
           Expanded(
             child: Text(
@@ -1064,7 +1159,10 @@ class _CancelledOrderDetailsPageState extends State<CancelledOrderDetailsPage> {
       backgroundColor: const Color(0xfffafafa),
       appBar: CustomAppBar(title: S.of(context).orderDetails),
       body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: screenWidth * 0.02),
+        padding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.04,
+          vertical: screenWidth * 0.02,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1079,7 +1177,13 @@ class _CancelledOrderDetailsPageState extends State<CancelledOrderDetailsPage> {
                 border: Border.all(color: Colors.grey.shade300),
                 borderRadius: BorderRadius.circular(screenWidth * 0.03),
                 color: Colors.white,
-                boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3))],
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 6,
+                    offset: Offset(0, 3),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1089,7 +1193,10 @@ class _CancelledOrderDetailsPageState extends State<CancelledOrderDetailsPage> {
                     children: [
                       Text(
                         S.of(context).orderStatus,
-                        style: TextStyle(fontSize: screenWidth * 0.035, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.035,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       Text(
                         _getStatusText(widget.order.status, context),
@@ -1115,11 +1222,15 @@ class _CancelledOrderDetailsPageState extends State<CancelledOrderDetailsPage> {
     final st = status.toLowerCase();
     if (st.contains('pending') || st.contains('معلق')) {
       return Color(0xffFF580E);
-    } else if (st.contains('confirmed') || st.contains('تم التأكيد') || st.contains('تمت الموافقة')) {
+    } else if (st.contains('confirmed') ||
+        st.contains('تم التأكيد') ||
+        st.contains('تمت الموافقة')) {
       return Colors.blue;
     } else if (st.contains('shipped') || st.contains('تم الشحن')) {
       return Colors.green;
-    } else if (st.contains('delivered') || st.contains('تم التسليم') || st.contains('تم الاستلام')) {
+    } else if (st.contains('delivered') ||
+        st.contains('تم التسليم') ||
+        st.contains('تم الاستلام')) {
       return KprimaryColor;
     } else if (st.contains('cancelled') || st.contains('ملغي')) {
       return const Color(0xffDD0C0C);
@@ -1131,11 +1242,15 @@ class _CancelledOrderDetailsPageState extends State<CancelledOrderDetailsPage> {
     final st = status.toLowerCase();
     if (st.contains('pending') || st.contains('معلق')) {
       return S.of(context).pending;
-    } else if (st.contains('confirmed') || st.contains('تم التأكيد') || st.contains('تمت الموافقة')) {
+    } else if (st.contains('confirmed') ||
+        st.contains('تم التأكيد') ||
+        st.contains('تمت الموافقة')) {
       return S.of(context).orderConfirmed;
     } else if (st.contains('shipped') || st.contains('تم الشحن')) {
       return S.of(context).shippedStatus;
-    } else if (st.contains('delivered') || st.contains('تم التسليم') || st.contains('تم الاستلام')) {
+    } else if (st.contains('delivered') ||
+        st.contains('تم التسليم') ||
+        st.contains('تم الاستلام')) {
       return S.of(context).receivedStatus;
     } else if (st.contains('cancelled') || st.contains('ملغي')) {
       return S.of(context).cancelledTab;
@@ -1143,6 +1258,9 @@ class _CancelledOrderDetailsPageState extends State<CancelledOrderDetailsPage> {
     return status;
   }
 }
+
+// ===================== SellerCancelledOrdersPage =====================
+// ... كود المستوردات والنماذج والـ API بدون تغيير ...
 
 // ===================== SellerCancelledOrdersPage =====================
 class SellerCancelledOrdersPage extends StatelessWidget {
@@ -1158,7 +1276,8 @@ class SellerCancelledOrdersPage extends StatelessWidget {
         body: BlocBuilder<CancelledOrdersCubit, CancelledOrdersState>(
           builder: (context, state) {
             if (state is CancelledOrdersError) {
-              return Center(child: Text(state.message));
+              // عرض تصميم فشل الاتصال مشابه لـ SuggestionsPage
+              return _buildErrorState(context, state.message);
             }
 
             if (state is CancelledOrdersLoaded) {
@@ -1166,18 +1285,86 @@ class SellerCancelledOrdersPage extends StatelessWidget {
               if (orders.isEmpty) {
                 return emptyState(context, S.of(context).noOrdersYet);
               }
-              return ListView.builder(
-                padding: EdgeInsets.zero,
-                itemCount: orders.length,
-                itemBuilder: (context, index) {
-                  final order = orders[index];
-                  return CancelledOrderCardSeller(order: order);
+              return RefreshIndicator(
+                onRefresh: () async {
+                  await context
+                      .read<CancelledOrdersCubit>()
+                      .fetchCancelledOrders();
                 },
+                child: ListView.builder(
+                  padding: EdgeInsets.zero,
+                  itemCount: orders.length,
+                  itemBuilder: (context, index) {
+                    final order = orders[index];
+                    return CancelledOrderCardSeller(order: order);
+                  },
+                ),
               );
             }
 
             return _buildCancelledOrdersShimmerList(context);
           },
+        ),
+      ),
+    );
+  }
+
+  // تصميم حالة فشل الاتصال/السيرفر (مشابه لـ SuggestionsPage)
+  Widget _buildErrorState(BuildContext context, String errorMessage) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: SizedBox(
+        height: screenHeight * 0.8,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.network_check,
+                color: Colors.grey,
+                size: screenWidth * 0.15,
+              ),
+              SizedBox(height: screenHeight * 0.02),
+              Text(
+                S.of(context).connectionTimeout,
+                style: TextStyle(
+                  fontSize: screenWidth * 0.03,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: screenHeight * 0.04),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.1),
+                child: ElevatedButton(
+                  onPressed: () {
+                    context.read<CancelledOrdersCubit>().fetchCancelledOrders();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xffFF580E),
+                    minimumSize: Size(screenWidth * 0.4, screenHeight * 0.04),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    S.of(context).tryAgain,
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.035,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.02),
+            ],
+          ),
         ),
       ),
     );
@@ -1242,7 +1429,9 @@ class SellerCancelledOrdersPage extends StatelessWidget {
                               width: screenWidth * 0.15,
                               decoration: BoxDecoration(
                                 color: Colors.grey.shade300,
-                                borderRadius: BorderRadius.circular(screenWidth * 0.015),
+                                borderRadius: BorderRadius.circular(
+                                  screenWidth * 0.015,
+                                ),
                               ),
                             ),
                             SizedBox(width: screenWidth * 0.02),

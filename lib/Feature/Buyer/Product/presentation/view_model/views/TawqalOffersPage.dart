@@ -57,7 +57,7 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
     context.read<CartCubit>().loadCart();
     await _loadOffers();
     await _getCurrentCartSeller();
-    _fetchProducts(); // استدعاء أولي للحصول على المنتجات
+    _fetchProducts();
   }
 
   Future<void> _getCurrentCartSeller() async {
@@ -94,7 +94,11 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
 
   Future<void> _loadOffers() async {
     try {
-      setState(() => _isLoading = true);
+      setState(() {
+        _isLoading = true;
+        _hasError = false;
+        _errorMessage = '';
+      });
       const storage = FlutterSecureStorage();
       final token = await storage.read(key: 'user_token');
 
@@ -106,33 +110,46 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
 
       final response = await dio.get(
         'https://toknagah.viking-iceland.online/api/user/products?type=normal',
+        options: Options(validateStatus: (_) => true),
       );
 
-      dynamic json = response.data;
-      if (json is String) json = jsonDecode(json);
+      if (!mounted) return;
 
-      final list = json['data'] is List ? json['data'] : [];
-      final loaded = <ProductModel>[];
+      if (response.statusCode == 200) {
+        dynamic json = response.data;
+        if (json is String) json = jsonDecode(json);
 
-      for (var item in list) {
-        if (item is Map<String, dynamic>) {
-          try {
-            loaded.add(ProductModel.fromJson(item));
-          } catch (e) {
-            debugPrint('Parse error: $e');
+        final list = json['data'] is List ? json['data'] : [];
+        final loaded = <ProductModel>[];
+        for (var item in list) {
+          if (item is Map<String, dynamic>) {
+            try {
+              loaded.add(ProductModel.fromJson(item));
+            } catch (e) {
+              debugPrint('Parse error: $e');
+            }
           }
         }
-      }
-
-      if (mounted) {
         setState(() {
           _displayedProducts = loaded;
           _isLoading = false;
+          _hasError = false;
+        });
+      } else {
+        debugPrint('Server error: ${response.statusCode} | ${response.data}');
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+          _errorMessage = '';
         });
       }
     } catch (e) {
       debugPrint('Load offers error: $e');
-      if (mounted) setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+        _errorMessage = '';
+      });
     }
   }
 
@@ -197,6 +214,8 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
       if (searchQuery != null && searchQuery.isNotEmpty) {
         setState(() {
           _isSearchLoading = true;
+          _hasError = false;
+          _errorMessage = '';
         });
       } else {
         setState(() {
@@ -219,7 +238,6 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
       } catch (_) {}
       _cancelToken = CancelToken();
 
-      // ✅ Server-side زي Postman (نبعتهم دايمًا حتى لو min=0)
       final double effectiveMin = minPrice ?? _currentMinPrice;
       final double effectiveMax = maxPrice ?? _currentMaxPrice;
 
@@ -247,7 +265,6 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
 
       if (response.statusCode == 200) {
         try {
-          // ✅ Fix: أحيانًا بيرجع String على الموبايل
           dynamic raw = response.data;
           if (raw is String) raw = jsonDecode(raw);
 
@@ -277,7 +294,8 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
               .map((e) {
             try {
               return ProductModel.fromJson(e as Map<String, dynamic>);
-            } catch (_) {
+            } catch (err) {
+              debugPrint('Product parse failed: $err');
               return null;
             }
           })
@@ -285,15 +303,11 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
               .cast<ProductModel>()
               .toList();
 
-          if (!mounted) return;
-
           setState(() {
             _displayedProducts = products;
             _isLoading = false;
             _isSearchLoading = false;
             _hasError = false;
-
-            // ✅ الفلتر يبقى Active لو فيه Search أو السعر اتغير عن الافتراضي
             _isFilterActive = (searchQuery != null && searchQuery.isNotEmpty) ||
                 (_currentMinPrice > 0) ||
                 (_currentMaxPrice != kFilterMaxPrice);
@@ -307,32 +321,32 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
             );
           });
         } catch (parseError) {
-          if (!mounted) return;
+          debugPrint('Parsing error: $parseError');
           setState(() {
             _displayedProducts = [];
             _isLoading = false;
             _isSearchLoading = false;
             _hasError = true;
-            _errorMessage = 'Parsing error: $parseError';
+            _errorMessage = ''; // لا نعرض الإستثناءات للمستخدم
           });
         }
       } else {
-        if (!mounted) return;
+        debugPrint('Server error: ${response.statusCode} | ${response.data}');
         setState(() {
           _isLoading = false;
           _isSearchLoading = false;
           _hasError = true;
-          _errorMessage = 'Server error: ${response.statusCode}\n${response.data ?? ''}';
+          _errorMessage = ''; // رسالة عامة فقط
         });
       }
     } catch (e) {
       if (e is DioException && e.type == DioExceptionType.cancel) return;
-      if (!mounted) return;
+      debugPrint('Request error: $e');
       setState(() {
         _isLoading = false;
         _isSearchLoading = false;
         _hasError = true;
-        _errorMessage = e.toString();
+        _errorMessage = ''; // رسالة موحدة بدون تفاصيل
       });
     }
   }
@@ -374,7 +388,6 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
   void _handleFilterApply(Map<String, dynamic> filters) {
     if (!mounted) return;
 
-    // ✅ Fix: رجّعها زي ما Explore بيعمل: minPrice/maxPrice فقط
     setState(() {
       _currentMinPrice = (filters['minPrice'] as num?)?.toDouble() ?? 0;
       _currentMaxPrice = (filters['maxPrice'] as num?)?.toDouble() ?? kFilterMaxPrice;
@@ -853,13 +866,20 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.network_check, color: Colors.grey, size: screenWidth * 0.15),
+                      Icon(
+                        Icons.network_check,
+                        color: Colors.grey,
+                        size: screenWidth * 0.15,
+                      ),
                       SizedBox(height: screenHeight * 0.02),
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
                         child: Text(
-                          _errorMessage.isNotEmpty ? _errorMessage : S.of(context).connectionTimeout,
-                          style: TextStyle(fontSize: screenWidth * 0.035, color: Colors.grey[700]),
+                          S.of(context).connectionTimeout,
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.035,
+                            color: Colors.grey[700],
+                          ),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -872,11 +892,16 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xffFF580E),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                         child: Text(
                           S.of(context).tryAgain,
-                          style: TextStyle(fontSize: screenWidth * 0.035, color: Colors.white),
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.035,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                       SizedBox(height: screenHeight * 0.1),
@@ -903,6 +928,7 @@ class _TawqalOffersPageState extends State<TawqalOffersPage> {
                             final product = _displayedProducts[index];
                             final productMap = product.toMap()
                               ..['images'] = ImageHome.processImageList(product.images);
+
                             return _buildProductCard(
                               product,
                               productMap,

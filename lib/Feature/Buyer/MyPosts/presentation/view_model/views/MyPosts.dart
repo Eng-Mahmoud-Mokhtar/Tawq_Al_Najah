@@ -51,6 +51,7 @@ class _MyPostsState extends State<MyPosts> {
       setState(() {
         _isLoading = true;
         _hasError = false;
+        _errorMessage = '';
       });
 
       final token = await _storage.read(key: 'user_token');
@@ -60,7 +61,9 @@ class _MyPostsState extends State<MyPosts> {
         if (token != null) 'Authorization': 'Bearer $token',
       };
 
-      if (!_cancelToken.isCancelled) _cancelToken.cancel('cancelling previous');
+      try {
+        if (!_cancelToken.isCancelled) _cancelToken.cancel('cancelling previous');
+      } catch (_) {}
       _cancelToken = CancelToken();
 
       final response = await _dio.get(
@@ -94,22 +97,22 @@ class _MyPostsState extends State<MyPosts> {
         setState(() {
           _displayedAds = ads;
           _isLoading = false;
+          _hasError = false;
           context.read<MyPostsCubit>().loadAds(ads);
         });
       } else {
         setState(() {
           _isLoading = false;
           _hasError = true;
-          _errorMessage = 'Server error: ${response.statusCode}';
+          _errorMessage = '';
         });
       }
     } catch (e) {
       if (e is DioException && e.type == DioExceptionType.cancel) return;
-      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _hasError = true;
-        _errorMessage = e.toString();
+        _errorMessage = '';
       });
     }
   }
@@ -168,12 +171,12 @@ class _MyPostsState extends State<MyPosts> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, color: Colors.grey, size: screenWidth * 0.15),
+          Icon(Icons.wifi_off, color: Colors.grey, size: screenWidth * 0.15),
           SizedBox(height: screenHeight * 0.02),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
             child: Text(
-              _errorMessage.isNotEmpty ? _errorMessage : S.of(context).connectionTimeout,
+              S.of(context).connectionTimeout,
               style: TextStyle(fontSize: screenWidth * 0.035, color: Colors.grey[700]),
               textAlign: TextAlign.center,
             ),
@@ -211,27 +214,18 @@ class _MyPostsState extends State<MyPosts> {
     );
   }
 
-  // ✅ استخراج لينك الصورة من كل الأشكال المحتملة
   String? _extractFirstImageUrl(Map<String, dynamic> ad) {
     final images = ad['images'] ?? ad['image'] ?? ad['main_image'];
-
-    // 1) لو String مباشرة
     if (images is String) {
       if (images.trim().isEmpty) return null;
       return _normalizeImageUrl(images.trim());
     }
-
-    // 2) لو List
     if (images is List && images.isNotEmpty) {
       final first = images.first;
-
-      // list contains string
       if (first is String) {
         if (first.trim().isEmpty) return null;
         return _normalizeImageUrl(first.trim());
       }
-
-      // list contains map like {url: "..."} or {path: "..."}
       if (first is Map) {
         final possible = first['url'] ??
             first['image'] ??
@@ -243,18 +237,12 @@ class _MyPostsState extends State<MyPosts> {
         }
       }
     }
-
     return null;
   }
 
-  // ✅ توحيد الرابط: لو نسبي نركّب baseUrl
   String _normalizeImageUrl(String url) {
     if (url.startsWith('http://') || url.startsWith('https://')) return url;
-
-    // لو url نسبي مثل: /storage/...
     if (url.startsWith('/')) return '$_baseUrl$url';
-
-    // لو نسبي بدون / مثل: storage/...
     return '$_baseUrl/$url';
   }
 
@@ -381,12 +369,10 @@ class _MyPostsState extends State<MyPosts> {
   Widget _buildImageSection(Map<String, dynamic> ad, double cardWidth, double cardHeight) {
     final imageUrl = _extractFirstImageUrl(ad);
 
-    // لو مفيش صورة صالحة → نعرض نفس handler الحالي
     if (imageUrl == null || imageUrl.isEmpty) {
       return _buildImageErrorPlaceholder(cardWidth, cardHeight);
     }
 
-    // لو رابط http(s) → CachedNetworkImage زي الصفحات السابقة
     if (imageUrl.startsWith('http')) {
       return CachedNetworkImage(
         imageUrl: imageUrl,
@@ -406,7 +392,6 @@ class _MyPostsState extends State<MyPosts> {
       );
     }
 
-    // لو path ملف محلي (لأسباب نادرة) نخليه زي ما كان عندك
     if (!kIsWeb) {
       return Image.file(
         File(imageUrl),
@@ -417,7 +402,6 @@ class _MyPostsState extends State<MyPosts> {
       );
     }
 
-    // لو web path غير مناسب → fallback
     return _buildImageErrorPlaceholder(cardWidth, cardHeight);
   }
 

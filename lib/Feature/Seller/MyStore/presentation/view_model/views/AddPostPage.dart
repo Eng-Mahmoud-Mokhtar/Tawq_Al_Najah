@@ -41,17 +41,17 @@ class _AddPostPageState extends State<AddPostPage> {
 
   // Controllers
   final TextEditingController nameController = TextEditingController();
-  final TextEditingController stockController = TextEditingController(); // stock
+  final TextEditingController stockController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
   final TextEditingController discountController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController socialLinkController = TextEditingController();
   final TextEditingController feesInternalController = TextEditingController();
-  final TextEditingController feesExternalController = TextEditingController(); // NEW: international shipping
+  final TextEditingController feesExternalController = TextEditingController();
 
   // Images and social links
   List<dynamic> selectedImages = [];
-  final List<Map<String, dynamic>> socialLinks = []; // Only Instagram/WhatsApp
+  final List<Map<String, dynamic>> socialLinks = [];
   final ImagePicker _picker = ImagePicker();
 
   // API and auth
@@ -68,14 +68,19 @@ class _AddPostPageState extends State<AddPostPage> {
   String? _imagesError;
   bool _socialLinkError = false;
   String? _feesInternalError;
-  String? _feesExternalError; // NEW: international shipping validation
+  String? _feesExternalError;
 
   // Social link fields
   String? _linkInsta;
   String? _linkWhatsapp;
 
-  // Currency type (UI removed, send constant as requested)
+  // Currency type
   final String currencyType = 'ريال';
+
+  // New state variables for error handling
+  bool _hasConnectionError = false;
+  String? _globalErrorMessage;
+  bool _isLoadingAdData = false;
 
   @override
   void initState() {
@@ -125,7 +130,94 @@ class _AddPostPageState extends State<AddPostPage> {
     _loadToken();
     if (widget.adToEdit != null && widget.isEditing) {
       _loadAdForEdit();
+    } else {
+      _isLoadingAdData = false;
     }
+  }
+
+  // ==================== تصميم فشل الاتصال الموحد ====================
+  Widget _buildErrorState(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: SizedBox(
+        height: screenHeight * 0.8,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(height: screenHeight * 0.04),
+                    Icon(
+                      Icons.network_check,
+                      color: Colors.grey,
+                      size: screenWidth * 0.15,
+                    ),
+                    SizedBox(height: screenHeight * 0.02),
+                    Text(
+                      S.of(context).connectionTimeout,
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.04,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+            SizedBox(height: screenHeight * 0.04),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.1),
+              child: ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _hasConnectionError = false;
+                    _globalErrorMessage = null;
+                  });
+                  if (widget.isEditing && widget.adToEdit != null) {
+                    _loadAdForEdit();
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xffFF580E),
+                  minimumSize: Size(screenWidth * 0.6, screenHeight * 0.06),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  S.of(context).tryAgain,
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.035,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: screenHeight * 0.02),
+          ],
+        ),
+      ),
+    )
+    );
+  }
+
+  String _getUserFriendlyErrorMessage(String technicalMessage) {
+    final lowerMessage = technicalMessage.toLowerCase();
+
+    if (lowerMessage.contains('timeout') || lowerMessage.contains('timed out')) {
+      return S.current.connectionTimeout;
+    } else if (lowerMessage.contains('no internet') || lowerMessage.contains('network')) {
+      return S.current.connectionError;
+    } else if (lowerMessage.contains('server') || lowerMessage.contains('500') || lowerMessage.contains('502')) {
+      return S.current.serverError;
+    } else if (lowerMessage.contains('unauthorized') || lowerMessage.contains('401')) {
+      return S.current.sessionExpired;
+    } else if (lowerMessage.contains('token') || lowerMessage.contains('login')) {
+      return S.current.pleaseLoginFirst;
+    }
+
+    return S.current.somethingWentWrong;
   }
 
   Future<String?> _getToken() async {
@@ -157,75 +249,95 @@ class _AddPostPageState extends State<AddPostPage> {
   }
 
   void _loadAdForEdit() {
-    final ad = widget.adToEdit!;
-    // Name: clamp to 30 chars max
-    final rawName = ad['name']?.toString() ?? '';
-    nameController.text = rawName.length > 30 ? rawName.substring(0, 30) : rawName;
+    if (widget.adToEdit == null) {
+      setState(() {
+        _hasConnectionError = true;
+        _globalErrorMessage = S.of(context).failedToLoadData;
+        _isLoadingAdData = false;
+      });
+      return;
+    }
 
-    stockController.text = ad['stock']?.toString() ?? ad['quantity']?.toString() ?? '1';
+    setState(() {
+      _isLoadingAdData = true;
+      _hasConnectionError = false;
+      _globalErrorMessage = null;
+    });
 
-    // Price: clamp to <= 1,000,000
-    final rawPriceStr = ad['price']?.toString() ?? '0';
-    final priceVal = double.tryParse(rawPriceStr) ?? 0;
-    priceController.text = priceVal > 1000000 ? '1000000' : rawPriceStr;
+    try {
+      final ad = widget.adToEdit!;
+      final rawName = ad['name']?.toString() ?? '';
+      nameController.text = rawName.length > 30 ? rawName.substring(0, 30) : rawName;
 
-    discountController.text = ad['discount']?.toString() ?? '0';
-    descriptionController.text = ad['description']?.toString() ?? '';
-    final adDeliveryType = ad['delivery_type']?.toString() ?? ad['shippingOption']?.toString();
-    deliveryType = ['internal', 'internalAndexternal', 'noDeliver'].contains(adDeliveryType)
-        ? adDeliveryType!
-        : (ad['is_deliverd'] == 1 ? 'internal' : 'noDeliver');
-    installment = (ad['is_installment'] == 1 || ad['installment'] == true);
+      stockController.text = ad['stock']?.toString() ?? ad['quantity']?.toString() ?? '1';
 
-    // fees
-    feesInternalController.text = ad['fees_internal']?.toString() ?? '';
-    feesExternalController.text = ad['fees_external']?.toString() ?? ''; // NEW
+      final rawPriceStr = ad['price']?.toString() ?? '0';
+      final priceVal = double.tryParse(rawPriceStr) ?? 0;
+      priceController.text = priceVal > 1000000 ? '1000000' : rawPriceStr;
 
-    // Social links
-    socialLinks.clear();
-    _linkInsta = null;
-    _linkWhatsapp = null;
+      discountController.text = ad['discount']?.toString() ?? '0';
+      descriptionController.text = ad['description']?.toString() ?? '';
+      final adDeliveryType = ad['delivery_type']?.toString() ?? ad['shippingOption']?.toString();
+      deliveryType = ['internal', 'internalAndexternal', 'noDeliver'].contains(adDeliveryType)
+          ? adDeliveryType!
+          : (ad['is_deliverd'] == 1 ? 'internal' : 'noDeliver');
+      installment = (ad['is_installment'] == 1 || ad['installment'] == true);
 
-    void addLinkIfValid(String? raw) {
-      if (raw == null || raw.trim().isEmpty) return;
-      final normalized = normalizeLink(raw);
-      final platform = detectPlatform(normalized);
-      if (platform != null) {
-        _setLinkFieldByUrl(normalized);
-        final platformName = (platform['name']?.toString().toLowerCase() ?? '');
-        socialLinks.removeWhere((old) {
-          final oldUrl = old['url']?.toString() ?? '';
-          final oldPlatform = detectPlatform(oldUrl);
-          final oldName = (oldPlatform?['name']?.toString().toLowerCase() ?? '');
-          return oldName == platformName;
-        });
-        socialLinks.add({
-          'url': normalized,
-          'icon': platform['icon'] ?? Icons.link,
-          'color': platform['color'] ?? Colors.grey,
-        });
+      feesInternalController.text = ad['fees_internal']?.toString() ?? '';
+      feesExternalController.text = ad['fees_external']?.toString() ?? '';
+
+      socialLinks.clear();
+      _linkInsta = null;
+      _linkWhatsapp = null;
+
+      void addLinkIfValid(String? raw) {
+        if (raw == null || raw.trim().isEmpty) return;
+        final normalized = normalizeLink(raw);
+        final platform = detectPlatform(normalized);
+        if (platform != null) {
+          _setLinkFieldByUrl(normalized);
+          final platformName = (platform['name']?.toString().toLowerCase() ?? '');
+          socialLinks.removeWhere((old) {
+            final oldUrl = old['url']?.toString() ?? '';
+            final oldPlatform = detectPlatform(oldUrl);
+            final oldName = (oldPlatform?['name']?.toString().toLowerCase() ?? '');
+            return oldName == platformName;
+          });
+          socialLinks.add({
+            'url': normalized,
+            'icon': platform['icon'] ?? Icons.link,
+            'color': platform['color'] ?? Colors.grey,
+          });
+        }
       }
-    }
 
-    addLinkIfValid(ad['linkInsta']?.toString());
-    addLinkIfValid(ad['linkWhatsapp']?.toString());
+      addLinkIfValid(ad['linkInsta']?.toString());
+      addLinkIfValid(ad['linkWhatsapp']?.toString());
 
-    if (ad['social_links'] is List) {
-      for (var link in (ad['social_links'] as List)) {
-        final url = link is Map ? (link['url']?.toString() ?? '') : (link is String ? link : '');
-        if (url.isNotEmpty) addLinkIfValid(url);
+      if (ad['social_links'] is List) {
+        for (var link in (ad['social_links'] as List)) {
+          final url = link is Map ? (link['url']?.toString() ?? '') : (link is String ? link : '');
+          if (url.isNotEmpty) addLinkIfValid(url);
+        }
       }
-    }
 
-    // Images
-    selectedImages.clear();
-    if (ad['images'] is List) {
-      selectedImages.addAll(ad['images']);
-    } else if (ad['image'] is List) {
-      selectedImages.addAll(ad['image']);
-    }
+      selectedImages.clear();
+      if (ad['images'] is List) {
+        selectedImages.addAll(ad['images']);
+      } else if (ad['image'] is List) {
+        selectedImages.addAll(ad['image']);
+      }
 
-    setState(() {});
+      setState(() {
+        _isLoadingAdData = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingAdData = false;
+        _hasConnectionError = true;
+        _globalErrorMessage = _getUserFriendlyErrorMessage(e.toString());
+      });
+    }
   }
 
   void _setLinkFieldByUrl(String url) {
@@ -262,7 +374,6 @@ class _AddPostPageState extends State<AddPostPage> {
     }
     return null;
   }
-
 
   void _removeSocialLink(int index) {
     final removedLink = socialLinks[index];
@@ -342,6 +453,7 @@ class _AddPostPageState extends State<AddPostPage> {
     required Color iconColor,
     required String confirmText,
     VoidCallback? onConfirm,
+    bool isNetworkError = false,
   }) {
     final s = S.of(context);
     final w = MediaQuery.of(context).size.width;
@@ -375,21 +487,26 @@ class _AddPostPageState extends State<AddPostPage> {
               Expanded(
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: KprimaryColor,
+                    backgroundColor: isNetworkError ? const Color(0xffFF580E) : KprimaryColor,
                     minimumSize: Size(0, w * 0.1),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8)),
                   ),
                   onPressed: () {
                     Navigator.pop(ctx);
-                    onConfirm?.call();
+                    if (isNetworkError) {
+                      _submitAd();
+                    } else {
+                      onConfirm?.call();
+                    }
                   },
-                  child: Text(confirmText,
-                      style:
-                      TextStyle(color: Colors.white, fontSize: w * 0.035)),
+                  child: Text(
+                    isNetworkError ? S.of(context).tryAgain : confirmText,
+                    style: TextStyle(color: Colors.white, fontSize: w * 0.035),
+                  ),
                 ),
               ),
-              if (onConfirm == null) ...[
+              if (!isNetworkError && onConfirm == null) ...[
                 SizedBox(width: w * 0.04),
                 Expanded(
                   child: ElevatedButton(
@@ -402,8 +519,7 @@ class _AddPostPageState extends State<AddPostPage> {
                     onPressed: () => Navigator.pop(ctx),
                     child: Text(
                       s.close,
-                      style:
-                      TextStyle(color: Colors.black87, fontSize: w * 0.035),
+                      style: TextStyle(color: Colors.black87, fontSize: w * 0.035),
                     ),
                   ),
                 ),
@@ -589,7 +705,6 @@ class _AddPostPageState extends State<AddPostPage> {
     try {
       final formData = FormData();
 
-      // Base fields
       formData.fields.add(MapEntry('name', nameController.text.trim()));
       formData.fields.add(MapEntry('stock', stockController.text.trim()));
       formData.fields.add(MapEntry('price', priceController.text.trim()));
@@ -597,12 +712,10 @@ class _AddPostPageState extends State<AddPostPage> {
       formData.fields.add(MapEntry('currency_type', currencyType));
       formData.fields.add(MapEntry('description', descriptionController.text.trim()));
 
-      // Delivery mapping
       final isDelivered = deliveryType == 'noDeliver' ? '0' : '1';
       formData.fields.add(MapEntry('is_deliverd', isDelivered));
-      formData.fields.add(MapEntry('delivery_type', deliveryType)); // 'noDeliver' | 'internal' | 'internalAndexternal'
+      formData.fields.add(MapEntry('delivery_type', deliveryType));
 
-      // Fees
       final String feesInternal = (deliveryType != 'noDeliver' && feesInternalController.text.trim().isNotEmpty)
           ? feesInternalController.text.trim()
           : '0';
@@ -613,18 +726,15 @@ class _AddPostPageState extends State<AddPostPage> {
       formData.fields.add(MapEntry('fees_internal', feesInternal));
       formData.fields.add(MapEntry('fees_external', feesExternal));
 
-      // Installment
       formData.fields.add(MapEntry('is_installment', installment ? '1' : '0'));
 
-      // Social links (only Insta/Whatsapp)
       _updateLinkFieldsFromSocialLinks();
       if ((_linkInsta ?? '').isNotEmpty) formData.fields.add(MapEntry('linkInsta', _linkInsta!));
       if ((_linkWhatsapp ?? '').isNotEmpty) formData.fields.add(MapEntry('linkWhatsapp', _linkWhatsapp!));
 
-      // Images
       for (int i = 0; i < selectedImages.length; i++) {
         final image = selectedImages[i];
-        if (image is String) continue; // existing URL case not used on creation
+        if (image is String) continue;
         try {
           final multipartFile = await _createMultipartFile(image, 'images[$i]');
           formData.files.add(MapEntry('images[$i]', multipartFile));
@@ -632,7 +742,14 @@ class _AddPostPageState extends State<AddPostPage> {
           debugPrint('Skip image[$i] due to error: $e');
         }
       }
+
       _debugPrintFormData(formData, '/saller/products/create-product-ad');
+
+      setState(() {
+        _isSubmitting = true;
+        _hasConnectionError = false;
+      });
+
       final response = await _dio.post(
         '/saller/products/create-product-ad',
         data: formData,
@@ -640,9 +757,15 @@ class _AddPostPageState extends State<AddPostPage> {
           headers: {'Accept': 'application/json'},
           receiveTimeout: const Duration(seconds: 90),
         ),
-      );
+      ).timeout(const Duration(seconds: 60));
+
       debugPrint('RESPONSE [${response.statusCode}] /saller/products/create-product-ad');
       debugPrint('DATA: ${response.data}');
+
+      setState(() {
+        _isSubmitting = false;
+      });
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = response.data;
         if (responseData is Map &&
@@ -667,7 +790,7 @@ class _AddPostPageState extends State<AddPostPage> {
             'images': selectedImages.map((imgItem) {
               if (kIsWeb && imgItem is Uint8List) return imgItem;
               if (imgItem is File) return imgItem.path;
-              return imgItem; // string URL if any
+              return imgItem;
             }).toList(),
           };
           try {
@@ -707,21 +830,50 @@ class _AddPostPageState extends State<AddPostPage> {
         );
       }
     } on DioException catch (e) {
+      setState(() {
+        _isSubmitting = false;
+        _hasConnectionError = true;
+      });
+
       final errorData = e.response?.data;
       final errorMsg = errorData is Map
           ? (errorData['message'] ?? errorData['error'] ?? e.message)
           : e.message;
-      // Print error response too
-      debugPrint('ERROR RESPONSE [${e.response?.statusCode}] /saller/products/create-product-ad');
-      debugPrint('ERROR DATA: ${e.response?.data}');
+
+      final isNetworkError = e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.connectionError;
+
       _showResultDialog(
         title: S.of(context).error,
-        content: errorMsg ?? S.of(context).somethingWentWrong,
+        content: isNetworkError
+            ? S.of(context).connectionTimeout
+            : (errorMsg ?? S.of(context).somethingWentWrong),
         icon: Icons.error_outline,
         iconColor: const Color(0xffDD0C0C),
         confirmText: S.of(context).ok,
+        isNetworkError: isNetworkError,
+      );
+    } on TimeoutException catch (_) {
+      setState(() {
+        _isSubmitting = false;
+        _hasConnectionError = true;
+      });
+
+      _showResultDialog(
+        title: S.of(context).error,
+        content: S.of(context).connectionTimeout,
+        icon: Icons.error_outline,
+        iconColor: const Color(0xffDD0C0C),
+        confirmText: S.of(context).ok,
+        isNetworkError: true,
       );
     } catch (e) {
+      setState(() {
+        _isSubmitting = false;
+      });
+
       debugPrint('Unhandled error during create: $e');
       _showResultDialog(
         title: S.of(context).error,
@@ -751,7 +903,6 @@ class _AddPostPageState extends State<AddPostPage> {
       _updateLinkFieldsFromSocialLinks();
       final formData = FormData();
 
-      // Base fields
       formData.fields.addAll([
         MapEntry('name', nameController.text.trim()),
         MapEntry('stock', stockController.text.trim()),
@@ -761,7 +912,6 @@ class _AddPostPageState extends State<AddPostPage> {
         MapEntry('description', descriptionController.text.trim()),
       ]);
 
-      // Delivery mapping
       final isDelivered = deliveryType == 'noDeliver' ? '0' : '1';
       formData.fields.add(MapEntry('is_deliverd', isDelivered));
       formData.fields.add(MapEntry('delivery_type', deliveryType));
@@ -776,14 +926,11 @@ class _AddPostPageState extends State<AddPostPage> {
       formData.fields.add(MapEntry('fees_internal', feesInternal));
       formData.fields.add(MapEntry('fees_external', feesExternal));
 
-      // Installment
       formData.fields.add(MapEntry('is_installment', installment ? '1' : '0'));
 
-      // Social
       formData.fields.add(MapEntry('linkInsta', _apiNullableLink(_linkInsta).toString()));
       formData.fields.add(MapEntry('linkWhatsapp', _apiNullableLink(_linkWhatsapp).toString()));
 
-      // Images
       for (int i = 0; i < selectedImages.length; i++) {
         final image = selectedImages[i];
         if (image is String) {
@@ -798,8 +945,12 @@ class _AddPostPageState extends State<AddPostPage> {
         }
       }
 
-      // Print request in terminal
       _debugPrintFormData(formData, '/user/products/update-ad/${widget.adId}');
+
+      setState(() {
+        _isSubmitting = true;
+        _hasConnectionError = false;
+      });
 
       final response = await _dio.post(
         '/user/products/update-ad/${widget.adId}',
@@ -808,11 +959,14 @@ class _AddPostPageState extends State<AddPostPage> {
           headers: {'Accept': 'application/json'},
           receiveTimeout: const Duration(seconds: 90),
         ),
-      );
+      ).timeout(const Duration(seconds: 60));
 
-      // Print response in terminal
       debugPrint('RESPONSE [${response.statusCode}] /user/products/update-ad/${widget.adId}');
       debugPrint('DATA: ${response.data}');
+
+      setState(() {
+        _isSubmitting = false;
+      });
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = response.data;
@@ -880,20 +1034,51 @@ class _AddPostPageState extends State<AddPostPage> {
         );
       }
     } on DioException catch (e) {
+      setState(() {
+        _isSubmitting = false;
+        _hasConnectionError = true;
+      });
+
       final errorData = e.response?.data;
       final errorMsg = errorData is Map
           ? (errorData['message'] ?? errorData['error'] ?? e.message)
           : e.message;
+
+      final isNetworkError = e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.connectionError;
+
       debugPrint('ERROR RESPONSE [${e.response?.statusCode}] /user/products/update-ad/${widget.adId}');
       debugPrint('ERROR DATA: ${e.response?.data}');
+
       _showResultDialog(
         title: s.error,
-        content: errorMsg ?? s.somethingWentWrong,
+        content: isNetworkError ? S.of(context).connectionTimeout : (errorMsg ?? s.somethingWentWrong),
         icon: Icons.error_outline,
         iconColor: const Color(0xffDD0C0C),
         confirmText: s.ok,
+        isNetworkError: isNetworkError,
+      );
+    } on TimeoutException catch (_) {
+      setState(() {
+        _isSubmitting = false;
+        _hasConnectionError = true;
+      });
+
+      _showResultDialog(
+        title: S.of(context).error,
+        content: S.of(context).connectionTimeout,
+        icon: Icons.error_outline,
+        iconColor: const Color(0xffDD0C0C),
+        confirmText: S.of(context).ok,
+        isNetworkError: true,
       );
     } catch (e) {
+      setState(() {
+        _isSubmitting = false;
+      });
+
       debugPrint('Unhandled error during update: $e');
       _showResultDialog(
         title: s.error,
@@ -976,15 +1161,14 @@ class _AddPostPageState extends State<AddPostPage> {
     TextInputType keyboardType = type;
     List<TextInputFormatter>? formatters;
 
-    // Name: enforce max 30 chars
     if (label == s.productName) {
       keyboardType = TextInputType.text;
       formatters = [LengthLimitingTextInputFormatter(30)];
     } else if (label == s.price ||
         label == s.discount ||
         label == s.quantity ||
-        label == s.internalShipping ||           // NEW
-        label == s.internationalShipping) {      // NEW
+        label == s.internalShipping ||
+        label == s.internationalShipping) {
       keyboardType = const TextInputType.numberWithOptions(decimal: true);
       formatters = integerOnly ? integerFormatters() : decimalFormatters();
     } else {
@@ -1016,10 +1200,10 @@ class _AddPostPageState extends State<AddPostPage> {
               controller: controller,
               keyboardType: keyboardType,
               inputFormatters: formatters,
-              maxLength: label == s.productName ? 30 : null, // enforce max length
+              maxLength: label == s.productName ? 30 : null,
               buildCounter: label == s.productName
                   ? (context, {required int currentLength, required bool isFocused, required int? maxLength}) => const SizedBox.shrink()
-                  : null, // hide counter
+                  : null,
               style: TextStyle(
                   fontSize: w * 0.03,
                   color: KprimaryText,
@@ -1043,10 +1227,8 @@ class _AddPostPageState extends State<AddPostPage> {
                   }
                 }
                 if (label == s.productName) {
-                  // no extra handling; maxLength + formatter enforce limit
                   setState(() => _nameError = null);
                 } else if (label == s.price) {
-                  // Clean numeric and clamp to <= 1,000,000
                   final cleaned = _cleanNumberInput(value);
                   if (cleaned != value) {
                     controller.text = cleaned;
@@ -1065,9 +1247,9 @@ class _AddPostPageState extends State<AddPostPage> {
                   setState(() => _discountError = null);
                 } else if (label == s.quantity) {
                   setState(() => _stockError = null);
-                } else if (label == s.internalShipping) { // NEW
+                } else if (label == s.internalShipping) {
                   setState(() => _feesInternalError = null);
-                } else if (label == s.internationalShipping) { // NEW
+                } else if (label == s.internationalShipping) {
                   setState(() => _feesExternalError = null);
                 }
               },
@@ -1164,422 +1346,466 @@ class _AddPostPageState extends State<AddPostPage> {
     final w = MediaQuery.of(context).size.width;
     final h = MediaQuery.of(context).size.height;
 
-    // Arabic labels
-    final String localShippingLabel = s.internalShipping;       // "سعر التوصيل الداخلي"
-    final String internationalShippingLabel = s.internationalShipping; // "سعر التوصيل الدولي"
+    if (_hasConnectionError && _isLoadingAdData) {
+      return Scaffold(
+        backgroundColor: const Color(0xfffafafa),
+        appBar: CustomAppBar(
+          title: widget.isEditing ? s.editAd : s.addAd,
+        ),
+        body: _buildErrorState(context),
+      );
+    }
+
+    if (_isLoadingAdData) {
+      return Scaffold(
+        backgroundColor: const Color(0xfffafafa),
+        appBar: CustomAppBar(
+          title: widget.isEditing ? s.editAd : s.addAd,
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(color: KprimaryColor),
+              SizedBox(height: h * 0.02),
+              Text(
+                s.loading,
+                style: TextStyle(
+                  fontSize: w * 0.035,
+                  color: Colors.grey[700],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final String localShippingLabel = s.internalShipping;
+    final String internationalShippingLabel = s.internationalShipping;
 
     return Scaffold(
       backgroundColor: const Color(0xfffafafa),
       appBar: CustomAppBar(
         title: widget.isEditing ? s.editAd : s.addAd,
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: w * 0.05, vertical: h * 0.02),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            customField(s.productName, nameController, hint: s.productName, errorText: _nameError),
-            Row(
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: EdgeInsets.symmetric(horizontal: w * 0.05, vertical: h * 0.02),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: customField(s.quantity, stockController,
-                      type: TextInputType.number, hint: s.quantity, errorText: _stockError, integerOnly: true),
+                customField(s.productName, nameController, hint: s.productName, errorText: _nameError),
+                Row(
+                  children: [
+                    Expanded(
+                      child: customField(s.quantity, stockController,
+                          type: TextInputType.number, hint: s.quantity, errorText: _stockError, integerOnly: true),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            if (showQuantityWarning)
-              Text(s.afterSellingQuantity,
-                  style:
-                  TextStyle(color: KprimaryColor, fontSize: w * 0.03)),
-            SizedBox(height: h * 0.02),
-            Row(
-              children: [
-                Expanded(
-                    child: customField(s.price, priceController,
+                if (showQuantityWarning)
+                  Text(s.afterSellingQuantity,
+                      style:
+                      TextStyle(color: KprimaryColor, fontSize: w * 0.03)),
+                SizedBox(height: h * 0.02),
+                Row(
+                  children: [
+                    Expanded(
+                        child: customField(s.price, priceController,
+                            type: const TextInputType.numberWithOptions(decimal: true),
+                            hint: s.enterPrice,
+                            errorText: _priceError)),
+                    SizedBox(width: w * 0.04),
+                    Expanded(
+                      child: customField(
+                        s.discount,
+                        discountController,
                         type: const TextInputType.numberWithOptions(decimal: true),
-                        hint: s.enterPrice,
-                        errorText: _priceError)),
-                SizedBox(width: w * 0.04),
-                Expanded(
-                  child: customField(
-                    s.discount,
-                    discountController,
-                    type: const TextInputType.numberWithOptions(decimal: true),
-                    hint: s.enterDiscount,
-                    suffix: Text("%",
-                        style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                            fontSize: w * 0.03)),
-                    errorText: _discountError,
-                    isDiscount: true,
-                  ),
+                        hint: s.enterDiscount,
+                        suffix: Text("%",
+                            style: TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                                fontSize: w * 0.03)),
+                        errorText: _discountError,
+                        isDiscount: true,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            SizedBox(height: h * 0.02),
-            descriptionField(s.productDescription, descriptionController),
-            SizedBox(height: h * 0.02),
+                SizedBox(height: h * 0.02),
+                descriptionField(s.productDescription, descriptionController),
+                SizedBox(height: h * 0.02),
 
-            // Social links section (Instagram/WhatsApp only)
-            Text(
-              s.socialLinks,
-              style: TextStyle(
-                  color: KprimaryText,
-                  fontSize: w * 0.035,
-                  fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: h * 0.01),
-            Column(
-              children: socialLinks
-                  .map(
-                    (link) => Container(
-                  margin: EdgeInsets.only(bottom: h * 0.01),
-                  padding: EdgeInsets.symmetric(horizontal: w * 0.03),
-                  height: w * 0.12,
-                  decoration: BoxDecoration(
-                    color: const Color(0xffFAFAFA),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xffE9E9E9)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(link['icon'], color: link['color']),
-                      SizedBox(width: w * 0.03),
-                      Expanded(
-                        child: Text(
-                          link['url'],
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: w * 0.03,
-                            color: KprimaryText,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          final index = socialLinks.indexOf(link);
-                          _removeSocialLink(index);
-                        },
-                        icon: const Icon(Icons.close, color: Color(0xffDD0C0C)),
-                      ),
-                    ],
-                  ),
+                Text(
+                  s.socialLinks,
+                  style: TextStyle(
+                      color: KprimaryText,
+                      fontSize: w * 0.035,
+                      fontWeight: FontWeight.bold),
                 ),
-              )
-                  .toList(),
-            ),
-            if (socialLinks.length < 3)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    height: w * 0.12,
-                    child: DecoratedBox(
+                SizedBox(height: h * 0.01),
+                Column(
+                  children: socialLinks
+                      .map(
+                        (link) => Container(
+                      margin: EdgeInsets.only(bottom: h * 0.01),
+                      padding: EdgeInsets.symmetric(horizontal: w * 0.03),
+                      height: w * 0.12,
                       decoration: BoxDecoration(
                         color: const Color(0xffFAFAFA),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: _socialLinkError ? const Color(0xffDD0C0C) : const Color(0xffE9E9E9),
-                          width: 1.5,
-                        ),
+                        border: Border.all(color: const Color(0xffE9E9E9)),
                       ),
-                      child: TextField(
-                        controller: socialLinkController,
-                        keyboardType: TextInputType.text,
-                        onSubmitted: (value) {
-                          final trimmedValue = normalizeLink(value);
-
-                          if (trimmedValue.isEmpty) {
-                            setState(() => _socialLinkError = false);
-                            return;
-                          }
-
-                          final platform = detectPlatform(trimmedValue);
-
-                          if (platform == null) {
-                            setState(() => _socialLinkError = true);
-                            socialLinkController.clear();
-                            return;
-                          }
-
-                          final platformName = platform['name']?.toString().toLowerCase() ?? '';
-                          socialLinks.removeWhere((link) {
-                            final oldUrl = link['url']?.toString() ?? '';
-                            final oldPlatform = detectPlatform(oldUrl);
-                            final oldName = oldPlatform?['name']?.toString().toLowerCase() ?? '';
-                            return oldName == platformName;
-                          });
-
-                          // Update local link fields
-                          if (platformName.contains('instagram')) {
-                            _linkInsta = trimmedValue;
-                          } else if (platformName.contains('whatsapp')) {
-                            _linkWhatsapp = trimmedValue;
-                          }
-
-                          setState(() {
-                            socialLinks.add({
-                              'url': trimmedValue,
-                              'icon': platform['icon'] ?? Icons.link,
-                              'color': platform['color'] ?? Colors.grey,
-                            });
-                            socialLinkController.clear();
-                            _socialLinkError = false;
-                          });
-                        },
-                        style: TextStyle(
-                            fontSize: w * 0.03,
-                            color: KprimaryText,
-                            fontWeight: FontWeight.bold),
-                        decoration: InputDecoration(
-                          hintText: s.enterSocialLink,
-                          hintStyle: TextStyle(
-                            fontSize: w * 0.03,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey.shade600,
+                      child: Row(
+                        children: [
+                          Icon(link['icon'], color: link['color']),
+                          SizedBox(width: w * 0.03),
+                          Expanded(
+                            child: Text(
+                              link['url'],
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: w * 0.03,
+                                color: KprimaryText,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(
-                              vertical: w * 0.035, horizontal: w * 0.035),
-                        ),
+                          IconButton(
+                            onPressed: () {
+                              final index = socialLinks.indexOf(link);
+                              _removeSocialLink(index);
+                            },
+                            icon: const Icon(Icons.close, color: Color(0xffDD0C0C)),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  SizedBox(height: h * 0.005),
-                  if (_socialLinkError)
-                    SizedBox(
-                      height: h * 0.02,
-                      child: Text(
-                        S.of(context).notSupportedLink,
-                        style: TextStyle(color: const Color(0xffDD0C0C), fontSize: w * 0.03),
-                      ),
-                    ),
-                ],
-              ),
-
-            SizedBox(height: h * 0.02),
-            Text(s.imagesMax10,
-                style: TextStyle(
-                    color: KprimaryText,
-                    fontSize: w * 0.035,
-                    fontWeight: FontWeight.bold)),
-            SizedBox(height: h * 0.01),
-            Container(
-              width: double.infinity,
-              height: w * 0.36,
-              decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: _imagesError != null ? const Color(0xffDD0C0C) : Colors.grey.shade200,
-                    width: 1.5,
-                  )),
-              child: selectedImages.isEmpty
-                  ? GestureDetector(
-                onTap: _pickImages,
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  )
+                      .toList(),
+                ),
+                if (socialLinks.length < 3)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.cloud_upload_outlined,
-                          size: w * 0.05, color: Colors.grey),
-                      SizedBox(height: h * 0.01),
-                      Text(s.addImages,
-                          style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: w * 0.03,
-                              fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ),
-              )
-                  : GridView.builder(
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate:
-                SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 5,
-                  crossAxisSpacing: w * 0.02,
-                  mainAxisSpacing: w * 0.02,
-                  childAspectRatio: 1.0,
-                ),
-                itemCount: selectedImages.length +
-                    (selectedImages.length < 10 ? 1 : 0),
-                itemBuilder: (context, index) {
-                  if (index == selectedImages.length &&
-                      selectedImages.length < 10) {
-                    return GestureDetector(
-                      onTap: _pickImages,
-                      child: Container(
-                        decoration: BoxDecoration(
+                      SizedBox(
+                        height: w * 0.12,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: const Color(0xffFAFAFA),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                                color: Colors.grey.shade300)),
-                        child: Center(
-                            child: Icon(Icons.add,
-                                color: Colors.grey,
-                                size: w * 0.05)),
-                      ),
-                    );
-                  }
-                  final imgItem = selectedImages[index];
-                  return Stack(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          image: DecorationImage(
-                            image: _imageProviderForItem(imgItem),
-                            fit: BoxFit.cover,
+                              color: _socialLinkError ? const Color(0xffDD0C0C) : const Color(0xffE9E9E9),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: TextField(
+                            controller: socialLinkController,
+                            keyboardType: TextInputType.text,
+                            onSubmitted: (value) {
+                              final trimmedValue = normalizeLink(value);
+
+                              if (trimmedValue.isEmpty) {
+                                setState(() => _socialLinkError = false);
+                                return;
+                              }
+
+                              final platform = detectPlatform(trimmedValue);
+
+                              if (platform == null) {
+                                setState(() => _socialLinkError = true);
+                                socialLinkController.clear();
+                                return;
+                              }
+
+                              final platformName = platform['name']?.toString().toLowerCase() ?? '';
+                              socialLinks.removeWhere((link) {
+                                final oldUrl = link['url']?.toString() ?? '';
+                                final oldPlatform = detectPlatform(oldUrl);
+                                final oldName = oldPlatform?['name']?.toString().toLowerCase() ?? '';
+                                return oldName == platformName;
+                              });
+
+                              if (platformName.contains('instagram')) {
+                                _linkInsta = trimmedValue;
+                              } else if (platformName.contains('whatsapp')) {
+                                _linkWhatsapp = trimmedValue;
+                              }
+
+                              setState(() {
+                                socialLinks.add({
+                                  'url': trimmedValue,
+                                  'icon': platform['icon'] ?? Icons.link,
+                                  'color': platform['color'] ?? Colors.grey,
+                                });
+                                socialLinkController.clear();
+                                _socialLinkError = false;
+                              });
+                            },
+                            style: TextStyle(
+                                fontSize: w * 0.03,
+                                color: KprimaryText,
+                                fontWeight: FontWeight.bold),
+                            decoration: InputDecoration(
+                              hintText: s.enterSocialLink,
+                              hintStyle: TextStyle(
+                                fontSize: w * 0.03,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.shade600,
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(
+                                  vertical: w * 0.035, horizontal: w * 0.035),
+                            ),
                           ),
                         ),
                       ),
-                      Positioned(
-                        top: 5,
-                        right: 5,
-                        child: GestureDetector(
-                          onTap: () => _removeImage(index),
-                          child: Container(
-                            decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Color(0xffDD0C0C)),
-                            child: Icon(Icons.close,
-                                color: Colors.white, size: w * 0.04),
+                      SizedBox(height: h * 0.005),
+                      if (_socialLinkError)
+                        SizedBox(
+                          height: h * 0.02,
+                          child: Text(
+                            S.of(context).notSupportedLink,
+                            style: TextStyle(color: const Color(0xffDD0C0C), fontSize: w * 0.03),
                           ),
                         ),
-                      ),
                     ],
-                  );
-                },
-              ),
-            ),
-            if (_imagesError != null) ...[
-              SizedBox(height: h * 0.005),
-              SizedBox(
-                height: h * 0.02,
-                child: Text(
-                  _imagesError!,
-                  style: TextStyle(color: const Color(0xffDD0C0C), fontSize: w * 0.03),
-                ),
-              ),
-            ],
-
-            SizedBox(height: h * 0.03),
-            Text(s.shippingOptions,
-                style: TextStyle(
-                    color: KprimaryText,
-                    fontSize: w * 0.035,
-                    fontWeight: FontWeight.bold)),
-            SizedBox(height: h * 0.01),
-            Row(
-              children: [
-                optionButton(s.none, "noDeliver", deliveryType,
-                        () => setState(() => deliveryType = "noDeliver")),
-                optionButton(s.local, "internal", deliveryType,
-                        () => setState(() => deliveryType = "internal")),
-                optionButton(s.localAndInternational, "internalAndexternal", deliveryType,
-                        () => setState(() => deliveryType = "internalAndexternal")),
-              ],
-            ),
-            SizedBox(height: h * 0.02),
-
-            // حقول أسعار التوصيل: "سعر التوصيل الداخلي" و "سعر التوصيل الدولي"
-            if (deliveryType == 'internal') ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: customField(
-                      localShippingLabel,
-                      feesInternalController,
-                      type: const TextInputType.numberWithOptions(decimal: true),
-                      hint: s.price,
-                      errorText: _feesInternalError,
-                      integerOnly: false,
-                    ),
                   ),
-                ],
-              ),
-            ] else if (deliveryType == 'internalAndexternal') ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: customField(
-                      localShippingLabel,
-                      feesInternalController,
-                      type: const TextInputType.numberWithOptions(decimal: true),
-                      hint: s.price,
-                      errorText: _feesInternalError,
-                      integerOnly: false,
-                    ),
-                  ),
-                  SizedBox(width: w * 0.04),
-                  Expanded(
-                    child: customField(
-                      internationalShippingLabel,
-                      feesExternalController,
-                      type: const TextInputType.numberWithOptions(decimal: true),
-                      hint: s.price,
-                      errorText: _feesExternalError,
-                      integerOnly: false,
-                    ),
-                  ),
-                ],
-              ),
-            ],
 
-            SizedBox(height: h * 0.03),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(s.installmentAvailable,
+                SizedBox(height: h * 0.02),
+                Text(s.imagesMax10,
                     style: TextStyle(
                         color: KprimaryText,
                         fontSize: w * 0.035,
                         fontWeight: FontWeight.bold)),
-                Transform.scale(
-                  scale: MediaQuery.of(context).size.width / 400,
-                  child: Checkbox(
-                    activeColor: KprimaryColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4),
+                SizedBox(height: h * 0.01),
+                Container(
+                  width: double.infinity,
+                  height: w * 0.36,
+                  decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: _imagesError != null ? const Color(0xffDD0C0C) : Colors.grey.shade200,
+                        width: 1.5,
+                      )),
+                  child: selectedImages.isEmpty
+                      ? GestureDetector(
+                    onTap: _pickImages,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.cloud_upload_outlined,
+                              size: w * 0.05, color: Colors.grey),
+                          SizedBox(height: h * 0.01),
+                          Text(s.addImages,
+                              style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: w * 0.03,
+                                  fontWeight: FontWeight.bold)),
+                        ],
+                      ),
                     ),
-                    value: installment,
-                    onChanged: (val) {
-                      setState(() => installment = val ?? false);
+                  )
+                      : GridView.builder(
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                    SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 5,
+                      crossAxisSpacing: w * 0.02,
+                      mainAxisSpacing: w * 0.02,
+                      childAspectRatio: 1.0,
+                    ),
+                    itemCount: selectedImages.length +
+                        (selectedImages.length < 10 ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index == selectedImages.length &&
+                          selectedImages.length < 10) {
+                        return GestureDetector(
+                          onTap: _pickImages,
+                          child: Container(
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                    color: Colors.grey.shade300)),
+                            child: Center(
+                                child: Icon(Icons.add,
+                                    color: Colors.grey,
+                                    size: w * 0.05)),
+                          ),
+                        );
+                      }
+                      final imgItem = selectedImages[index];
+                      return Stack(
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              image: DecorationImage(
+                                image: _imageProviderForItem(imgItem),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 5,
+                            right: 5,
+                            child: GestureDetector(
+                              onTap: () => _removeImage(index),
+                              child: Container(
+                                decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Color(0xffDD0C0C)),
+                                child: Icon(Icons.close,
+                                    color: Colors.white, size: w * 0.04),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
                     },
+                  ),
+                ),
+                if (_imagesError != null) ...[
+                  SizedBox(height: h * 0.005),
+                  SizedBox(
+                    height: h * 0.02,
+                    child: Text(
+                      _imagesError!,
+                      style: TextStyle(color: const Color(0xffDD0C0C), fontSize: w * 0.03),
+                    ),
+                  ),
+                ],
+
+                SizedBox(height: h * 0.03),
+                Text(s.shippingOptions,
+                    style: TextStyle(
+                        color: KprimaryText,
+                        fontSize: w * 0.035,
+                        fontWeight: FontWeight.bold)),
+                SizedBox(height: h * 0.01),
+                Row(
+                  children: [
+                    optionButton(s.none, "noDeliver", deliveryType,
+                            () => setState(() => deliveryType = "noDeliver")),
+                    optionButton(s.local, "internal", deliveryType,
+                            () => setState(() => deliveryType = "internal")),
+                    optionButton(s.localAndInternational, "internalAndexternal", deliveryType,
+                            () => setState(() => deliveryType = "internalAndexternal")),
+                  ],
+                ),
+                SizedBox(height: h * 0.02),
+
+                if (deliveryType == 'internal') ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: customField(
+                          localShippingLabel,
+                          feesInternalController,
+                          type: const TextInputType.numberWithOptions(decimal: true),
+                          hint: s.price,
+                          errorText: _feesInternalError,
+                          integerOnly: false,
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else if (deliveryType == 'internalAndexternal') ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: customField(
+                          localShippingLabel,
+                          feesInternalController,
+                          type: const TextInputType.numberWithOptions(decimal: true),
+                          hint: s.price,
+                          errorText: _feesInternalError,
+                          integerOnly: false,
+                        ),
+                      ),
+                      SizedBox(width: w * 0.04),
+                      Expanded(
+                        child: customField(
+                          internationalShippingLabel,
+                          feesExternalController,
+                          type: const TextInputType.numberWithOptions(decimal: true),
+                          hint: s.price,
+                          errorText: _feesExternalError,
+                          integerOnly: false,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+
+                SizedBox(height: h * 0.03),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(s.installmentAvailable,
+                        style: TextStyle(
+                            color: KprimaryText,
+                            fontSize: w * 0.035,
+                            fontWeight: FontWeight.bold)),
+                    Transform.scale(
+                      scale: MediaQuery.of(context).size.width / 400,
+                      child: Checkbox(
+                        activeColor: KprimaryColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        value: installment,
+                        onChanged: (val) {
+                          setState(() => installment = val ?? false);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: h * 0.02),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _isSubmitting ? null : _submitAd,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _isSubmitting ? Colors.grey : KprimaryColor,
+                      padding: EdgeInsets.symmetric(vertical: h * 0.012),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(w * 0.02)),
+                    ),
+                    child: _isSubmitting
+                        ? SizedBox(
+                      width: w * 0.05,
+                      height: w * 0.05,
+                      child: const CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2),
+                    )
+                        : Text(
+                      widget.isEditing ? s.saveChanges : s.postAd,
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: w * 0.035,
+                          fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
               ],
             ),
-            SizedBox(height: h * 0.02),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _isSubmitting ? null : _submitAd,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _isSubmitting ? Colors.grey : KprimaryColor,
-                  padding: EdgeInsets.symmetric(vertical: h * 0.024),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(w * 0.02)),
-                ),
-                child: _isSubmitting
-                    ? SizedBox(
-                  width: w * 0.05,
-                  height: w * 0.05,
-                  child: const CircularProgressIndicator(
-                      color: Colors.white, strokeWidth: 2),
-                )
-                    : Text(
-                  widget.isEditing ? s.saveChanges : s.postAd,
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: w * 0.035,
-                      fontWeight: FontWeight.bold),
+          ),
+          if (_isSubmitting)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.3),
+                child: Center(
+                  child: CircularProgressIndicator(color: KprimaryColor),
                 ),
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }

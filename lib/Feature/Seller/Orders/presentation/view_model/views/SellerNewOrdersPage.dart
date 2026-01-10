@@ -1320,7 +1320,8 @@ class SellerNewOrdersPage extends StatelessWidget {
         body: BlocBuilder<NewOrdersCubit, NewOrdersState>(
           builder: (context, state) {
             if (state is NewOrdersError) {
-              return Center(child: Text(state.message));
+              // عرض تصميم فشل الاتصال مشابه لـ SuggestionsPage
+              return _buildErrorState(context, state.message);
             }
             if (state is NewOrdersLoaded) {
               final orders = state.orders;
@@ -1347,6 +1348,66 @@ class SellerNewOrdersPage extends StatelessWidget {
             }
             return _buildNewOrdersShimmerList(context);
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(BuildContext context, String errorMessage) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: SizedBox(
+        height: screenHeight * 0.8,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+                  Icon(
+                    Icons.network_check,
+                    color: Colors.grey,
+                    size: screenWidth * 0.15,
+                  ),
+                  SizedBox(height: screenHeight * 0.02),
+                  Text(
+                    S.of(context).connectionTimeout,
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.03,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+              SizedBox(height: screenHeight * 0.04),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.1),
+                child: ElevatedButton(
+                  onPressed: () {
+                    context.read<NewOrdersCubit>().fetchNewOrders();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xffFF580E), // نفس لون SuggestionsPage
+                    minimumSize: Size(screenWidth * 0.4, screenHeight * 0.04),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    S.of(context).tryAgain, // استخدام نفس النص المترجم
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.035,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.02),
+            ],
+          ),
         ),
       ),
     );
@@ -1440,4 +1501,3 @@ class SellerNewOrdersPage extends StatelessWidget {
     );
   }
 }
-

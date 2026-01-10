@@ -39,7 +39,6 @@ class _HomePageState extends State<HomePage> {
     Icons.kitchen_outlined,
     Icons.health_and_safety_outlined,
     Icons.book_outlined,
-
   ];
 
   late final BannerCubit _bannerCubit;
@@ -89,7 +88,6 @@ class _HomePageState extends State<HomePage> {
     await Future.delayed(const Duration(seconds: 1));
   }
 
-
   void _navigateToCategoryPage(BuildContext context, CategoryModel category, {String? displayLabel}) {
     Navigator.push(
       context,
@@ -101,6 +99,68 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
+  }
+
+  /// --- NEW: reconnect button and network error handler like SuggestionsPage ---
+
+  bool _networkHasError = false;
+
+  void _handleNetworkError() {
+    setState(() {
+      _networkHasError = true;
+    });
+  }
+
+  Widget _buildNetworkErrorWidget(BuildContext context, double screenWidth, double screenHeight) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.network_check,
+            color: Colors.grey,
+            size: screenWidth * 0.15,
+          ),
+          SizedBox(height: screenHeight * 0.02),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
+            child: Text(
+              S.of(context).connectionTimeout,
+              style: TextStyle(
+                fontSize: screenWidth * 0.035,
+                color: Colors.grey[700],
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          SizedBox(height: screenHeight * 0.02),
+          ElevatedButton(
+            onPressed: () async {
+              setState(() => _networkHasError = false);
+              await _onRefresh();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xffFF580E),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              S.of(context).tryAgain,
+              style: TextStyle(
+                fontSize: screenWidth * 0.035,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          SizedBox(height: screenHeight * 0.1),
+        ],
+      ),
+    );
+  }
+
+  bool _anyBlocHasNetworkError(BannerState bannerState, HomeState homeState) {
+    return _bannerHasError || _categoriesHasError;
   }
 
   @override
@@ -125,140 +185,144 @@ class _HomePageState extends State<HomePage> {
         BlocProvider<BannerCubit>.value(value: _bannerCubit),
         BlocProvider<HomeCubit>.value(value: _homeCubit),
       ],
-      child: BlocListener<BannerCubit, BannerState>(
-        listener: (context, state) {
-          if (state is BannerLoading) {
+      child: BlocConsumer<BannerCubit, BannerState>(
+        listener: (context, bannerState) {
+          if (bannerState is BannerLoading) {
             setState(() {
               _isLoadingBanners = true;
               _bannerHasError = false;
             });
-          } else if (state is BannerLoaded) {
-            print('Banners loaded successfully: ${state.banners.length} items');
+          } else if (bannerState is BannerLoaded) {
             setState(() {
               _isLoadingBanners = false;
               _bannerHasError = false;
-              _banners = state.banners;
-              _tawqalProducts = state.tawqalProducts;
-              _suggestedProducts = state.suggestedProducts;
+              _banners = bannerState.banners;
+              _tawqalProducts = bannerState.tawqalProducts;
+              _suggestedProducts = bannerState.suggestedProducts;
+              _networkHasError = false;
             });
-          } else if (state is BannerError) {
-            print('Banner error: ${state.message}');
+          } else if (bannerState is BannerError) {
             setState(() {
               _isLoadingBanners = false;
               _bannerHasError = true;
+              _networkHasError = true;
             });
           }
         },
-        child: AnnotatedRegion<SystemUiOverlayStyle>(
-          value: const SystemUiOverlayStyle(
-            statusBarColor: Colors.white,
-            statusBarIconBrightness: Brightness.dark,
-          ),
-          child: Scaffold(
-            backgroundColor: Colors.grey[100],
-            body: RefreshIndicator(
-              color: KprimaryColor,
-              onRefresh: _onRefresh,
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.symmetric(
-                  vertical: screenHeight * 0.02,
+        builder: (context, bannerState) {
+          return BlocBuilder<HomeCubit, HomeState>(
+            builder: (context, homeState) {
+              _categoriesHasError = homeState.categoriesHasError;
+
+              if (_anyBlocHasNetworkError(bannerState, homeState) || _networkHasError) {
+                // Network (or server) issue: show same as SuggestionsPage
+                return Scaffold(
+                  backgroundColor: Colors.grey[100],
+                  body: _buildNetworkErrorWidget(context, screenWidth, screenHeight),
+                );
+              }
+
+              return AnnotatedRegion<SystemUiOverlayStyle>(
+                value: const SystemUiOverlayStyle(
+                  statusBarColor: Colors.white,
+                  statusBarIconBrightness: Brightness.dark,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(height: screenWidth * 0.06),
-                    BlocBuilder<HomeCubit, HomeState>(
-                      builder: (context, homeState) {
-                        return HomeHeader(
-                          isLoading: homeState.isProfileLoading,
-                          userName: homeState.userName.isEmpty ? userName : homeState.userName,
-                          userImage: homeState.userImage.isEmpty ? userImage : homeState.userImage,
-                          screenWidth: screenWidth,
-                          onNotificationPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const NotificationsPage(),
-                              ),
-                            );
-                          },
-                          onProfileTap: null,
-                        );
-                      },
-                    ),
-                    SizedBox(height: screenHeight * 0.02),
-                    SearchFilterBar(
-                      screenWidth: screenWidth,
-                      onSearchTap: () => context.read<BottomNavBCubit>().setIndex(1),
-                    ),
-                    SizedBox(height: screenHeight * 0.02),
-                    BlocBuilder<HomeCubit, HomeState>(
-                      builder: (context, homeState) {
-                        _categoriesHasError = homeState.categoriesHasError;
-                        return CategoriesHeader(
-                          screenWidth: screenWidth,
-                          title: S.of(context).categories,
-                          showRefresh: _categoriesHasError,
-                          onRefresh: () => context.read<HomeCubit>().loadCategories(),
-                        );
-                      },
-                    ),
-                    SizedBox(height: screenHeight * 0.015),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
-                      child: BlocBuilder<HomeCubit, HomeState>(
-                        builder: (context, homeState) {
-                          return CategoryList(
-                            categories: homeState.categories,
-                            icons: icons,
-                            labels: labels,
-                            width: screenWidth,
-                            onCategoryTap: (category, displayLabelLocal) {
-                              _navigateToCategoryPage(context, category, displayLabel: displayLabelLocal);
+                child: Scaffold(
+                  backgroundColor: Colors.grey[100],
+                  body: RefreshIndicator(
+                    color: KprimaryColor,
+                    onRefresh: _onRefresh,
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: EdgeInsets.symmetric(
+                        vertical: screenHeight * 0.02,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(height: screenWidth * 0.06),
+                          HomeHeader(
+                            isLoading: homeState.isProfileLoading,
+                            userName: homeState.userName.isEmpty ? userName : homeState.userName,
+                            userImage: homeState.userImage.isEmpty ? userImage : homeState.userImage,
+                            screenWidth: screenWidth,
+                            onNotificationPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const NotificationsPage(),
+                                ),
+                              );
                             },
-                          );
-                        },
+                            onProfileTap: null,
+                          ),
+                          SizedBox(height: screenHeight * 0.02),
+                          SearchFilterBar(
+                            screenWidth: screenWidth,
+                            onSearchTap: () => context.read<BottomNavBCubit>().setIndex(1),
+                          ),
+                          SizedBox(height: screenHeight * 0.02),
+                          CategoriesHeader(
+                            screenWidth: screenWidth,
+                            title: S.of(context).categories,
+                            showRefresh: _categoriesHasError,
+                            onRefresh: () => context.read<HomeCubit>().loadCategories(),
+                          ),
+                          SizedBox(height: screenHeight * 0.015),
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
+                            child: CategoryList(
+                              categories: homeState.categories,
+                              icons: icons,
+                              labels: labels,
+                              width: screenWidth,
+                              onCategoryTap: (category, displayLabelLocal) {
+                                _navigateToCategoryPage(context, category, displayLabel: displayLabelLocal);
+                              },
+                            ),
+                          ),
+                          SizedBox(height: screenWidth * 0.04),
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
+                            child: BannerSection(
+                              screenWidth: screenWidth,
+                              screenHeight: screenHeight,
+                              banners: _banners,
+                              isLoading: _isLoadingBanners,
+                              hasError: _bannerHasError,
+                            ),
+                          ),
+                          TawqalOffersSection(
+                            screenWidth: screenWidth,
+                            screenHeight: screenHeight,
+                            cardWidth: cardWidth,
+                            cardHeight: cardHeight,
+                            isLoading: _isLoadingBanners,
+                            tawqalProducts: _tawqalProducts,
+                          ),
+                          SizedBox(height: screenHeight * 0.01),
+                          SuggestionsSection(
+                            screenWidth: screenWidth,
+                            screenHeight: screenHeight,
+                            cardWidth: cardWidth,
+                            cardHeight: cardHeight,
+                            isLoading: _isLoadingBanners,
+                            suggestedProducts: _suggestedProducts,
+                          ),
+                        ],
                       ),
                     ),
-                    SizedBox(height: screenWidth * 0.04),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
-                      child: BannerSection(
-                        screenWidth: screenWidth,
-                        screenHeight: screenHeight,
-                        banners: _banners,
-                        isLoading: _isLoadingBanners,
-                        hasError: _bannerHasError,
-                      ),
-                    ),
-                    TawqalOffersSection(
-                      screenWidth: screenWidth,
-                      screenHeight: screenHeight,
-                      cardWidth: cardWidth,
-                      cardHeight: cardHeight,
-                      isLoading: _isLoadingBanners,
-                      tawqalProducts: _tawqalProducts,
-                    ),
-                    SizedBox(height: screenHeight * 0.01),
-                    SuggestionsSection(
-                      screenWidth: screenWidth,
-                      screenHeight: screenHeight,
-                      cardWidth: cardWidth,
-                      cardHeight: cardHeight,
-                      isLoading: _isLoadingBanners,
-                      suggestedProducts: _suggestedProducts,
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          ),
-        ),
+              );
+            },
+          );
+        },
       ),
     );
   }
 }
+
 class SearchFilterBar extends StatelessWidget {
   final double screenWidth;
   final VoidCallback onSearchTap;

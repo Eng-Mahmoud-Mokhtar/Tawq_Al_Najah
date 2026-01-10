@@ -55,8 +55,6 @@ class _SuggestionsPageState extends State<SuggestionsPage> {
     context.read<FavoriteCubit>().loadFavorites();
     context.read<CartCubit>().loadCart();
     _searchController.addListener(_onSearchChanged);
-
-    // استدعاء الجلب من السيرفر فور الدخول لعرض كل النتائج وليس فقط الممرّرة عبر widget.products
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _fetchProducts(
         minPrice: _currentMinPrice,

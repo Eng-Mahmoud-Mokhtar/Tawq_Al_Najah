@@ -10,6 +10,279 @@ import '../../../../Product/Data/repository/RatingRepository.dart';
 import '../../../../Product/presentation/view_model/views/widgets/FullScreenGallery.dart';
 import 'CreatPost.dart';
 
+// ------------------ Dialogات موحدة لمشاكل التطبيق ------------------
+
+// Dialog النجاح
+class SuccessDialogWidget extends StatelessWidget {
+  final String title;
+  final String message;
+  final VoidCallback? onPressed;
+  const SuccessDialogWidget({super.key, required this.title, required this.message, this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(screenWidth * 0.05),
+      ),
+      backgroundColor: Colors.transparent,
+      child: Container(
+        padding: EdgeInsets.all(screenWidth * 0.05),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(screenWidth * 0.05),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black12, blurRadius: 25, offset: const Offset(0, 5)),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: screenWidth * 0.2,
+              height: screenWidth * 0.2,
+              decoration: BoxDecoration(
+                color: Colors.green.shade50, shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.check_circle_rounded,
+                size: screenWidth * 0.1,
+                color: Colors.green.shade700,
+              ),
+            ),
+            SizedBox(height: screenHeight * 0.025),
+            Text(title, style: TextStyle(
+              fontSize: screenWidth * 0.035, fontWeight: FontWeight.w700, color: Colors.grey.shade800,
+            ), textAlign: TextAlign.center,),
+            SizedBox(height: screenHeight * 0.01),
+            Text(message, textAlign: TextAlign.center, style: TextStyle(
+              fontSize: screenWidth * 0.03, color: Colors.grey.shade600, height: 1.5,
+            )),
+            SizedBox(height: screenHeight * 0.02),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: onPressed ?? () => Navigator.of(context, rootNavigator: true).pop(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: KprimaryColor,
+                  padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                  ),
+                  elevation: 0, shadowColor: Colors.transparent,
+                ),
+                child: Text(
+                  S.of(context).ok,
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.03,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Dialog الخطأ وأخطاء الاتصال
+class ErrorDialogWidget extends StatelessWidget {
+  final String title;
+  final String message;
+  final VoidCallback? onPressed;
+  const ErrorDialogWidget({super.key, required this.title, required this.message, this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(screenWidth * 0.05),
+      ),
+      backgroundColor: Colors.transparent,
+      child: Container(
+        padding: EdgeInsets.all(screenWidth * 0.05),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(screenWidth * 0.05),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black12, blurRadius: 25, offset: const Offset(0, 5)),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: screenWidth * 0.2,
+              height: screenWidth * 0.2,
+              decoration: BoxDecoration(
+                color: Colors.red.shade50, shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.error_outline,
+                size: screenWidth * 0.1,
+                color: Colors.red.shade700,
+              ),
+            ),
+            SizedBox(height: screenHeight * 0.025),
+            Text(title, style: TextStyle(
+              fontSize: screenWidth * 0.035, fontWeight: FontWeight.w700, color: Colors.red.shade900,
+            ), textAlign: TextAlign.center,),
+            SizedBox(height: screenHeight * 0.01),
+            Text(message, textAlign: TextAlign.center, style: TextStyle(
+              fontSize: screenWidth * 0.03, color: Colors.grey.shade600, height: 1.5,
+            )),
+            SizedBox(height: screenHeight * 0.02),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: onPressed ?? () => Navigator.of(context, rootNavigator: true).pop(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                  ),
+                  elevation: 0, shadowColor: Colors.transparent,
+                ),
+                child: Text(
+                  S.of(context).ok,
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.03,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Dialog تأكيد الحذف
+class DeleteConfirmationDialogWidget extends StatelessWidget {
+  final VoidCallback? onDelete;
+  final VoidCallback? onCancel;
+  const DeleteConfirmationDialogWidget({super.key, this.onDelete, this.onCancel});
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(screenWidth * 0.05),
+      ),
+      backgroundColor: Colors.transparent,
+      child: Container(
+        padding: EdgeInsets.all(screenWidth * 0.05),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(screenWidth * 0.05),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black12, blurRadius: 25, offset: const Offset(0, 5)),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: screenWidth * 0.2,
+              height: screenWidth * 0.2,
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50, shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.warning_amber_rounded,
+                size: screenWidth * 0.1,
+                color: Colors.orange.shade700,
+              ),
+            ),
+            SizedBox(height: screenHeight * 0.025),
+            Text(S.of(context).delete, style: TextStyle(
+              fontSize: screenWidth * 0.035, fontWeight: FontWeight.w700, color: Colors.grey.shade800,
+            ), textAlign: TextAlign.center,),
+            SizedBox(height: screenHeight * 0.01),
+            Text(
+              S.of(context).deleteAdContent,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: screenWidth * 0.03, color: Colors.grey.shade600, height: 1.5,
+              ),
+            ),
+            SizedBox(height: screenHeight * 0.02),
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    margin: EdgeInsets.only(right: screenWidth * 0.01),
+                    child: TextButton(
+                      onPressed: onCancel ?? () => Navigator.of(context, rootNavigator: true).pop(false),
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.grey.shade200,
+                        padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                        ),
+                      ),
+                      child: Text(
+                        S.of(context).cancel,
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.03,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: screenWidth * 0.02),
+                Expanded(
+                  child: Container(
+                    margin: EdgeInsets.only(left: screenWidth * 0.01),
+                    child: ElevatedButton(
+                      onPressed: onDelete ?? () => Navigator.of(context, rootNavigator: true).pop(true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xffDD0C0C),
+                        padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                        ),
+                        elevation: 0, shadowColor: Colors.transparent,
+                      ),
+                      child: Text(
+                        S.of(context).delete,
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.03,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ------------------ صفحة تفاصيل الإعلان ------------------
 class AdsDetails extends StatefulWidget {
   final int productId;
   final Map<String, dynamic> initialProductData;
@@ -90,6 +363,11 @@ class _AdsDetailsState extends State<AdsDetails> {
           _isLoading = false;
           _sellerData = {};
         });
+        // عرض خطأ عام إذا فشل تحميل البيانات لأي سبب (تشبه مشكلة النت أو غيره)
+        _showErrorDialog(
+          title: S.of(context).errorLoadingCategories,
+          message: S.of(context).connectionError,
+        );
       }
     }
   }
@@ -111,17 +389,20 @@ class _AdsDetailsState extends State<AdsDetails> {
         _ratingSubmitted = true;
       });
       _loadProductDetails();
-    } catch (_) {}
+    } catch (_) {
+      _showErrorDialog(
+        title: S.of(context).error,
+        message: S.of(context).connectionError,
+      );
+    }
   }
 
-  // يعتبر أي قيمة "null" نصياً أو فارغة كأنها غير موجودة
   bool _hasLink(dynamic value) {
     if (value == null) return false;
     final s = value.toString().trim();
     return s.isNotEmpty && s.toLowerCase() != 'null';
   }
 
-  // ترجيع رابط اجتماعي مضبوط (يبحث أولاً في بيانات المنتج ثم البائع)
   String? _getSocialLink(String key) {
     final candidateProduct = _productData[key];
     if (_hasLink(candidateProduct)) return _normalizeLink(candidateProduct.toString());
@@ -176,7 +457,8 @@ class _AdsDetailsState extends State<AdsDetails> {
       }
 
       // إجبار https لواتساب/أرقام
-      if (link.contains('whatsapp') || link.contains('wa.me') ||
+      if (link.contains('whatsapp') ||
+          link.contains('wa.me') ||
           RegExp(r'^\+?[\d\s\-]+$').hasMatch(link)) {
         if (!link.startsWith('https://')) {
           link = 'https://$link';
@@ -184,15 +466,13 @@ class _AdsDetailsState extends State<AdsDetails> {
       }
 
       final uri = Uri.parse(link);
-      bool canLaunch = false;
+      bool canLaunchLink = false;
 
       try {
-        canLaunch = await canLaunchUrl(uri);
-      } catch (e) {
-        // تجاهل
-      }
+        canLaunchLink = await canLaunchUrl(uri);
+      } catch (e) {}
 
-      if (canLaunch) {
+      if (canLaunchLink) {
         await launchUrl(
           uri,
           mode: LaunchMode.externalApplication,
@@ -206,11 +486,10 @@ class _AdsDetailsState extends State<AdsDetails> {
         await _launchUrlFallback(link);
       }
     } catch (e) {
-      _showLaunchError(context);
+      _showErrorDialog(title: S.of(context).error, message: S.of(context).connectionError);
     }
   }
 
-  // طريقة بديلة لفتح الروابط
   Future<void> _launchUrlFallback(String url) async {
     try {
       if (await canLaunch(url)) {
@@ -234,240 +513,31 @@ class _AdsDetailsState extends State<AdsDetails> {
     }
   }
 
-  void _showLaunchError(BuildContext context) {
-    final snackBar = SnackBar(
-      content: Text(S.of(context).error),
-      backgroundColor: Colors.red,
-    );
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
-  }
-
-  Future<bool?> _showDeleteConfirmationDialog() async {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    return await showDialog<bool>(
+  // عرض الديالوج الخاص بالخطأ (هندلة مشاكل الاتصال والحذف وغيرها)
+  Future<void> _showErrorDialog({required String title, required String message}) async {
+    await showDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(screenWidth * 0.05),
-          ),
-          elevation: 0,
-          backgroundColor: Colors.transparent,
-          child: Container(
-            padding: EdgeInsets.all(screenWidth * 0.05),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(screenWidth * 0.05),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color.fromRGBO(0, 0, 0, 0.15),
-                  blurRadius: 25,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: screenWidth * 0.2,
-                  height: screenWidth * 0.2,
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.warning_amber_rounded,
-                    size: screenWidth * 0.1,
-                    color: Colors.orange.shade700,
-                  ),
-                ),
-                SizedBox(height: screenHeight * 0.025),
-                Text(
-                  S.of(context).delete,
-                  style: TextStyle(
-                    fontSize: screenWidth * 0.035,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.grey.shade800,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: screenHeight * 0.01),
-                Text(
-                  S.of(context).deleteAdContent,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: screenWidth * 0.03,
-                    color: Colors.grey.shade600,
-                    height: 1.5,
-                  ),
-                ),
-                SizedBox(height: screenHeight * 0.02),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        margin: EdgeInsets.only(right: screenWidth * 0.01),
-                        child: TextButton(
-                          onPressed: () =>
-                              Navigator.of(dialogContext, rootNavigator: true).pop(false),
-                          style: TextButton.styleFrom(
-                            backgroundColor: Colors.grey.shade200,
-                            padding: EdgeInsets.symmetric(
-                              vertical: screenHeight * 0.02,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(screenWidth * 0.02),
-                            ),
-                          ),
-                          child: Text(
-                            S.of(context).cancel,
-                            style: TextStyle(
-                              fontSize: screenWidth * 0.03,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey.shade700,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: screenWidth * 0.02),
-                    Expanded(
-                      child: Container(
-                        margin: EdgeInsets.only(left: screenWidth * 0.01),
-                        child: ElevatedButton(
-                          onPressed: () =>
-                              Navigator.of(dialogContext, rootNavigator: true).pop(true),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xffDD0C0C),
-                            padding: EdgeInsets.symmetric(
-                              vertical: screenHeight * 0.02,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(screenWidth * 0.02),
-                            ),
-                            elevation: 0,
-                            shadowColor: Colors.transparent,
-                          ),
-                          child: Text(
-                            S.of(context).delete,
-                            style: TextStyle(
-                              fontSize: screenWidth * 0.03,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      builder: (context) => ErrorDialogWidget(title: title, message: message),
     );
   }
 
-  Future<void> _showSuccessDialog(String message, {bool isDelete = false}) async {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+  // عرض الديالوج الخاص بالنجاح في الحذف وغيره
+  Future<void> _showSuccessDialog({required String title, required String message, bool popParent = false}) async {
     await showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(screenWidth * 0.05),
-          ),
-          elevation: 0,
-          backgroundColor: Colors.transparent,
-          child: Container(
-            padding: EdgeInsets.all(screenWidth * 0.05),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(screenWidth * 0.05),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color.fromRGBO(0, 0, 0, 0.15),
-                  blurRadius: 25,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: screenWidth * 0.2,
-                  height: screenWidth * 0.2,
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade50,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.check_circle_rounded,
-                    size: screenWidth * 0.1,
-                    color: Colors.green.shade700,
-                  ),
-                ),
-                SizedBox(height: screenHeight * 0.025),
-                Text(
-                  S.of(context).successTitle,
-                  style: TextStyle(
-                    fontSize: screenWidth * 0.035,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.grey.shade800,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: screenHeight * 0.01),
-                Text(
-                  message,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: screenWidth * 0.03,
-                    color: Colors.grey.shade600,
-                    height: 1.5,
-                  ),
-                ),
-                SizedBox(height: screenHeight * 0.02),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(dialogContext, rootNavigator: true).pop();
-                      Navigator.of(context, rootNavigator: true).pop(true);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: KprimaryColor,
-                      padding: EdgeInsets.symmetric(
-                        vertical: screenHeight * 0.02,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(screenWidth * 0.02),
-                      ),
-                      elevation: 0,
-                      shadowColor: Colors.transparent,
-                    ),
-                    child: Text(
-                      S.of(context).ok,
-                      style: TextStyle(
-                        fontSize: screenWidth * 0.03,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+      builder: (context) => SuccessDialogWidget(title: title, message: message, onPressed: () {
+        Navigator.of(context, rootNavigator: true).pop();
+        if (popParent) Navigator.of(context, rootNavigator: true).pop(true);
+      }),
+    );
+  }
+
+  Future<bool?> _showDeleteConfirmationDialog() async {
+    return await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => DeleteConfirmationDialogWidget(),
     );
   }
 
@@ -541,16 +611,23 @@ class _AdsDetailsState extends State<AdsDetails> {
         );
 
         if (response.statusCode == 200) {
-          await _showSuccessDialog(S.of(context).adDeletedSuccess, isDelete: true);
+          await _showSuccessDialog(
+            title: S.of(context).successTitle,
+            message: S.of(context).adDeletedSuccess,
+            popParent: true,
+          );
         } else {
-          throw Exception('${S.of(context).failedToDeleteAd}: ${response.statusCode}');
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${S.of(context).errorDeletingAd}: $e')),
+          // هندلة الأخطاء من السيرفر نفسه
+          await _showErrorDialog(
+            title: S.of(context).failedToDeleteAd,
+            message: "${S.of(context).errorDeletingAd}: ${response.statusCode}",
           );
         }
+      } catch (e) {
+        await _showErrorDialog(
+          title: S.of(context).errorDeletingAd,
+          message: S.of(context).connectionError,
+        );
       } finally {
         if (mounted) setState(() => _isDeleting = false);
       }
@@ -587,7 +664,6 @@ class _AdsDetailsState extends State<AdsDetails> {
   Widget _buildSellerInfo(double screenWidth, double screenHeight) {
     final bool hasSeller = _sellerData.isNotEmpty;
 
-    // الروابط الاجتماعية (يتم أخذها من المنتج أولاً ثم البائع)
     final whatsappLink = _getSocialLink('linkWhatsapp');
     final facebookLink = _getSocialLink('linkFacebook');
     final instaLink = _getSocialLink('linkInsta');
@@ -633,7 +709,6 @@ class _AdsDetailsState extends State<AdsDetails> {
               }),
             ),
             SizedBox(height: screenHeight * 0.02),
-            // عرض أيقونات الروابط حتى لو لم توجد بيانات بائع (من بيانات المنتج)
             Row(
               children: [
                 if (whatsappLink != null)

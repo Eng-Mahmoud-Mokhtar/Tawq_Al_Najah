@@ -1149,6 +1149,9 @@ class _SellerActiveOrderDetailsPageState extends State<SellerActiveOrderDetailsP
 }
 
 // ==================== صفحة الطلبات ==========================
+// ... كود المستوردات والنماذج والـ API بدون تغيير ...
+
+// ==================== صفحة الطلبات ==========================
 class SellerActiveOrdersPage extends StatefulWidget {
   final bool fromBottomNav;
   const SellerActiveOrdersPage({super.key, this.fromBottomNav = false});
@@ -1169,7 +1172,8 @@ class _SellerActiveOrdersPageState extends State<SellerActiveOrdersPage> {
         body: BlocBuilder<ActiveOrdersCubit, ActiveOrdersState>(
           builder: (context, state) {
             if (state is ActiveOrdersError) {
-              return Center(child: Text(state.message));
+              // عرض تصميم فشل الاتصال مشابه لـ SuggestionsPage
+              return _buildErrorState(context, state.message);
             }
             if (state is! ActiveOrdersLoaded) {
               return _buildActiveOrdersShimmerList(context);
@@ -1218,20 +1222,25 @@ class _SellerActiveOrdersPageState extends State<SellerActiveOrdersPage> {
                 Expanded(
                   child: lists[selectedTabIndex].isEmpty
                       ? emptyState(context, S.of(context).noOrdersYet)
-                      : ListView.builder(
-                    padding: EdgeInsets.zero,
-                    itemCount: lists[selectedTabIndex].length,
-                    itemBuilder: (context, index) {
-                      final order = lists[selectedTabIndex][index];
-                      return ActiveShipmentCardSeller(
-                        order: order,
-                        onStatusChange: selectedTabIndex == 0
-                            ? (o, status) => context.read<ActiveOrdersCubit>().markShipped(o.orderId.toString())
-                            : selectedTabIndex == 1
-                            ? (o, status) => context.read<ActiveOrdersCubit>().markDelivered(o.orderId.toString())
-                            : null,
-                      );
+                      : RefreshIndicator(
+                    onRefresh: () async {
+                      await context.read<ActiveOrdersCubit>().fetchAll();
                     },
+                    child: ListView.builder(
+                      padding: EdgeInsets.zero,
+                      itemCount: lists[selectedTabIndex].length,
+                      itemBuilder: (context, index) {
+                        final order = lists[selectedTabIndex][index];
+                        return ActiveShipmentCardSeller(
+                          order: order,
+                          onStatusChange: selectedTabIndex == 0
+                              ? (o, status) => context.read<ActiveOrdersCubit>().markShipped(o.orderId.toString())
+                              : selectedTabIndex == 1
+                              ? (o, status) => context.read<ActiveOrdersCubit>().markDelivered(o.orderId.toString())
+                              : null,
+                        );
+                      },
+                    ),
                   ),
                 ),
               ],
@@ -1242,91 +1251,181 @@ class _SellerActiveOrdersPageState extends State<SellerActiveOrdersPage> {
     );
   }
 
+  Widget _buildErrorState(BuildContext context, String errorMessage) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: SizedBox(
+        height: screenHeight * 0.8,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.network_check,
+                color: Colors.grey,
+                size: screenWidth * 0.15,
+              ),
+              SizedBox(height: screenHeight * 0.02),
+              Text(
+                S.of(context).connectionTimeout,
+                style: TextStyle(
+                  fontSize: screenWidth * 0.03,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: screenHeight * 0.04),
+              ElevatedButton(
+                onPressed: () {
+                  context.read<ActiveOrdersCubit>().fetchAll();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xffFF580E),
+                  minimumSize: Size(screenWidth * 0.4, screenHeight * 0.04),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  S.of(context).tryAgain,
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.035,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              SizedBox(height: screenHeight * 0.02),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildActiveOrdersShimmerList(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final itemCount = 6;
 
-    return ListView.builder(
-      padding: EdgeInsets.symmetric(vertical: screenWidth * 0.02),
-      itemCount: itemCount,
-      itemBuilder: (context, index) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: screenWidth * 0.04,
-            right: screenWidth * 0.04,
-            bottom: screenWidth * 0.04,
-          ),
-          child: shimmer_package.Shimmer.fromColors(
-            baseColor: Colors.grey.shade300,
-            highlightColor: Colors.grey.shade100,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.all(color: Colors.grey.shade300, width: 1),
-                borderRadius: BorderRadius.circular(screenWidth * 0.03),
-              ),
-              padding: EdgeInsets.all(screenWidth * 0.04),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: screenWidth * 0.18,
-                    height: screenWidth * 0.18,
-                    decoration: BoxDecoration(
+    return Column(
+      children: [
+        // Shimmer لعلامات التبويب
+        Container(
+          padding: EdgeInsets.all(screenWidth * 0.04),
+          child: Row(
+            children: List.generate(3, (i) {
+              return Expanded(
+                child: Container(
+                  margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.01),
+                  padding: EdgeInsets.symmetric(vertical: screenWidth * 0.03),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                  ),
+                  child: shimmer_package.Shimmer.fromColors(
+                    baseColor: Colors.grey.shade300,
+                    highlightColor: Colors.grey.shade100,
+                    child: Container(
+                      height: screenWidth * 0.03,
                       color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  SizedBox(width: screenWidth * 0.02),
-                  Expanded(
-                    child: Column(
+                ),
+              );
+            }),
+          ),
+        ),
+        // Shimmer لعناصر القائمة
+        Expanded(
+          child: ListView.builder(
+            padding: EdgeInsets.symmetric(vertical: screenWidth * 0.02),
+            itemCount: itemCount,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: EdgeInsets.only(
+                  left: screenWidth * 0.04,
+                  right: screenWidth * 0.04,
+                  bottom: screenWidth * 0.04,
+                ),
+                child: shimmer_package.Shimmer.fromColors(
+                  baseColor: Colors.grey.shade300,
+                  highlightColor: Colors.grey.shade100,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: Colors.grey.shade300, width: 1),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                    ),
+                    padding: EdgeInsets.all(screenWidth * 0.04),
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          height: screenWidth * 0.035,
-                          width: screenWidth * 0.4,
-                          color: Colors.grey.shade300,
+                          width: screenWidth * 0.18,
+                          height: screenWidth * 0.18,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
-                        SizedBox(height: screenWidth * 0.02),
-                        Container(
-                          height: screenWidth * 0.03,
-                          width: screenWidth * 0.6,
-                          color: Colors.grey.shade300,
-                        ),
-                        SizedBox(height: screenWidth * 0.02),
-                        Row(
-                          children: [
-                            Container(
-                              height: screenWidth * 0.035,
-                              width: screenWidth * 0.15,
-                              decoration: BoxDecoration(
+                        SizedBox(width: screenWidth * 0.02),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                height: screenWidth * 0.035,
+                                width: screenWidth * 0.4,
                                 color: Colors.grey.shade300,
-                                borderRadius: BorderRadius.circular(screenWidth * 0.015),
                               ),
-                            ),
-                            SizedBox(width: screenWidth * 0.02),
-                            Container(
-                              height: screenWidth * 0.03,
-                              width: screenWidth * 0.2,
-                              color: Colors.grey.shade300,
-                            ),
-                            const Spacer(),
-                            Container(
-                              height: screenWidth * 0.03,
-                              width: screenWidth * 0.18,
-                              color: Colors.grey.shade300,
-                            ),
-                          ],
+                              SizedBox(height: screenWidth * 0.02),
+                              Container(
+                                height: screenWidth * 0.03,
+                                width: screenWidth * 0.6,
+                                color: Colors.grey.shade300,
+                              ),
+                              SizedBox(height: screenWidth * 0.02),
+                              Row(
+                                children: [
+                                  Container(
+                                    height: screenWidth * 0.035,
+                                    width: screenWidth * 0.15,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade300,
+                                      borderRadius: BorderRadius.circular(screenWidth * 0.015),
+                                    ),
+                                  ),
+                                  SizedBox(width: screenWidth * 0.02),
+                                  Container(
+                                    height: screenWidth * 0.03,
+                                    width: screenWidth * 0.2,
+                                    color: Colors.grey.shade300,
+                                  ),
+                                  const Spacer(),
+                                  Container(
+                                    height: screenWidth * 0.03,
+                                    width: screenWidth * 0.18,
+                                    color: Colors.grey.shade300,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 }

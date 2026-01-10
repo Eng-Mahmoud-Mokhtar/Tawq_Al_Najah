@@ -15,7 +15,6 @@ import 'Feature/Buyer/Product/presentation/view_model/favorite_cubit.dart';
 import 'Feature/Seller/Home/presentation/view_model/views/HomeStructure.dart';
 import 'Feature/Seller/Orders/presentation/view_model/views/SellerActiveOrdersPage.dart';
 import 'Feature/Seller/Orders/presentation/view_model/views/SellerNewOrdersPage.dart';
-import 'Feature/Seller/RelatedProuducts/presentation/view_model/FilterRelated_cubit.dart';
 import 'Feature/Splash/presentation/view_model/views/SplashScreen.dart';
 import 'generated/l10n.dart';
 
@@ -37,7 +36,6 @@ void main() async {
             providers: [
               BlocProvider(create: (_) => BottomNavBCubit()),
               BlocProvider(create: (_) => BottomNavSCubit()),
-              BlocProvider(create: (_) => FilterRelatedCubit()),
               BlocProvider(create: (_) => LocaleCubit()),
               BlocProvider(create: (_) => CountryCubit()),
               BlocProvider(create: (_) => MyPostsCubit()),

@@ -50,14 +50,17 @@ class _RelatedPageState extends State<RelatedPage> {
     super.initState();
     _displayedProducts = widget.products;
     _searchController.addListener(_onSearchChanged);
-
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    });
+    if (widget.products.isNotEmpty) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      });
+    } else {
+      _fetchProducts();
+    }
   }
 
   @override
@@ -75,36 +78,48 @@ class _RelatedPageState extends State<RelatedPage> {
 
   void _onSearchChanged() {
     final query = _searchController.text.trim();
-    if (query.isEmpty) return;
+    if (query.isEmpty) {
+      // إذا كان البحث فارغاً، نرجع للبيانات الأصلية
+      if (_displayedProducts.isEmpty) {
+        _fetchProducts();
+      }
+      return;
+    }
 
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 500), () {
       if (!mounted) return;
-      if (query.isNotEmpty) {
-        _fetchProducts(
-          searchQuery: query,
-          minPrice: _currentMinPrice,
-          maxPrice: _currentMaxPrice,
-        );
-      }
+      _fetchProducts(
+        searchQuery: query,
+        minPrice: _currentMinPrice,
+        maxPrice: _currentMaxPrice,
+      );
     });
-  }
-
-  void _resetSearch() {
-    _searchDebounce?.cancel();
-    if (!mounted) return;
-
-    setState(() {
-      _isSearchLoading = false;
-    });
-
-    _fetchProducts(minPrice: _currentMinPrice, maxPrice: _currentMaxPrice);
   }
 
   int _safeInt(double v) {
     if (v.isNaN || v.isInfinite) return 0;
     if (v < 0) return 0;
     return v.round();
+  }
+
+  // تطبيع مفاتيح الـ JSON
+  Map<String, dynamic> _normalizeProductJson(Map<String, dynamic> e) {
+    final m = Map<String, dynamic>.from(e);
+
+    if (m['images'] == null && m['image'] != null) {
+      m['images'] = m['image'];
+    }
+
+    if (m['currencyType'] == null && m['currency_type'] != null) {
+      m['currencyType'] = m['currency_type'];
+    }
+
+    if (m['priceAfterDiscount'] == null && m['price_after_discount'] != null) {
+      m['priceAfterDiscount'] = m['price_after_discount'];
+    }
+
+    return m;
   }
 
   Future<void> _fetchProducts({
@@ -115,18 +130,16 @@ class _RelatedPageState extends State<RelatedPage> {
     try {
       if (!mounted) return;
 
-      if (searchQuery != null && searchQuery.isNotEmpty) {
-        setState(() {
+      setState(() {
+        if (searchQuery != null && searchQuery.isNotEmpty) {
           _isSearchLoading = true;
-        });
-      } else {
-        setState(() {
+        } else {
           _isLoading = true;
           _isSearchLoading = false;
-          _hasError = false;
-          _errorMessage = '';
-        });
-      }
+        }
+        _hasError = false;
+        _errorMessage = '';
+      });
 
       final token = await _storage.read(key: 'user_token');
 
@@ -137,11 +150,11 @@ class _RelatedPageState extends State<RelatedPage> {
       if (token != null) headers['Authorization'] = 'Bearer $token';
 
       try {
-        if (!_cancelToken.isCancelled)
-          _cancelToken.cancel('cancelling previous');
+        if (!_cancelToken.isCancelled) _cancelToken.cancel('cancelling previous');
       } catch (_) {}
       _cancelToken = CancelToken();
 
+      // تحديث هنا: إرسال min_price و max_price دائماً (حتى لو 0)
       final double effectiveMin = minPrice ?? _currentMinPrice;
       final double effectiveMax = maxPrice ?? _currentMaxPrice;
 
@@ -158,7 +171,10 @@ class _RelatedPageState extends State<RelatedPage> {
       final response = await _dio.get(
         'https://toknagah.viking-iceland.online/api/user/products',
         queryParameters: queryParams,
-        options: Options(headers: headers, validateStatus: (_) => true),
+        options: Options(
+          headers: headers,
+          validateStatus: (_) => true,
+        ),
         cancelToken: _cancelToken,
       );
 
@@ -193,13 +209,15 @@ class _RelatedPageState extends State<RelatedPage> {
 
           final products = productsJson
               .map((e) {
-                try {
-                  return ProductModel.fromJson(e as Map<String, dynamic>);
-                } catch (_) {
-                  return null;
-                }
-              })
-              .where((product) => product != null)
+            try {
+              final normalized = _normalizeProductJson(e as Map<String, dynamic>);
+              return ProductModel.fromJson(normalized);
+            } catch (err) {
+              debugPrint('Product parse failed: $err');
+              return null;
+            }
+          })
+              .where((p) => p != null)
               .cast<ProductModel>()
               .toList();
 
@@ -211,13 +229,12 @@ class _RelatedPageState extends State<RelatedPage> {
             _isSearchLoading = false;
             _hasError = false;
 
-            _isFilterActive =
-                (searchQuery != null && searchQuery.isNotEmpty) ||
+            _isFilterActive = (searchQuery != null && searchQuery.isNotEmpty) ||
                 (_currentMinPrice > 0) ||
                 (_currentMaxPrice != kFilterMaxPrice);
 
-            if (minPrice != null) _currentMinPrice = minPrice;
-            if (maxPrice != null) _currentMaxPrice = maxPrice;
+            _currentMinPrice = effectiveMin;
+            _currentMaxPrice = effectiveMax;
 
             _filterCubit.updateFilters(
               minPrice: _currentMinPrice,
@@ -225,42 +242,42 @@ class _RelatedPageState extends State<RelatedPage> {
             );
           });
         } catch (parseError) {
+          debugPrint('Parsing error: $parseError');
           if (!mounted) return;
           setState(() {
             _displayedProducts = [];
             _isLoading = false;
             _isSearchLoading = false;
             _hasError = true;
-            _errorMessage = 'Parsing error: $parseError';
+            _errorMessage = '';
           });
         }
       } else {
+        debugPrint('Server error: ${response.statusCode} | ${response.data}');
         if (!mounted) return;
         setState(() {
           _isLoading = false;
           _isSearchLoading = false;
           _hasError = true;
-          _errorMessage =
-              'Server error: ${response.statusCode}\n${response.data ?? ''}';
+          _errorMessage = '';
         });
       }
     } catch (e) {
       if (e is DioException && e.type == DioExceptionType.cancel) return;
+      debugPrint('Request error: $e');
       if (!mounted) return;
       setState(() {
         _isLoading = false;
         _isSearchLoading = false;
         _hasError = true;
-        _errorMessage = e.toString();
+        _errorMessage = '';
       });
     }
   }
 
   Future<void> _onRefresh() async {
     await _fetchProducts(
-      searchQuery: _searchController.text.isNotEmpty
-          ? _searchController.text
-          : null,
+      searchQuery: _searchController.text.isNotEmpty ? _searchController.text : null,
       minPrice: _currentMinPrice,
       maxPrice: _currentMaxPrice,
     );
@@ -297,13 +314,10 @@ class _RelatedPageState extends State<RelatedPage> {
 
     setState(() {
       _currentMinPrice = (filters['minPrice'] as num?)?.toDouble() ?? 0;
-      _currentMaxPrice =
-          (filters['maxPrice'] as num?)?.toDouble() ?? kFilterMaxPrice;
+      _currentMaxPrice = (filters['maxPrice'] as num?)?.toDouble() ?? kFilterMaxPrice;
     });
 
-    final searchQuery = _searchController.text.isNotEmpty
-        ? _searchController.text
-        : null;
+    final searchQuery = _searchController.text.isNotEmpty ? _searchController.text : null;
 
     _fetchProducts(
       searchQuery: searchQuery,
@@ -323,10 +337,10 @@ class _RelatedPageState extends State<RelatedPage> {
   }
 
   void _navigateToProductDetails(
-    BuildContext context,
-    int productId,
-    Map<String, dynamic> productData,
-  ) {
+      BuildContext context,
+      int productId,
+      Map<String, dynamic> productData,
+      ) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -376,7 +390,7 @@ class _RelatedPageState extends State<RelatedPage> {
                         TextField(
                           controller: _searchController,
                           textDirection:
-                              Directionality.of(context) == TextDirection.rtl
+                          Directionality.of(context) == TextDirection.rtl
                               ? TextDirection.rtl
                               : TextDirection.ltr,
                           textAlign: TextAlign.start,
@@ -388,7 +402,7 @@ class _RelatedPageState extends State<RelatedPage> {
                           decoration: InputDecoration(
                             hintText: S.of(context).search,
                             hintTextDirection:
-                                Directionality.of(context) == TextDirection.rtl
+                            Directionality.of(context) == TextDirection.rtl
                                 ? TextDirection.rtl
                                 : TextDirection.ltr,
                             hintStyle: TextStyle(
@@ -431,7 +445,9 @@ class _RelatedPageState extends State<RelatedPage> {
                       ),
                       onPressed: () {
                         _searchController.clear();
-                        _resetSearch();
+                        if (_displayedProducts.isEmpty) {
+                          _fetchProducts();
+                        }
                       },
                     ),
                 ],
@@ -468,11 +484,11 @@ class _RelatedPageState extends State<RelatedPage> {
   }
 
   Widget _buildProductCard(
-    ProductModel product,
-    Map<String, dynamic> productMap,
-    int productId,
-    double screenWidth,
-  ) {
+      ProductModel product,
+      Map<String, dynamic> productMap,
+      int productId,
+      double screenWidth,
+      ) {
     final cardWidth = (screenWidth - 48) / 2;
     final cardHeight = cardWidth * 1.4;
 
@@ -558,7 +574,6 @@ class _RelatedPageState extends State<RelatedPage> {
                       ),
                     ),
                     const Spacer(),
-                    // تمت إزالة زر الإضافة للعربة
                   ],
                 ),
               ),
@@ -570,12 +585,12 @@ class _RelatedPageState extends State<RelatedPage> {
   }
 
   Widget _buildImageSection(
-    Map<String, dynamic> productMap,
-    double cardWidth,
-    double cardHeight,
-  ) {
+      Map<String, dynamic> productMap,
+      double cardWidth,
+      double cardHeight,
+      ) {
     final imageUrl =
-        (productMap['images'] is List && productMap['images'].isNotEmpty)
+    (productMap['images'] is List && productMap['images'].isNotEmpty)
         ? productMap['images'][0]
         : null;
 
@@ -689,8 +704,11 @@ class _RelatedPageState extends State<RelatedPage> {
           ),
           SizedBox(height: screenHeight * 0.01),
           Text(
-            'لا توجد عناصر ذات صلة',
-            style: TextStyle(fontSize: screenWidth * 0.035, color: Colors.grey),
+            S.of(context).noSuggestionsAvailable,
+            style: TextStyle(
+              fontSize: screenWidth * 0.035,
+              color: Colors.grey,
+            ),
           ),
           SizedBox(height: screenHeight * 0.1),
         ],
@@ -751,85 +769,80 @@ class _RelatedPageState extends State<RelatedPage> {
                     ? _buildShimmerLoading(screenWidth, screenHeight)
                     : _hasError
                     ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.network_check,
-                              color: Colors.grey,
-                              size: screenWidth * 0.15,
-                            ),
-                            SizedBox(height: screenHeight * 0.02),
-                            Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: screenWidth * 0.03,
-                              ),
-                              child: Text(
-                                _errorMessage.isNotEmpty
-                                    ? _errorMessage
-                                    : S.of(context).connectionTimeout,
-                                style: TextStyle(
-                                  fontSize: screenWidth * 0.035,
-                                  color: Colors.grey[700],
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                            SizedBox(height: screenHeight * 0.02),
-                            ElevatedButton(
-                              onPressed: () => _fetchProducts(
-                                searchQuery: _searchController.text.isNotEmpty
-                                    ? _searchController.text
-                                    : null,
-                                minPrice: _currentMinPrice,
-                                maxPrice: _currentMaxPrice,
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xffFF580E),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: Text(
-                                S.of(context).tryAgain,
-                                style: TextStyle(
-                                  fontSize: screenWidth * 0.035,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: screenHeight * 0.1),
-                          ],
-                        ),
-                      )
-                    : _displayedProducts.isEmpty
+    child: Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+    Icon(
+    Icons.network_check,
+    color: Colors.grey,
+    size: screenWidth * 0.15,
+    ),
+    SizedBox(height: screenHeight * 0.02),
+    Padding(
+    padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
+    child: Text(
+    S.of(context).connectionTimeout,
+    style: TextStyle(
+    fontSize: screenWidth * 0.035,
+    color: Colors.grey[700],
+    ),
+    textAlign: TextAlign.center,
+    ),
+    ),
+    SizedBox(height: screenHeight * 0.02),
+    ElevatedButton(
+    onPressed: () => _fetchProducts(
+    searchQuery: _searchController.text.isNotEmpty ? _searchController.text : null,
+    minPrice: _currentMinPrice,
+    maxPrice: _currentMaxPrice,
+    ),
+    style: ElevatedButton.styleFrom(
+    backgroundColor: const Color(0xffFF580E),
+    shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(8),
+    ),
+    ),
+    child: Text(
+    S.of(context).tryAgain,
+    style: TextStyle(
+    fontSize: screenWidth * 0.035,
+    color: Colors.white,
+    ),
+    ),
+    ),
+    SizedBox(height: screenHeight * 0.1),
+    ],
+    ),
+    )
+
+        : _displayedProducts.isEmpty
                     ? _buildEmptyState(screenWidth, screenHeight)
                     : GridView.builder(
-                        controller: _gridViewController,
-                        padding: EdgeInsets.zero,
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 16,
-                              mainAxisSpacing: 16,
-                              childAspectRatio: 0.65,
-                            ),
-                        itemCount: _displayedProducts.length,
-                        itemBuilder: (context, index) {
-                          final product = _displayedProducts[index];
-                          final productMap = product.toMap()
-                            ..['images'] = ImageHome.processImageList(
-                              product.images,
-                            );
+                  controller: _gridViewController,
+                  padding: EdgeInsets.zero,
+                  gridDelegate:
+                  const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 0.65,
+                  ),
+                  itemCount: _displayedProducts.length,
+                  itemBuilder: (context, index) {
+                    final product = _displayedProducts[index];
+                    final productMap = product.toMap()
+                      ..['images'] = ImageHome.processImageList(
+                        product.images,
+                      );
 
-                          return _buildProductCard(
-                            product,
-                            productMap,
-                            product.id,
-                            screenWidth,
-                          );
-                        },
-                      ),
+                    return _buildProductCard(
+                      product,
+                      productMap,
+                      product.id,
+                      screenWidth,
+                    );
+                  },
+                ),
               ),
             ),
           ),
